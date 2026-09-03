@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@import "@hv/ui/tokens.css";
+
+/* App-level base styles */
+body {
+  font-family: var(--hv-font-sans);
+  color: var(--hv-color-neutral-900);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[dir='rtl'] body {
+  font-family: var(--hv-font-urdu);
+}
