@@ -1,8 +1,46 @@
+## .NET build output
+**/bin/
+**/obj/
+
+## Common .NET build artifacts
+*.dll
+*.pdb
+*.exe
+*.deps.json
+*.runtimeconfig.json
+*.xml
+
+## IDE / editors
+.vs/
+.vscode/
+.idea/
+*.code-workspace
+
+## Test results
+**/TestResults/
+**/*.trx
+
+## OS / misc
+.DS_Store
+Thumbs.db
+
+## .NET / tooling artifacts
+*.user
+*.suo
+*.userosscache
+*.slnx
+
+## Logs
+*.log
+*.tmp
+
 node_modules
 dist
 .env
 .env.local
 .env.*.local
+appsettings.Local.json
+**/appsettings.Local.json
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
