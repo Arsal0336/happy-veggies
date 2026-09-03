@@ -1,0 +1,24 @@
+{
+  "name": "happy-veggie",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Happy Veggie — AI Farm Digital Twin (Frontend)",
+  "scripts": {
+    "dev:farmer": "pnpm --filter @hv/farmer-web dev",
+    "dev:admin": "pnpm --filter @hv/admin-web dev",
+    "build:farmer": "pnpm --filter @hv/farmer-web build",
+    "build:admin": "pnpm --filter @hv/admin-web build",
+    "build": "pnpm -r build",
+    "preview:farmer": "pnpm --filter @hv/farmer-web preview",
+    "preview:admin": "pnpm --filter @hv/admin-web preview",
+    "test": "pnpm -r test",
+    "test:farmer": "pnpm --filter @hv/farmer-web test",
+    "test:admin": "pnpm --filter @hv/admin-web test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
