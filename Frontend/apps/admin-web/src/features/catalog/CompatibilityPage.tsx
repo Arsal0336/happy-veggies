@@ -31,7 +31,7 @@ export function CompatibilityPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Crop Compatibility Matrix</h1>
+      <h1 className="text-[var(--hv-text-2xl)] font-bold">Crop Compatibility Matrix</h1>
       <p className="text-[var(--hv-text-sm)] text-[var(--hv-color-neutral-500)]">
         Click a cell to cycle between Good → Neutral → Avoid.
       </p>
@@ -41,9 +41,9 @@ export function CompatibilityPage() {
           <table className="text-[var(--hv-text-sm)]">
             <thead>
               <tr>
-                <th className="px-3 py-2" />
+                <th className="sticky start-0 z-10 bg-[var(--hv-color-neutral-50)] px-3 py-2" />
                 {crops.map((c) => (
-                  <th key={c.id} className="px-3 py-2 text-center font-medium text-[var(--hv-text-xs)]">
+                  <th key={c.id} className="sticky top-0 z-10 bg-[var(--hv-color-neutral-50)] px-3 py-2 text-center font-medium text-[var(--hv-text-xs)] whitespace-nowrap">
                     {c.nameEn}
                   </th>
                 ))}
@@ -52,7 +52,7 @@ export function CompatibilityPage() {
             <tbody>
               {crops.map((rowCrop) => (
                 <tr key={rowCrop.id}>
-                  <td className="px-3 py-2 font-medium text-[var(--hv-text-xs)] whitespace-nowrap">
+                  <td className="sticky start-0 z-10 bg-white px-3 py-2 font-medium text-[var(--hv-text-xs)] whitespace-nowrap">
                     {rowCrop.nameEn}
                   </td>
                   {crops.map((colCrop) => {

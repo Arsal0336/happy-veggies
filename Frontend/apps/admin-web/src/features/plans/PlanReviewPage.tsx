@@ -16,12 +16,12 @@ export function PlanReviewPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Plan Reviews</h1>
+      <h1 className="text-[var(--hv-text-2xl)] font-bold">Plan Reviews</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* List */}
         <div className="lg:col-span-2">
           <Card padding="none">
+            <div className="overflow-x-auto">
             <table className="w-full text-[var(--hv-text-sm)]">
               <thead className="bg-[var(--hv-color-neutral-50)] border-b border-[var(--hv-color-neutral-200)]">
                 <tr>
@@ -50,11 +50,11 @@ export function PlanReviewPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </Card>
         </div>
 
-        {/* Detail pane */}
-        <div>
+        <div className="lg:sticky lg:top-6 lg:self-start">
           {selected ? (
             <Card padding="md">
               <h3 className="font-semibold mb-2">{selected.farmName}</h3>
@@ -65,13 +65,13 @@ export function PlanReviewPage() {
                 Status: <Badge variant={statusVariant(selected.status)} size="sm">{selected.status}</Badge>
               </p>
               {selected.flagReason && (
-                <div className="bg-amber-50 border border-amber-200 rounded-[var(--hv-radius-md)] p-3 mb-4">
-                  <p className="text-[var(--hv-text-xs)] font-medium text-amber-800">Flag Reason</p>
-                  <p className="text-[var(--hv-text-sm)] text-amber-700">{selected.flagReason}</p>
+                <div className="bg-[var(--hv-color-warning-50)] border border-[var(--hv-color-warning-300)] rounded-[var(--hv-radius-md)] p-3 mb-4">
+                  <p className="text-[var(--hv-text-xs)] font-medium text-[var(--hv-color-warning-700)]">Flag Reason</p>
+                  <p className="text-[var(--hv-text-sm)] text-[var(--hv-color-warning-700)]">{selected.flagReason}</p>
                 </div>
               )}
               {selected.status === 'pending' && (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button size="sm" onClick={() => updateStatus(selected.id, 'approved')}>Approve</Button>
                   <Button variant="danger" size="sm" onClick={() => updateStatus(selected.id, 'rejected')}>Reject</Button>
                 </div>
@@ -79,7 +79,7 @@ export function PlanReviewPage() {
             </Card>
           ) : (
             <Card padding="md">
-              <p className="text-[var(--hv-color-neutral-400)] text-[var(--hv-text-sm)] text-center py-8">
+              <p className="text-[var(--hv-color-neutral-400)] text-[var(--hv-text-sm)] text-center py-12">
                 Select a plan to review
               </p>
             </Card>

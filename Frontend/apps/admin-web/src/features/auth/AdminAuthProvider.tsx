@@ -1,5 +1,13 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import type { AdminLoginResponse } from '@hv/api-types';
+import { adminApi } from '../../shared/api/adminApiInstance';
+
+export function isAdminFixtureMode(): boolean {
+  const fixturesFlag = import.meta.env.VITE_USE_FIXTURES;
+  if (fixturesFlag === 'true') return true;
+  if (fixturesFlag === 'false') return false;
+  return !import.meta.env.VITE_API_BASE_URL;
+}
 
 interface AdminAuthState {
   admin: AdminLoginResponse['admin'] | null;
@@ -46,26 +54,18 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, _password: string): Promise<void> => {
     setState((s) => ({ ...s, isLoading: true }));
     try {
-      const useFixtures = !import.meta.env.VITE_API_BASE_URL;
-
       let admin: AdminLoginResponse['admin'];
       let token: string;
 
-      if (useFixtures) {
+      if (isAdminFixtureMode()) {
         await delay(500);
         admin = { id: 'admin-001', email, roles: ['admin'] };
         token = 'fixture-admin-token';
       } else {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/admin/auth/login`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password: _password }),
-          },
-        );
-        if (!res.ok) throw new Error('Login failed');
-        const data: AdminLoginResponse = await res.json();
+        const data = await adminApi.post<AdminLoginResponse>('/admin/auth/login', {
+          email,
+          password: _password,
+        });
         admin = data.admin;
         token = data.sessionToken;
       }

@@ -7,10 +7,10 @@ export function AnalyticsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold">Analytics</h1>
+      <h1 className="text-[var(--hv-text-2xl)] font-bold">Analytics</h1>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card padding="md">
           <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-500)]">Total Requests</p>
           <p className="text-[var(--hv-text-2xl)] font-bold text-[var(--hv-color-primary-600)]">
@@ -40,7 +40,8 @@ export function AnalyticsPage() {
       {/* Daily bar chart */}
       <Card padding="md">
         <h2 className="font-semibold mb-4">Daily Requests (Last 7 Days)</h2>
-        <div className="flex items-end gap-2 h-40">
+        <div className="overflow-x-auto">
+        <div className="flex items-end gap-2 h-40 min-w-[20rem]">
           {analytics.dailyStats.map((day) => {
             const pct = maxRequests > 0 ? (day.requests / maxRequests) * 100 : 0;
             return (
@@ -58,6 +59,7 @@ export function AnalyticsPage() {
               </div>
             );
           })}
+        </div>
         </div>
       </Card>
 

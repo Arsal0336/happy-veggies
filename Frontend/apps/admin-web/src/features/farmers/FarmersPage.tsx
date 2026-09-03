@@ -27,9 +27,9 @@ export function FarmersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Farmers</h1>
-        <div className="w-64">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-[var(--hv-text-2xl)] font-bold">Farmers</h1>
+        <div className="w-full sm:w-64">
           <Input
             placeholder="Search name, phone, region…"
             value={search}
@@ -42,6 +42,7 @@ export function FarmersPage() {
       </div>
 
       <Card padding="none">
+        <div className="overflow-x-auto">
         <table className="w-full text-[var(--hv-text-sm)]">
           <thead className="bg-[var(--hv-color-neutral-50)] border-b border-[var(--hv-color-neutral-200)]">
             <tr>
@@ -53,6 +54,13 @@ export function FarmersPage() {
             </tr>
           </thead>
           <tbody>
+            {paged.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-12 text-center text-[var(--hv-text-sm)] text-[var(--hv-color-neutral-500)]">
+                  No farmers match your search.
+                </td>
+              </tr>
+            )}
             {paged.map((f) => (
               <tr key={f.id} className="border-b border-[var(--hv-color-neutral-100)] hover:bg-[var(--hv-color-neutral-50)]">
                 <td className="px-4 py-3">
@@ -70,6 +78,7 @@ export function FarmersPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
 
       {totalPages > 1 && (

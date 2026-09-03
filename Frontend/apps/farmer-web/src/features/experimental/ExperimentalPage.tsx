@@ -105,11 +105,11 @@ export function ExperimentalPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-[var(--hv-text-lg)] font-bold">
           {t('experimental.title', 'Experimental Farming')}
         </h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="primary" size="sm" onClick={() => setModalMode('create')}>
             {t('experimental.newPlan', 'New Experiment')}
           </Button>
@@ -131,7 +131,7 @@ export function ExperimentalPage() {
         return (
           <Card key={plan.id} padding="md">
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{plan.cropName}</span>
                   <Badge variant={STATUS_BADGE[plan.status] ?? 'neutral'} size="sm">

@@ -80,11 +80,11 @@ export function PlanPage() {
       {/* Regenerate banner */}
       {isStale && (
         <Alert variant="warning">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[var(--hv-text-sm)]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[var(--hv-text-sm)] flex-1 min-w-0">
               {t('plan.staleNotice', 'Plan language differs from your current language. Regenerate for an updated plan.')}
             </p>
-            <Button variant="primary" size="sm" onClick={handleRegenerate}>
+            <Button variant="primary" size="sm" onClick={handleRegenerate} className="shrink-0 self-start sm:self-auto">
               {t('plan.regenerate', 'Regenerate')}
             </Button>
           </div>

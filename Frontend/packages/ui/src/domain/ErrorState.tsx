@@ -26,7 +26,7 @@ export function ErrorState({
 
   return (
     <div className={`flex flex-col items-center justify-center py-12 px-4 text-center ${className}`}>
-      <div className="mb-4 text-[var(--hv-color-danger-400)]">
+      <div className="mb-4 text-[var(--hv-color-danger-500)]">
         <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
           <path
             strokeLinecap="round"

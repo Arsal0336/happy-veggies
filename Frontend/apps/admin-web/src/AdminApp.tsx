@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Navigate, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import '@hv/i18n';
@@ -26,6 +27,7 @@ initDirection();
 function AdminLayout() {
   const { t, i18n } = useTranslation();
   const { admin, logout } = useAdminAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLanguageToggle = () => {
     const next: Language = i18n.language === 'en' ? 'ur' : 'en';
@@ -48,12 +50,26 @@ function AdminLayout() {
     { to: '/audit', label: 'Audit Log' },
   ];
 
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="w-56 bg-white border-e border-[var(--hv-color-neutral-200)] flex flex-col">
-        <div className="p-4 border-b border-[var(--hv-color-neutral-200)]">
-          <h1 className="text-lg font-bold text-[var(--hv-color-primary-600)]">
+    <div className="flex h-screen overflow-hidden">
+      {sidebarOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-[var(--hv-z-overlay)] bg-black/40 md:hidden"
+          aria-label="Close menu"
+          onClick={closeSidebar}
+        />
+      )}
+
+      <aside
+        className={`fixed md:static inset-y-0 start-0 z-[var(--hv-z-modal)] w-56 bg-white border-e border-[var(--hv-color-neutral-200)] flex flex-col shrink-0 h-full transform transition-transform duration-200 md:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full'
+        }`}
+      >
+        <div className="p-4 border-b border-[var(--hv-color-neutral-200)] shrink-0">
+          <h1 className="text-[var(--hv-text-lg)] font-bold text-[var(--hv-color-primary-600)]">
             HV Admin
           </h1>
           {admin && (
@@ -62,11 +78,12 @@ function AdminLayout() {
             </p>
           )}
         </div>
-        <nav className="flex-1 p-2 flex flex-col gap-1 overflow-y-auto">
+        <nav className="flex-1 min-h-0 p-2 flex flex-col gap-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={closeSidebar}
               className={({ isActive }) =>
                 `px-3 py-2 rounded-[var(--hv-radius-md)] text-[var(--hv-text-sm)] transition-colors ${
                   isActive
@@ -79,26 +96,42 @@ function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="p-3 border-t border-[var(--hv-color-neutral-200)] flex flex-col gap-2">
+        <div className="p-3 border-t border-[var(--hv-color-neutral-200)] flex flex-col gap-2 shrink-0">
           <button
+            type="button"
             onClick={handleLanguageToggle}
-            className="px-2 py-1 text-[var(--hv-text-xs)] rounded border border-[var(--hv-color-neutral-300)] hover:bg-[var(--hv-color-neutral-100)]"
+            className="min-h-10 px-3 py-2 text-[var(--hv-text-xs)] rounded border border-[var(--hv-color-neutral-300)] hover:bg-[var(--hv-color-neutral-100)]"
           >
             {i18n.language === 'en' ? 'اردو' : 'English'}
           </button>
           <button
+            type="button"
             onClick={logout}
-            className="px-2 py-1 text-[var(--hv-text-xs)] rounded border border-[var(--hv-color-neutral-300)] text-[var(--hv-color-error-600)] hover:bg-[var(--hv-color-error-50)]"
+            className="min-h-10 px-3 py-2 text-[var(--hv-text-xs)] rounded border border-[var(--hv-color-neutral-300)] text-[var(--hv-color-danger-600)] hover:bg-[var(--hv-color-danger-50)]"
           >
             Logout
           </button>
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 p-6 overflow-y-auto">
-        <Outlet />
-      </main>
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+        <header className="md:hidden shrink-0 flex items-center gap-3 px-4 py-3 border-b border-[var(--hv-color-neutral-200)] bg-white">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="min-h-11 min-w-11 inline-flex items-center justify-center rounded border border-[var(--hv-color-neutral-300)]"
+            aria-label="Open menu"
+          >
+            ☰
+          </button>
+          <span className="text-[var(--hv-text-base)] font-semibold text-[var(--hv-color-primary-600)]">
+            HV Admin
+          </span>
+        </header>
+        <main className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

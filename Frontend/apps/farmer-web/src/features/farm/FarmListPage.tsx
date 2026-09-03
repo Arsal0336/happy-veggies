@@ -23,9 +23,9 @@ export function FarmListPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-[var(--hv-text-lg)] font-bold">{t('farm.myFarms')}</h1>
-        <Button variant="primary" size="sm" onClick={() => navigate('/farms/new')}>
+        <Button variant="primary" size="sm" onClick={() => navigate('/farms/new')} className="self-start sm:self-auto">
           {t('farm.addFarm')}
         </Button>
       </div>

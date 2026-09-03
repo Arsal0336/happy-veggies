@@ -173,12 +173,13 @@ export function NewFarmPage() {
                 value={state.area}
                 onChange={(e) => update('area', e.target.value)}
                 placeholder="25"
-                className="flex-1"
+                className="flex-1 min-w-0"
               />
               <Select
                 value={state.unit}
                 onChange={(e) => update('unit', e.target.value as AreaUnit)}
                 options={UNIT_OPTIONS}
+                className="shrink-0 w-28"
               />
             </div>
           </FormField>
@@ -199,12 +200,12 @@ export function NewFarmPage() {
         return (
           <div className="flex flex-col gap-4">
             <FormField label="Water Access">
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-3 min-h-11 py-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={state.waterAccess}
                   onChange={(e) => update('waterAccess', e.target.checked)}
-                  className="w-4 h-4"
+                  className="w-5 h-5 shrink-0"
                 />
                 <span className="text-[var(--hv-text-sm)]">Farm has water access</span>
               </label>
@@ -266,12 +267,14 @@ export function NewFarmPage() {
       <h1 className="text-[var(--hv-text-lg)] font-bold">{t('newFarmer.title')}</h1>
 
       {/* Step indicator */}
-      <div className="flex gap-1">
+      <div className="overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
         {STEPS.map((s, i) => (
           <button
             key={s}
+            type="button"
             onClick={() => i <= currentIdx && setStep(s)}
-            className={`flex-1 py-1 text-[var(--hv-text-xs)] rounded transition-colors ${
+            className={`min-w-[2.5rem] sm:flex-1 py-2 px-2 text-[var(--hv-text-xs)] rounded transition-colors ${
               i === currentIdx
                 ? 'bg-[var(--hv-color-primary-600)] text-white'
                 : i < currentIdx
@@ -279,9 +282,11 @@ export function NewFarmPage() {
                   : 'bg-[var(--hv-color-neutral-100)] text-[var(--hv-color-neutral-400)]'
             }`}
           >
-            {STEP_LABELS[s]}
+            <span className="hidden sm:inline">{STEP_LABELS[s]}</span>
+            <span className="sm:hidden">{i + 1}</span>
           </button>
         ))}
+        </div>
       </div>
 
       <Card padding="lg">
@@ -289,7 +294,7 @@ export function NewFarmPage() {
           <h2 className="text-[var(--hv-text-md)] font-semibold">{STEP_LABELS[step]}</h2>
           {renderStep()}
 
-          <div className="flex gap-3 mt-2">
+          <div className="flex flex-wrap gap-3 mt-2">
             {isFirst ? (
               <Button variant="outline" onClick={() => navigate('/farms')}>
                 {t('common.cancel')}
@@ -300,11 +305,11 @@ export function NewFarmPage() {
               </Button>
             )}
             {isLast ? (
-              <Button variant="primary" onClick={handleSubmit} loading={isSubmitting}>
+              <Button variant="primary" onClick={handleSubmit} loading={isSubmitting} className="sm:ms-auto">
                 {t('farm.createFarm')}
               </Button>
             ) : (
-              <Button variant="primary" onClick={next}>
+              <Button variant="primary" onClick={next} className="sm:ms-auto">
                 Next
               </Button>
             )}

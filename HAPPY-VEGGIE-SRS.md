@@ -26,19 +26,19 @@
 
 ## Table of contents
 
-1. Introduction  
-2. Overall description  
+1. Introduction
+2. Overall description
    - 2.7 Technology stack (normative)  
    - 2.8 Required engineering skills  
-3. Specific requirements  
+3. Specific requirements
    - 3.2.2 Farm Management & Production Areas  
    - 3.2.3 Digital Farm Twin  
    - 3.2.4–3.2.17 (existing modules)  
    - 3.2.18 Protected / In-House Farming  
    - 3.2.19 Green Farm Intelligence  
    - 3.4 Acceptance criteria (selected)  
-4. Data requirements  
-5. Traceability matrix  
+4. Data requirements
+5. Traceability matrix
 6. Production readiness & delivery phases  
 7. Appendices  
 

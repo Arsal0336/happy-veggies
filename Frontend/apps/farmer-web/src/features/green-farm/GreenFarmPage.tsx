@@ -39,7 +39,7 @@ export function GreenFarmPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-[var(--hv-text-lg)] font-bold">{t('greenFarm.title')}</h1>
         <Button variant="outline" size="sm" onClick={() => navigate(`/farms/${farmId}`)}>
           {t('common.back')}
@@ -47,13 +47,6 @@ export function GreenFarmPage() {
       </div>
 
       <GreenScoreMeter score={score} onRecalculate={handleRecalculate} />
-
-      {/* Prominent non-certification disclaimer */}
-      <div className="rounded-lg border-2 border-[var(--hv-color-warning-300)] bg-[var(--hv-color-warning-50)] p-4 text-center">
-        <p className="text-[var(--hv-text-sm)] font-semibold text-[var(--hv-color-warning-700)]">
-          ⚠️ {score.nonCertificationDisclaimer}
-        </p>
-      </div>
     </div>
   );
 }

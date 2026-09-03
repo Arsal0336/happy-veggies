@@ -20,9 +20,9 @@ export function AuditLogPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Audit Log</h1>
-        <div className="w-64">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-[var(--hv-text-2xl)] font-bold">Audit Log</h1>
+        <div className="w-full sm:w-64">
           <Input
             placeholder="Search actions, actors…"
             value={search}
@@ -32,6 +32,7 @@ export function AuditLogPage() {
       </div>
 
       <Card padding="none">
+        <div className="overflow-x-auto">
         <table className="w-full text-[var(--hv-text-sm)]">
           <thead className="bg-[var(--hv-color-neutral-50)] border-b border-[var(--hv-color-neutral-200)]">
             <tr>
@@ -44,7 +45,7 @@ export function AuditLogPage() {
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-[var(--hv-color-neutral-400)]">
+                <td colSpan={4} className="px-4 py-12 text-center text-[var(--hv-color-neutral-400)]">
                   No log entries found.
                 </td>
               </tr>
@@ -60,13 +61,14 @@ export function AuditLogPage() {
                   </Badge>
                 </td>
                 <td className="px-4 py-3">{entry.action}</td>
-                <td className="px-4 py-3 text-[var(--hv-text-xs)] font-mono">
+                <td className="px-4 py-3 text-[var(--hv-text-xs)] font-mono max-w-[12rem] truncate">
                   {entry.targetType}/{entry.targetId}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );

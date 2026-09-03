@@ -12,6 +12,7 @@
   --hv-text-xs: 0.75rem;
   --hv-text-sm: 0.875rem;
   --hv-text-base: 1rem;
+  --hv-text-md: 1rem;
   --hv-text-lg: 1.125rem;
   --hv-text-xl: 1.25rem;
   --hv-text-2xl: 1.5rem;
@@ -81,10 +82,26 @@
   --hv-color-neutral-800: #1f2937;
   --hv-color-neutral-900: #111827;
 
+  --hv-color-success-50: #f0fdf4;
   --hv-color-success-500: #22c55e;
+  --hv-color-success-600: #16a34a;
+  --hv-color-success-700: #15803d;
+  --hv-color-warning-50: #fffbeb;
+  --hv-color-warning-300: #fcd34d;
   --hv-color-warning-500: #f59e0b;
+  --hv-color-warning-600: #d97706;
+  --hv-color-warning-700: #b45309;
+  --hv-color-danger-50: #fef2f2;
+  --hv-color-danger-400: #f87171;
   --hv-color-danger-500: #ef4444;
+  --hv-color-danger-600: #dc2626;
+  --hv-color-danger-700: #b91c1c;
+  --hv-color-info-50: #eff6ff;
   --hv-color-info-500: #3b82f6;
+  --hv-color-info-700: #1d4ed8;
+  /* Aliases */
+  --hv-color-error-50: var(--hv-color-danger-50);
+  --hv-color-error-600: var(--hv-color-danger-600);
 
   /* ── Area-type colors (semantic) ── */
   --hv-area-open-field: #22c55e;

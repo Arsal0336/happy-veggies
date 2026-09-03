@@ -31,7 +31,7 @@ export function FarmerDetailPage() {
         ← Back to Farmers
       </Link>
 
-      <h1 className="text-2xl font-bold">{farmer.name}</h1>
+      <h1 className="text-[var(--hv-text-2xl)] font-bold">{farmer.name}</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card padding="md">
@@ -69,12 +69,14 @@ export function FarmerDetailPage() {
 
       {/* Farm Graphic (read-only) */}
       {farms.length > 0 && (
-        <Card padding="md">
+        <Card padding="md" className="overflow-hidden">
           <h2 className="font-semibold mb-3">Farm Layout</h2>
+          <div className="max-h-96 overflow-auto">
           <FarmGraphic
             areas={fixtureProductionAreas}
             zones={fixtureCropZones}
           />
+          </div>
         </Card>
       )}
 

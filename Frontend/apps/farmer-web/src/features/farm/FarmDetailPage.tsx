@@ -412,7 +412,7 @@ export function FarmDetailPage() {
           {compatWarnings.length > 0 && (
             <div className="flex flex-col gap-1">
               {compatWarnings.map((w, i) => (
-                <div key={i} className="text-[var(--hv-text-sm)] text-red-600 flex items-center gap-1">
+                <div key={i} className="text-[var(--hv-text-sm)] text-[var(--hv-color-danger-600)] flex items-center gap-1">
                   <CompatibilityBadge relation="avoid" />
                   <span>{w}</span>
                 </div>
@@ -442,14 +442,14 @@ export function FarmDetailPage() {
 
           {areas.map((area) => (
             <Card key={area.id} padding="sm">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <p className="font-medium">{area.name}</p>
                   <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-500)]">
                     {area.typeLabel} — {area.areaValue} {area.areaUnit}
                   </p>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 shrink-0 self-end sm:self-auto">
                   <Button variant="outline" size="sm" onClick={() => openEditArea(area)}>Edit</Button>
                   <Button variant="outline" size="sm" onClick={() => setDeleteAreaConfirm(area.id)}>Delete</Button>
                 </div>
@@ -478,8 +478,8 @@ export function FarmDetailPage() {
               </FormField>
               <FormField label="Area">
                 <div className="flex gap-2">
-                  <Input type="number" value={newAreaValue} onChange={(e) => setNewAreaValue(e.target.value)} className="flex-1" />
-                  <Select value={newAreaUnit} onChange={(e) => setNewAreaUnit(e.target.value as LandUnit)} options={landUnitOptions} />
+                  <Input type="number" value={newAreaValue} onChange={(e) => setNewAreaValue(e.target.value)} className="flex-1 min-w-0" />
+                  <Select value={newAreaUnit} onChange={(e) => setNewAreaUnit(e.target.value as LandUnit)} options={landUnitOptions} className="shrink-0 w-28" />
                 </div>
               </FormField>
               {envAttributesFields(newAreaTypeCode, newAreaTemp, setNewAreaTemp, newAreaHumidity, setNewAreaHumidity, newAreaVentilation, setNewAreaVentilation)}
@@ -504,8 +504,8 @@ export function FarmDetailPage() {
               </FormField>
               <FormField label="Area">
                 <div className="flex gap-2">
-                  <Input type="number" value={editAreaValue} onChange={(e) => setEditAreaValue(e.target.value)} className="flex-1" />
-                  <Select value={editAreaUnit} onChange={(e) => setEditAreaUnit(e.target.value as LandUnit)} options={landUnitOptions} />
+                  <Input type="number" value={editAreaValue} onChange={(e) => setEditAreaValue(e.target.value)} className="flex-1 min-w-0" />
+                  <Select value={editAreaUnit} onChange={(e) => setEditAreaUnit(e.target.value as LandUnit)} options={landUnitOptions} className="shrink-0 w-28" />
                 </div>
               </FormField>
               {editingArea && envAttributesFields(editingArea.typeCode, editAreaTemp, setEditAreaTemp, editAreaHumidity, setEditAreaHumidity, editAreaVentilation, setEditAreaVentilation)}
@@ -520,7 +520,7 @@ export function FarmDetailPage() {
             footer={
               <>
                 <Button variant="outline" onClick={() => setDeleteAreaConfirm(null)}>Cancel</Button>
-                <Button variant="primary" onClick={() => deleteAreaConfirm && handleDeleteArea(deleteAreaConfirm)}>Delete</Button>
+                <Button variant="danger" onClick={() => deleteAreaConfirm && handleDeleteArea(deleteAreaConfirm)}>Delete</Button>
               </>
             }
           >
@@ -549,14 +549,14 @@ export function FarmDetailPage() {
 
           {zones.map((zone) => (
             <Card key={zone.id} padding="sm">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <p className="font-medium">{zone.label}</p>
                   <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-500)]">
                     {zone.area} {zone.areaUnit} — {zone.growthStage ?? t('farm.notPlanted')}
                   </p>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 shrink-0 self-end sm:self-auto">
                   <Button variant="outline" size="sm" onClick={() => openEditZone(zone)}>Edit</Button>
                   <Button variant="outline" size="sm" onClick={() => setDeleteZoneConfirm(zone.id)}>Delete</Button>
                 </div>
@@ -585,8 +585,8 @@ export function FarmDetailPage() {
               </FormField>
               <FormField label="Area">
                 <div className="flex gap-2">
-                  <Input type="number" value={newZoneAreaValue} onChange={(e) => setNewZoneAreaValue(e.target.value)} className="flex-1" />
-                  <Select value={newZoneAreaUnit} onChange={(e) => setNewZoneAreaUnit(e.target.value as LandUnit)} options={landUnitOptions} />
+                  <Input type="number" value={newZoneAreaValue} onChange={(e) => setNewZoneAreaValue(e.target.value)} className="flex-1 min-w-0" />
+                  <Select value={newZoneAreaUnit} onChange={(e) => setNewZoneAreaUnit(e.target.value as LandUnit)} options={landUnitOptions} className="shrink-0 w-28" />
                 </div>
               </FormField>
               <FormField label="Crop">
@@ -614,8 +614,8 @@ export function FarmDetailPage() {
               </FormField>
               <FormField label="Area">
                 <div className="flex gap-2">
-                  <Input type="number" value={editZoneAreaValue} onChange={(e) => setEditZoneAreaValue(e.target.value)} className="flex-1" />
-                  <Select value={editZoneAreaUnit} onChange={(e) => setEditZoneAreaUnit(e.target.value as LandUnit)} options={landUnitOptions} />
+                  <Input type="number" value={editZoneAreaValue} onChange={(e) => setEditZoneAreaValue(e.target.value)} className="flex-1 min-w-0" />
+                  <Select value={editZoneAreaUnit} onChange={(e) => setEditZoneAreaUnit(e.target.value as LandUnit)} options={landUnitOptions} className="shrink-0 w-28" />
                 </div>
               </FormField>
               <FormField label="Crop">
@@ -633,7 +633,7 @@ export function FarmDetailPage() {
             footer={
               <>
                 <Button variant="outline" onClick={() => setDeleteZoneConfirm(null)}>Cancel</Button>
-                <Button variant="primary" onClick={() => deleteZoneConfirm && handleDeleteZone(deleteZoneConfirm)}>Delete</Button>
+                <Button variant="danger" onClick={() => deleteZoneConfirm && handleDeleteZone(deleteZoneConfirm)}>Delete</Button>
               </>
             }
           >
@@ -663,7 +663,10 @@ export function FarmDetailPage() {
             );
           })}
           {edgesForThisFarm.length === 0 && (
-            <p className="text-[var(--hv-text-sm)] text-[var(--hv-color-neutral-400)]">No neighbour compatibility information available.</p>
+            <EmptyState
+              title="No compatibility data"
+              description="Add neighbouring zones to see compatibility information."
+            />
           )}
         </div>
       ),

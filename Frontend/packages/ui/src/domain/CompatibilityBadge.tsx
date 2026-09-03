@@ -1,4 +1,4 @@
-import type { CompatibilityRelation } from '@hv/api-types';
+import { type CompatibilityRelation } from '@hv/api-types';
 
 export interface CompatibilityBadgeProps {
   relation: CompatibilityRelation;
@@ -12,10 +12,9 @@ const labels: Record<CompatibilityRelation, string> = {
 };
 
 const colorMap: Record<CompatibilityRelation, string> = {
-  // Keep styling self-contained (tokens define base colors, not the BG/TEXT variants).
-  good: 'bg-green-100 text-green-700',
-  neutral: 'bg-gray-100 text-gray-700',
-  avoid: 'bg-red-100 text-red-700',
+  good: 'bg-[var(--hv-color-success-50)] text-[var(--hv-color-success-700)]',
+  neutral: 'bg-[var(--hv-color-neutral-100)] text-[var(--hv-color-neutral-700)]',
+  avoid: 'bg-[var(--hv-color-danger-50)] text-[var(--hv-color-danger-700)]',
 };
 
 export function CompatibilityBadge({ relation, className = '' }: CompatibilityBadgeProps) {

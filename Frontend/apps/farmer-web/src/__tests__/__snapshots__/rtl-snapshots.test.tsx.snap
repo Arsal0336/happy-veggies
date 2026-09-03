@@ -25,7 +25,7 @@ exports[`RTL snapshot tests (Urdu) > DashboardPage snapshot 1`] = `
         class="relative"
       >
         <select
-          class="w-full px-3 py-2 rounded-[var(--hv-radius-md)] border bg-white text-[var(--hv-text-base)] transition-colors duration-[var(--hv-transition-fast)] focus:outline-none focus:ring-2 focus:ring-[var(--hv-color-primary-500)] focus:border-transparent disabled:bg-[var(--hv-color-neutral-100)] disabled:cursor-not-allowed appearance-none border-[var(--hv-color-neutral-300)] "
+          class="w-full px-3 py-2 pe-10 rounded-[var(--hv-radius-md)] border bg-white text-[var(--hv-text-base)] transition-colors duration-[var(--hv-transition-fast)] focus:outline-none focus:ring-2 focus:ring-[var(--hv-color-primary-500)] focus:border-transparent disabled:bg-[var(--hv-color-neutral-100)] disabled:cursor-not-allowed appearance-none border-[var(--hv-color-neutral-300)] "
         >
           <option
             value="farm-001"
@@ -178,7 +178,7 @@ exports[`RTL snapshot tests (Urdu) > DashboardPage snapshot 1`] = `
                 </p>
               </div>
               <button
-                class="inline-flex items-center justify-center font-medium rounded-[var(--hv-radius-md)] transition-colors duration-[var(--hv-transition-fast)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hv-color-primary-500)] disabled:opacity-50 disabled:pointer-events-none text-[var(--hv-color-neutral-600)] hover:bg-[var(--hv-color-neutral-100)] px-3 py-1.5 text-[var(--hv-text-sm)] "
+                class="inline-flex items-center justify-center font-medium rounded-[var(--hv-radius-md)] transition-colors duration-[var(--hv-transition-fast)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hv-color-primary-500)] disabled:opacity-50 disabled:pointer-events-none text-[var(--hv-color-neutral-600)] hover:bg-[var(--hv-color-neutral-100)] px-3 py-2 min-h-10 text-[var(--hv-text-sm)] "
               >
                 Mark read
               </button>
@@ -552,7 +552,7 @@ exports[`RTL snapshot tests (Urdu) > PlanPage snapshot 1`] = `
       class="flex flex-col items-center justify-center py-12 px-4 text-center "
     >
       <div
-        class="mb-4 text-[var(--hv-color-danger-400)]"
+        class="mb-4 text-[var(--hv-color-danger-500)]"
       >
         <svg
           class="w-16 h-16"

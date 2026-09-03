@@ -137,12 +137,13 @@ export function EditFarmPage() {
                 value={area}
                 onChange={(e) => setArea(e.target.value)}
                 placeholder="25"
-                className="flex-1"
+                className="flex-1 min-w-0"
               />
               <Select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value as AreaUnit)}
                 options={UNIT_OPTIONS}
+                className="shrink-0 w-28"
               />
             </div>
           </FormField>

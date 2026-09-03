@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { AdminAuthProvider } from '../features/auth/AdminAuthProvider';
 import { AdminLoginPage } from '../features/auth/AdminLoginPage';
@@ -7,6 +8,30 @@ import { FarmManagePage } from '../features/farms/FarmManagePage';
 import { AuditLogPage } from '../features/audit/AuditLogPage';
 
 describe('Admin flow tests', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('AdminLoginPage accepts any credentials in fixture mode', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AdminAuthProvider>
+          <AdminLoginPage />
+        </AdminAuthProvider>
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByPlaceholderText('admin@happyveggie.pk'), 'dev@happyveggie.pk');
+    await user.type(screen.getByPlaceholderText('••••••••'), 'any-password');
+    await user.click(screen.getByText('Sign In'));
+
+    await waitFor(() => {
+      expect(localStorage.getItem('hv_admin_token')).toBe('fixture-admin-token');
+    });
+    expect(screen.queryByText('Login failed. Please check your credentials.')).not.toBeInTheDocument();
+  });
+
   it('AdminLoginPage renders email and password fields', () => {
     render(
       <MemoryRouter>

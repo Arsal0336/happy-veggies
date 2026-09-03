@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import { Input } from '../primitives/Input';
 import { Button } from '../primitives/Button';
 import { FormField } from '../primitives/FormField';
@@ -33,8 +34,8 @@ export function MapOrCoords({ lat, lng, onSelect, className = '' }: MapOrCoordsP
 
       {onSelect ? (
         <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <FormField label="Latitude" className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <FormField label="Latitude" className="flex-1 min-w-0">
               <Input
                 type="number"
                 step="any"
@@ -43,7 +44,7 @@ export function MapOrCoords({ lat, lng, onSelect, className = '' }: MapOrCoordsP
                 placeholder="e.g. 31.52"
               />
             </FormField>
-            <FormField label="Longitude" className="flex-1">
+            <FormField label="Longitude" className="flex-1 min-w-0">
               <Input
                 type="number"
                 step="any"

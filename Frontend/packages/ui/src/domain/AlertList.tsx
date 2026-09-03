@@ -30,7 +30,7 @@ const severityVariant: Record<string, 'warning' | 'info' | 'danger'> = {
 export function AlertList({ alerts, onMarkRead, className = '' }: AlertListProps) {
   if (alerts.length === 0) {
     return (
-      <div className={`text-center py-8 text-[var(--hv-color-neutral-400)] text-[var(--hv-text-sm)] ${className}`}>
+      <div className={`text-center py-12 text-[var(--hv-color-neutral-400)] text-[var(--hv-text-sm)] ${className}`}>
         No alerts
       </div>
     );

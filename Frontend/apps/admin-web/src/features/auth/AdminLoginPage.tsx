@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAdminAuth } from './AdminAuthProvider';
+import { isAdminFixtureMode, useAdminAuth } from './AdminAuthProvider';
 import { Button, Input, FormField, Card } from '@hv/ui';
 
 export function AdminLoginPage() {
@@ -27,9 +27,9 @@ export function AdminLoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen px-4">
-      <Card padding="lg" className="w-full max-w-sm">
+      <Card padding="lg" className="w-full max-w-sm min-w-0">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-[var(--hv-color-primary-600)]">
+          <h1 className="text-[var(--hv-text-2xl)] font-bold text-[var(--hv-color-primary-600)]">
             HV Admin
           </h1>
           <p className="text-[var(--hv-text-sm)] text-[var(--hv-color-neutral-500)] mt-1">
@@ -37,7 +37,13 @@ export function AdminLoginPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-4">
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+        >
           <FormField label="Email" error={error && email.trim() === '' ? 'Email is required' : undefined}>
             <Input
               type="email"
@@ -62,14 +68,16 @@ export function AdminLoginPage() {
             </p>
           )}
 
-          <Button variant="primary" onClick={handleSubmit} loading={isLoading}>
+          <Button variant="primary" type="submit" loading={isLoading}>
             Sign In
           </Button>
-        </div>
+        </form>
 
-        <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-400)] mt-4 text-center">
-          Dev mode: enter any email + password
-        </p>
+        {isAdminFixtureMode() && (
+          <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-400)] mt-4 text-center">
+            Dev mode: enter any email + password
+          </p>
+        )}
       </Card>
     </div>
   );

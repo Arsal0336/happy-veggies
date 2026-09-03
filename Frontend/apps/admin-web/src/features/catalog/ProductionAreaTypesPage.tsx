@@ -45,12 +45,13 @@ export function ProductionAreaTypesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Production Area Types</h1>
-        <Button size="sm" onClick={openAdd}>+ Add Type</Button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-[var(--hv-text-2xl)] font-bold">Production Area Types</h1>
+        <Button size="sm" onClick={openAdd} className="self-start sm:self-auto">+ Add Type</Button>
       </div>
 
       <Card padding="none">
+        <div className="overflow-x-auto">
         <table className="w-full text-[var(--hv-text-sm)]">
           <thead className="bg-[var(--hv-color-neutral-50)] border-b border-[var(--hv-color-neutral-200)]">
             <tr>
@@ -76,16 +77,19 @@ export function ProductionAreaTypesPage() {
                     {t.enabled ? 'Enabled' : 'Disabled'}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 flex gap-2">
+                <td className="px-4 py-3">
+                  <div className="flex gap-2 flex-wrap">
                   <Button variant="ghost" size="sm" onClick={() => openEdit(t)}>Edit</Button>
                   <Button variant="outline" size="sm" onClick={() => toggleEnabled(t.code)}>
                     {t.enabled ? 'Disable' : 'Enable'}
                   </Button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Type' : 'Add Type'} footer={

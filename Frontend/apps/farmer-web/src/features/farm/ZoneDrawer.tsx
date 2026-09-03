@@ -16,15 +16,25 @@ export function ZoneDrawer({ zone, onClose }: ZoneDrawerProps) {
   const crop = fixtureCrops.find((c) => c.id === zone.cropId);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/30" />
+    <div className="fixed inset-0 z-[var(--hv-z-overlay)] flex justify-end rtl:justify-start" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
       <div
-        className="relative w-80 max-w-full bg-white h-full shadow-lg overflow-y-auto p-4 flex flex-col gap-4"
+        role="dialog"
+        aria-modal="true"
+        aria-label={zone.label}
+        className="relative z-[var(--hv-z-modal)] w-80 max-w-full bg-white h-full shadow-lg overflow-y-auto p-4 flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
-          <h2 className="text-[var(--hv-text-md)] font-bold">{zone.label}</h2>
-          <button onClick={onClose} className="text-[var(--hv-color-neutral-400)] hover:text-[var(--hv-color-neutral-700)] text-xl">✕</button>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-[var(--hv-text-lg)] font-bold truncate">{zone.label}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-11 min-w-11 shrink-0 inline-flex items-center justify-center rounded text-[var(--hv-color-neutral-400)] hover:text-[var(--hv-color-neutral-700)] hover:bg-[var(--hv-color-neutral-100)]"
+            aria-label="Close"
+          >
+            ✕
+          </button>
         </div>
 
         <Card padding="sm">

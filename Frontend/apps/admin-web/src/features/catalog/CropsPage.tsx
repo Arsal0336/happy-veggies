@@ -42,12 +42,13 @@ export function CropsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Crop Catalog</h1>
-        <Button size="sm" onClick={openAdd}>+ Add Crop</Button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-[var(--hv-text-2xl)] font-bold">Crop Catalog</h1>
+        <Button size="sm" onClick={openAdd} className="self-start sm:self-auto">+ Add Crop</Button>
       </div>
 
       <Card padding="none">
+        <div className="overflow-x-auto">
         <table className="w-full text-[var(--hv-text-sm)]">
           <thead className="bg-[var(--hv-color-neutral-50)] border-b border-[var(--hv-color-neutral-200)]">
             <tr>
@@ -61,7 +62,7 @@ export function CropsPage() {
           <tbody>
             {crops.map((crop) => (
               <tr key={crop.id} className="border-b border-[var(--hv-color-neutral-100)]">
-                <td className="px-4 py-3 font-mono text-[var(--hv-text-xs)]">{crop.id}</td>
+                <td className="px-4 py-3 font-mono text-[var(--hv-text-xs)] max-w-[8rem] truncate">{crop.id}</td>
                 <td className="px-4 py-3">{crop.nameEn}</td>
                 <td className="px-4 py-3">{crop.nameUr}</td>
                 <td className="px-4 py-3">
@@ -69,14 +70,17 @@ export function CropsPage() {
                     {crop.enabled ? 'Enabled' : 'Disabled'}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 flex gap-2">
+                <td className="px-4 py-3">
+                  <div className="flex gap-2 flex-wrap">
                   <Button variant="ghost" size="sm" onClick={() => openEdit(crop)}>Edit</Button>
                   <Button variant="danger" size="sm" onClick={() => setDeleteId(crop.id)}>Delete</Button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
 
       {/* Add/Edit Modal */}

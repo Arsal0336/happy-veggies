@@ -3,7 +3,7 @@
 
 /* App-level base styles */
 body {
-  font-family: var(--hv-font-sans);
+  font-family: var(--hv-font-body, var(--hv-font-sans));
   color: var(--hv-color-neutral-900);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
