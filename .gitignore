@@ -39,6 +39,8 @@ dist
 .env
 .env.local
 .env.*.local
+appsettings.Local.json
+**/appsettings.Local.json
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
