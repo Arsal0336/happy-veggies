@@ -29,24 +29,24 @@ Statuses and Task IDs **must match the Master**. Default status: `NOT STARTED`.
 
 | Task ID | Phase | Area | Task | Description | Deliverable | Dependencies | Priority | Status | Owner | Estimate | Notes |
 | ------- | ----- | ---- | ---- | ----------- | ----------- | ------------ | -------- | ------ | ----- | -------- | ----- |
-| TASK-100 | 7 | AI | ILlmProvider abstraction | Chat + JSON completion; config-driven | Interface + impl/stub | TASK-001 | P0 | NOT STARTED | AI | — | Doc 04 §2 |
-| TASK-101 | 7 | AI | Prompt + plan JSON schema infra | Versioned prompts; plan schema | Artifacts | TASK-100 | P0 | NOT STARTED | AI | — | Doc 04 §3.3 / §5.1 |
-| TASK-102 | 7 | AI | Token/cost/timeout controls | Bounds; rate-limit hooks | Options | TASK-100 | P0 | NOT STARTED | AI | — | NFR-007/019 |
-| TASK-103 | 7 | AI | FarmContext pack builder | Twin-grounded context; env tags | Builder | TASK-040, TASK-100 | P1 | NOT STARTED | AI | — | Doc 04 §3.2 |
-| TASK-104 | 7 | AI | Plan JSON generation + validate | LLM JSON; retry once; handoff to BE | Service | TASK-101, TASK-103, TASK-083 | P0 | NOT STARTED | AI | — | Blocks TASK-084 |
-| TASK-106 | 7 | AI | Assistant response validation | Disclaimer; no PII; citations | Validator | TASK-103, TASK-100 | P1 | NOT STARTED | AI | — | Doc 04 §3.4 |
-| TASK-108 | 7 | AI | AI grounding & isolation tests | Refuse invent; farm isolation | Tests | TASK-103, TASK-106 | P1 | NOT STARTED | AI | — | |
-| TASK-109 | 7 | AI | Embeddings / vector search | Optional retrieval | Capability | TASK-100 | P2 | NOT STARTED | AI | — | Prefer DEFERRED for P1; Doc 04 §4 |
-| TASK-123 | 9 | AI | Green tip wording | NL tips after deterministic score | Prompt path | TASK-120, TASK-103 | P1 | NOT STARTED | AI | — | FR-131 labels |
-| TASK-145 | 11 | AI | Prompt + cost control tests | Schema + token bounds | Tests | TASK-104, TASK-102 | P0 | NOT STARTED | AI | — | |
+| TASK-100 | 7 | AI | ILlmProvider abstraction | Chat + JSON completion; config-driven | Interface + impl/stub | TASK-001 | P0 | DONE | AI | — | Doc 04 §2 |
+| TASK-101 | 7 | AI | Prompt + plan JSON schema infra | Versioned prompts; plan schema | Artifacts | TASK-100 | P0 | DONE | AI | — | Doc 04 §3.3 / §5.1 |
+| TASK-102 | 7 | AI | Token/cost/timeout controls | Bounds; rate-limit hooks | Options | TASK-100 | P0 | DONE | AI | — | NFR-007/019 |
+| TASK-103 | 7 | AI | FarmContext pack builder | Twin-grounded context; env tags | Builder | TASK-040, TASK-100 | P1 | DONE | AI | — | Doc 04 §3.2 |
+| TASK-104 | 7 | AI | Plan JSON generation + validate | LLM JSON; retry once; handoff to BE | Service | TASK-101, TASK-103, TASK-083 | P0 | DONE | AI | — | Retry on malformed JSON |
+| TASK-106 | 7 | AI | Assistant response validation | Disclaimer; no PII; citations | Validator | TASK-103, TASK-100 | P1 | DONE | AI | — | Doc 04 §3.4 |
+| TASK-108 | 7 | AI | AI grounding & isolation tests | Refuse invent; farm isolation | Tests | TASK-103, TASK-106 | P1 | DONE | AI | — | 21 AI tests |
+| TASK-109 | 7 | AI | Embeddings / vector search | Optional retrieval | Capability | TASK-100 | P2 | DEFERRED | AI | — | Per Doc 04 §4 recommendation |
+| TASK-123 | 9 | AI | Green tip wording | NL tips after deterministic score | Prompt path | TASK-120, TASK-103 | P1 | DONE | AI | — | FR-131 labels |
+| TASK-145 | 11 | AI | Prompt + cost control tests | Schema + token bounds | Tests | TASK-104, TASK-102 | P0 | DONE | AI | — | Schema validation + prompt tests |
 
 ---
 
 ## AI foundation checklist
 
-- [ ] TASK-100 Provider abstraction (no vendor lock-in in domain)  
-- [ ] TASK-101 Prompts + plan schema versioning  
-- [ ] TASK-102 Cost/timeout/rate controls  
+- [x] TASK-100 Provider abstraction (no vendor lock-in in domain)  
+- [x] TASK-101 Prompts + plan schema versioning  
+- [x] TASK-102 Cost/timeout/rate controls  
 - [ ] Logging of usage for admin cost visibility (no secrets)  
 
 ## Farm context pipeline tasks
