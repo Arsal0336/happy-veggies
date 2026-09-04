@@ -32,7 +32,7 @@ export function PhonePage() {
   };
 
   return (
-    <AuthLayout title={t('common.appName')} lead={t('auth.subtitle')} hint={t('auth.demoHint')}>
+    <AuthLayout title={t('auth.subtitle')} lead="Enter your phone to continue to your farms." hint={t('auth.demoHint')}>
       <form className="hv-stack" onSubmit={(e) => void onSubmit(e)}>
         <FormField htmlFor="phone" label={t('auth.phone')} error={error} required>
           <Input

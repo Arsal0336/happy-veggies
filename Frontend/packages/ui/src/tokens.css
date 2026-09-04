@@ -1,10 +1,10 @@
 /**
  * Happy Veggie design tokens — agricultural green palette.
- * Apps should import: `@hv/ui/tokens.css`
  */
 :root {
-  /* Typography — Urdu-capable stack */
-  --hv-font-sans: 'Segoe UI', 'Noto Nastaliq Urdu', 'Noto Sans', system-ui, sans-serif;
+  /* Typography — distinctive UI stack + Urdu fallback */
+  --hv-font-sans: 'Manrope', 'Segoe UI', 'Noto Nastaliq Urdu', 'Noto Sans', system-ui, sans-serif;
+  --hv-font-display: 'Fraunces', 'Georgia', 'Noto Nastaliq Urdu', serif;
   --hv-font-mono: 'Cascadia Code', 'Consolas', ui-monospace, monospace;
 
   --hv-text-xs: 0.75rem;
@@ -24,39 +24,39 @@
   --hv-weight-bold: 700;
 
   /* Spacing — 4/8 scale */
-  --hv-space-1: 0.25rem; /* 4px */
-  --hv-space-2: 0.5rem; /* 8px */
-  --hv-space-3: 0.75rem; /* 12px */
-  --hv-space-4: 1rem; /* 16px */
-  --hv-space-5: 1.5rem; /* 24px */
-  --hv-space-6: 2rem; /* 32px */
-  --hv-space-7: 2.5rem; /* 40px */
-  --hv-space-8: 3rem; /* 48px */
+  --hv-space-1: 0.25rem;
+  --hv-space-2: 0.5rem;
+  --hv-space-3: 0.75rem;
+  --hv-space-4: 1rem;
+  --hv-space-5: 1.5rem;
+  --hv-space-6: 2rem;
+  --hv-space-7: 2.5rem;
+  --hv-space-8: 3rem;
 
-  /* Primary greens */
+  /* Primary greens — deeper, more confident */
   --hv-color-primary-50: #eef8f0;
   --hv-color-primary-100: #d4ecd9;
   --hv-color-primary-200: #a8d9b4;
   --hv-color-primary-300: #6fbf84;
   --hv-color-primary-400: #3d9e58;
   --hv-color-primary-500: #2a7a42;
-  --hv-color-primary-600: #216336;
-  --hv-color-primary-700: #1a4f2c;
-  --hv-color-primary-800: #143d23;
-  --hv-color-primary-900: #0f2e1a;
+  --hv-color-primary-600: #1f5c32;
+  --hv-color-primary-700: #174828;
+  --hv-color-primary-800: #11351e;
+  --hv-color-primary-900: #0c2415;
 
   /* Neutrals (cool gray-green) */
   --hv-color-neutral-0: #ffffff;
-  --hv-color-neutral-50: #f5f7f5;
-  --hv-color-neutral-100: #e8ece9;
-  --hv-color-neutral-200: #d1d8d3;
-  --hv-color-neutral-300: #b0bbb4;
-  --hv-color-neutral-400: #88948c;
+  --hv-color-neutral-50: #f3f6f3;
+  --hv-color-neutral-100: #e6ebe7;
+  --hv-color-neutral-200: #cfd7d1;
+  --hv-color-neutral-300: #aeb8b1;
+  --hv-color-neutral-400: #87948c;
   --hv-color-neutral-500: #67756c;
   --hv-color-neutral-600: #4f5c54;
   --hv-color-neutral-700: #3c4740;
   --hv-color-neutral-800: #2a322e;
-  --hv-color-neutral-900: #1a211d;
+  --hv-color-neutral-900: #15201a;
 
   /* Semantic */
   --hv-color-success: #2a7a42;
@@ -76,26 +76,28 @@
   --hv-area-experimental: #d4a017;
 
   /* Surfaces & text */
-  --hv-color-bg: var(--hv-color-neutral-50);
+  --hv-color-bg: #eef3ef;
   --hv-color-surface: var(--hv-color-neutral-0);
-  --hv-color-border: var(--hv-color-neutral-200);
+  --hv-color-border: rgb(15 46 26 / 0.1);
   --hv-color-text: var(--hv-color-neutral-900);
   --hv-color-text-muted: var(--hv-color-neutral-500);
   --hv-color-text-inverse: var(--hv-color-neutral-0);
   --hv-color-focus: var(--hv-color-primary-400);
 
   /* Radii */
-  --hv-radius-sm: 0.25rem;
-  --hv-radius-md: 0.375rem;
-  --hv-radius-lg: 0.5rem;
-  --hv-radius-xl: 0.75rem;
+  --hv-radius-sm: 0.375rem;
+  --hv-radius-md: 0.5rem;
+  --hv-radius-lg: 0.75rem;
+  --hv-radius-xl: 1rem;
+  --hv-radius-2xl: 1.25rem;
 
-  /* Elevation (light) */
-  --hv-shadow-sm: 0 1px 2px rgb(15 46 26 / 0.06);
-  --hv-shadow-md: 0 2px 8px rgb(15 46 26 / 0.08);
-  --hv-shadow-lg: 0 8px 24px rgb(15 46 26 / 0.12);
+  /* Elevation */
+  --hv-shadow-sm: 0 1px 2px rgb(15 46 26 / 0.05);
+  --hv-shadow-md: 0 4px 14px rgb(15 46 26 / 0.08);
+  --hv-shadow-lg: 0 12px 32px rgb(15 46 26 / 0.12);
+  --hv-shadow-nav: 0 -8px 28px rgb(15 46 26 / 0.08);
 
   /* Motion */
-  --hv-transition-fast: 120ms ease;
-  --hv-transition: 180ms ease;
+  --hv-transition-fast: 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  --hv-transition: 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }

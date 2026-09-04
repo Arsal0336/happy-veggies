@@ -45,7 +45,7 @@ export type TableRowProps = HTMLAttributes<HTMLTableRowElement> & {
 
 export function TableRow({ className, children, ...rest }: TableRowProps) {
   return (
-    <tr className={cn('transition-colors hover:bg-primary-50/60', className)} {...rest}>
+    <tr className={cn('transition-colors hover:bg-primary-50', className)} {...rest}>
       {children}
     </tr>
   );

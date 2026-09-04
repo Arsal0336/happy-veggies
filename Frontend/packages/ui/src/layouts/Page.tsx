@@ -7,7 +7,7 @@ export type PageProps = HTMLAttributes<HTMLDivElement> & {
 
 export function Page({ className, children, ...rest }: PageProps) {
   return (
-    <div className={cn('flex flex-col gap-4', className)} {...rest}>
+    <div className={cn('flex flex-col gap-5', className)} {...rest}>
       {children}
     </div>
   );
@@ -21,7 +21,11 @@ export type SectionProps = HTMLAttributes<HTMLElement> & {
 export function Section({ title, className, children, ...rest }: SectionProps) {
   return (
     <section className={cn('flex flex-col gap-3', className)} {...rest}>
-      {title ? <h2 className="m-0 text-base font-semibold">{title}</h2> : null}
+      {title ? (
+        <h2 className="m-0 font-display text-lg font-semibold tracking-tight text-foreground">
+          {title}
+        </h2>
+      ) : null}
       {children}
     </section>
   );

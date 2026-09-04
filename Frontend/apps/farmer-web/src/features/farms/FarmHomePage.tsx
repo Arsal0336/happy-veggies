@@ -2,6 +2,14 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
+  AlertTriangle,
+  CloudSun,
+  Droplets,
+  Leaf,
+  RefreshCw,
+  Sparkles,
+} from 'lucide-react';
+import {
   AlertList,
   Badge,
   Button,
@@ -109,9 +117,10 @@ export function FarmHomePage() {
               loading={refreshTwin.isPending}
               onClick={() => void onRefresh()}
             >
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden />
               {t('twin.refresh')}
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => navigate(`/farms/${farmId}/edit`)}>
+            <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}/edit`)}>
               {t('common.edit')}
             </Button>
           </>
@@ -122,24 +131,58 @@ export function FarmHomePage() {
         </p>
       </PageHeader>
 
+      <Card
+        padding="md"
+        className="border-primary-700 bg-gradient-to-br from-primary-600 to-primary-800 text-primary-foreground shadow-md"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="m-0 text-[0.65rem] font-semibold uppercase tracking-wider text-primary-100">
+              Next action
+            </p>
+            <p className="m-0 mt-1 font-display text-lg font-bold tracking-tight">
+              {t('plan.generate')}
+            </p>
+            <p className="m-0 mt-1 text-sm text-primary-100">
+              AI plan grounded in your twin, weather, and water.
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            className="shrink-0 border-0 bg-white text-primary-800 hover:bg-primary-50"
+            onClick={() => navigate(`/farms/${farmId}/plan`)}
+          >
+            <Sparkles className="h-4 w-4" aria-hidden />
+            {t('plan.generate')}
+          </Button>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label={t('twin.weather')} value={weather ?? '—'} hint={weatherStatus} />
-        <StatCard label={t('twin.water')} value={water ?? '—'} />
+        <StatCard
+          label={t('twin.weather')}
+          value={weather ?? '—'}
+          hint={weatherStatus}
+          icon={<CloudSun className="h-4 w-4" aria-hidden />}
+        />
+        <StatCard
+          label={t('twin.water')}
+          value={water ?? '—'}
+          icon={<Droplets className="h-4 w-4" aria-hidden />}
+        />
         <StatCard
           label={t('green.title')}
           value={twin?.greenSummary?.overallScore ?? '—'}
           hint={soilStatus ? `${t('twin.soil')}: ${soilStatus}` : undefined}
+          icon={<Leaf className="h-4 w-4" aria-hidden />}
         />
         <StatCard
           label={t('alerts.title')}
           value={unread}
           hint={t('alerts.unreadCount', { count: unread })}
+          icon={<AlertTriangle className="h-4 w-4" aria-hidden />}
         />
       </div>
-
-      <Button variant="primary" onClick={() => navigate(`/farms/${farmId}/plan`)}>
-        {t('plan.generate')}
-      </Button>
 
       <TwinSummaryPanel
         weather={weather}
@@ -150,7 +193,7 @@ export function FarmHomePage() {
       {alerts && alerts.length > 0 && (
         <Section title={t('alerts.title')}>
           <div className="flex items-center justify-between">
-            {unread > 0 && <Badge tone="error">{unread}</Badge>}
+            {unread > 0 ? <Badge tone="error">{unread} unread</Badge> : <span />}
             <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}/alerts`)}>
               {t('alerts.viewAll')}
             </Button>
@@ -176,7 +219,7 @@ export function FarmHomePage() {
         </Section>
       )}
 
-      <Section>
+      <Section title={t('nav.graphic')}>
         <FarmGraphic
           farmName={farm.name ?? t('common.unnamed')}
           selectedId={selectedZoneId ?? undefined}
@@ -213,10 +256,12 @@ export function FarmHomePage() {
           <ul className="m-0 flex list-none flex-col gap-3 p-0">
             {suggestions.suggestions.map((s) => (
               <li key={s.cropId}>
-                <Card padding="sm">
-                  <strong>{s.cropName ?? s.cropId}</strong>
-                  <p className="m-0 text-sm text-muted">{s.reason}</p>
-                  <Badge tone="default">{s.source}</Badge>
+                <Card padding="sm" className="transition hover:border-primary-200 hover:shadow-md">
+                  <div className="flex items-start justify-between gap-2">
+                    <strong className="font-display text-base">{s.cropName ?? s.cropId}</strong>
+                    <Badge tone="primary">{s.source}</Badge>
+                  </div>
+                  <p className="m-0 mt-1 text-sm leading-relaxed text-muted">{s.reason}</p>
                 </Card>
               </li>
             ))}

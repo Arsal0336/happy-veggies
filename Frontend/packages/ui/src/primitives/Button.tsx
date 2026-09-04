@@ -4,20 +4,21 @@ import { LoaderCircle } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold tracking-tight transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        primary: 'bg-primary-600 text-primary-foreground hover:bg-primary-700',
+        primary:
+          'bg-primary-600 text-primary-foreground shadow-sm hover:bg-primary-700 hover:shadow-md',
         secondary:
-          'border border-primary-300 bg-surface text-primary-700 hover:bg-primary-50',
+          'border border-primary-200 bg-surface text-primary-800 shadow-sm hover:border-primary-300 hover:bg-primary-50',
         ghost: 'bg-transparent text-primary-700 hover:bg-primary-50',
-        danger: 'bg-error text-white hover:bg-error/90',
+        danger: 'bg-error text-white shadow-sm hover:opacity-90',
       },
       size: {
-        sm: 'h-9 min-h-9 px-3 text-sm',
-        md: 'h-10 min-h-10 px-4 text-base',
-        lg: 'h-12 min-h-12 px-5 text-lg',
+        sm: 'h-9 min-h-9 px-3.5 text-sm',
+        md: 'h-11 min-h-11 px-4 text-sm',
+        lg: 'h-12 min-h-12 px-6 text-base',
         icon: 'h-10 w-10 min-h-10 p-0',
       },
     },

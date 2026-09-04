@@ -10,9 +10,11 @@ export type PageHeaderProps = {
 
 export function PageHeader({ title, actions, children, className }: PageHeaderProps) {
   return (
-    <header className={cn('flex flex-col gap-2', className)}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="m-0 text-xl font-bold">{title}</h1>
+    <header className={cn('flex flex-col gap-1.5', className)}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h1 className="m-0 font-display text-2xl font-bold tracking-tight text-foreground">
+          {title}
+        </h1>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
       {children}

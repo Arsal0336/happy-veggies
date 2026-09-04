@@ -54,12 +54,14 @@ export default {
       fontFamily: {
         sans: [
           'var(--hv-font-sans)',
+          'Manrope',
           'Segoe UI',
           'Noto Nastaliq Urdu',
           'Noto Sans',
           'system-ui',
           'sans-serif',
         ],
+        display: ['var(--hv-font-display)', 'Fraunces', 'Georgia', 'serif'],
       },
       borderRadius: {
         sm: 'var(--hv-radius-sm)',
@@ -67,12 +69,23 @@ export default {
         md: 'var(--hv-radius-md)',
         lg: 'var(--hv-radius-lg)',
         xl: 'var(--hv-radius-xl)',
+        '2xl': 'var(--hv-radius-2xl)',
       },
       boxShadow: {
         sm: 'var(--hv-shadow-sm)',
         DEFAULT: 'var(--hv-shadow-md)',
         md: 'var(--hv-shadow-md)',
         lg: 'var(--hv-shadow-lg)',
+        nav: 'var(--hv-shadow-nav)',
+      },
+      keyframes: {
+        'hv-rise': {
+          from: { opacity: '0', transform: 'translateY(10px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'hv-rise': 'hv-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both',
       },
     },
   },

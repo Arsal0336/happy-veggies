@@ -40,7 +40,7 @@ export function OtpPage() {
 
   return (
     <AuthLayout
-      title={t('common.appName')}
+      title={t('auth.otp')}
       lead={t('auth.otpSentTo', { phone: pendingPhone })}
       hint={t('auth.demoHint')}
     >

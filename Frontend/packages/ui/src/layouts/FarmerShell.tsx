@@ -1,10 +1,9 @@
 import { useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Bot, ClipboardList, House, Menu, Sprout } from 'lucide-react';
+import { Bot, ClipboardList, House, Leaf, Menu, Sprout } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Drawer } from '../primitives/Drawer';
 import { Avatar } from './Avatar';
-import { IconButton } from './IconButton';
 
 export type FarmerShellMoreItem = {
   id: string;
@@ -40,8 +39,27 @@ export type FarmerShellProps = {
 
 function tabClass({ isActive }: { isActive: boolean }) {
   return cn(
-    'flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 text-[0.65rem] font-medium no-underline',
-    isActive ? 'text-primary-700' : 'text-muted',
+    'relative flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[0.65rem] font-semibold no-underline transition-colors duration-150',
+    isActive ? 'text-primary-700' : 'text-muted hover:text-primary-600',
+  );
+}
+
+function TabIcon({
+  active,
+  children,
+}: {
+  active?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        'inline-flex h-8 w-8 items-center justify-center rounded-xl transition-colors',
+        active ? 'bg-primary-100 text-primary-700' : 'text-current',
+      )}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -64,19 +82,29 @@ export function FarmerShell({
   const farmReady = Boolean(homeHref && planHref && assistantHref);
 
   return (
-    <div className={cn('flex min-h-screen flex-col bg-background', className)}>
-      <header className="sticky top-0 z-20 border-b border-border bg-surface">
+    <div className={cn('flex min-h-screen flex-col', className)}>
+      <header className="sticky top-0 z-20 border-b border-border bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-xl items-center justify-between gap-3 px-4 py-3">
-          <div className="min-w-0">
-            <NavLink to={farmsHref} className="text-lg font-bold text-primary-700 no-underline">
-              {brand}
-            </NavLink>
-            {farmName ? <p className="m-0 truncate text-xs text-muted">{farmName}</p> : null}
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-primary-foreground shadow-sm">
+              <Leaf className="h-4 w-4" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <NavLink
+                to={farmsHref}
+                className="block truncate font-display text-lg font-bold tracking-tight text-primary-800 no-underline"
+              >
+                {brand}
+              </NavLink>
+              {farmName ? (
+                <p className="m-0 truncate text-xs font-medium text-muted">{farmName}</p>
+              ) : null}
+            </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
-              className="rounded-lg px-2 py-1 text-sm font-medium text-primary-700 hover:bg-primary-50"
+              className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-primary-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50"
               onClick={onToggleLanguage}
             >
               {languageLabel}
@@ -86,58 +114,91 @@ export function FarmerShell({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-24 pt-4">{children}</main>
+      <main className="hv-rise mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-5">{children}</main>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
+        className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
         aria-label="Main"
       >
-        <div className="mx-auto flex max-w-xl">
+        <div className="mx-auto flex max-w-xl overflow-hidden rounded-2xl border border-border bg-white/95 shadow-nav backdrop-blur-md">
           <NavLink to={farmsHref} end className={tabClass}>
-            <Sprout className="h-5 w-5" aria-hidden />
-            {labels.farms}
+            {({ isActive }) => (
+              <>
+                <TabIcon active={isActive}>
+                  <Sprout className="h-5 w-5" aria-hidden />
+                </TabIcon>
+                {labels.farms}
+              </>
+            )}
           </NavLink>
           {farmReady ? (
             <NavLink to={homeHref!} end className={tabClass}>
-              <House className="h-5 w-5" aria-hidden />
-              {labels.home}
+              {({ isActive }) => (
+                <>
+                  <TabIcon active={isActive}>
+                    <House className="h-5 w-5" aria-hidden />
+                  </TabIcon>
+                  {labels.home}
+                </>
+              )}
             </NavLink>
           ) : (
-            <span className={tabClass({ isActive: false })} aria-disabled>
-              <House className="h-5 w-5" aria-hidden />
+            <span className={cn(tabClass({ isActive: false }), 'opacity-40')} aria-disabled>
+              <TabIcon>
+                <House className="h-5 w-5" aria-hidden />
+              </TabIcon>
               {labels.home}
             </span>
           )}
           {farmReady ? (
             <NavLink to={planHref!} className={tabClass}>
-              <ClipboardList className="h-5 w-5" aria-hidden />
-              {labels.plan}
+              {({ isActive }) => (
+                <>
+                  <TabIcon active={isActive}>
+                    <ClipboardList className="h-5 w-5" aria-hidden />
+                  </TabIcon>
+                  {labels.plan}
+                </>
+              )}
             </NavLink>
           ) : (
-            <span className={tabClass({ isActive: false })} aria-disabled>
-              <ClipboardList className="h-5 w-5" aria-hidden />
+            <span className={cn(tabClass({ isActive: false }), 'opacity-40')} aria-disabled>
+              <TabIcon>
+                <ClipboardList className="h-5 w-5" aria-hidden />
+              </TabIcon>
               {labels.plan}
             </span>
           )}
           {farmReady ? (
             <NavLink to={assistantHref!} className={tabClass}>
-              <Bot className="h-5 w-5" aria-hidden />
-              {labels.assistant}
+              {({ isActive }) => (
+                <>
+                  <TabIcon active={isActive}>
+                    <Bot className="h-5 w-5" aria-hidden />
+                  </TabIcon>
+                  {labels.assistant}
+                </>
+              )}
             </NavLink>
           ) : (
-            <span className={tabClass({ isActive: false })} aria-disabled>
-              <Bot className="h-5 w-5" aria-hidden />
+            <span className={cn(tabClass({ isActive: false }), 'opacity-40')} aria-disabled>
+              <TabIcon>
+                <Bot className="h-5 w-5" aria-hidden />
+              </TabIcon>
               {labels.assistant}
             </span>
           )}
-          <IconButton
-            label={labels.more}
-            className="h-auto min-h-[3.25rem] w-auto flex-1 flex-col gap-0.5 rounded-none text-[0.65rem] font-medium text-muted"
+          <button
+            type="button"
+            aria-label={labels.more}
+            className={cn(tabClass({ isActive: moreOpen }), 'border-0 bg-transparent')}
             onClick={() => setMoreOpen(true)}
           >
-            <Menu className="h-5 w-5" aria-hidden />
+            <TabIcon active={moreOpen}>
+              <Menu className="h-5 w-5" aria-hidden />
+            </TabIcon>
             {labels.more}
-          </IconButton>
+          </button>
         </div>
       </nav>
 
@@ -148,7 +209,7 @@ export function FarmerShell({
               {item.href ? (
                 <NavLink
                   to={item.href}
-                  className="block rounded-lg px-3 py-2.5 text-sm text-foreground no-underline hover:bg-primary-50"
+                  className="block rounded-xl px-3 py-3 text-sm font-medium text-foreground no-underline transition hover:bg-primary-50"
                   onClick={() => setMoreOpen(false)}
                 >
                   {item.label}
@@ -156,7 +217,7 @@ export function FarmerShell({
               ) : (
                 <button
                   type="button"
-                  className="w-full rounded-lg px-3 py-2.5 text-start text-sm hover:bg-primary-50"
+                  className="w-full rounded-xl px-3 py-3 text-start text-sm font-medium transition hover:bg-primary-50"
                   onClick={() => {
                     setMoreOpen(false);
                     item.onClick?.();
