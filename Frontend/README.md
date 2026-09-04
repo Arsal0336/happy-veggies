@@ -11,7 +11,7 @@ Backend-independent React monorepo (Doc `02-Frontend-Technical-Design.md`).
 
 ## Packages (planned)
 
-- `@hv/ui` — design tokens & primitives (TASK-009)
+- `@hv/ui` — design tokens & primitives
 - `@hv/api-types` — API contract types
 - `@hv/i18n` — shared i18n helpers
 
@@ -25,6 +25,8 @@ pnpm build
 pnpm test
 ```
 
-API base URL: `VITE_API_BASE_URL`. Development uses fixtures until backend integration (`05-Frontend-Backend-Integration.md`).
+API base URL: `VITE_API_BASE_URL` (default `/api/v1`, proxied to `http://localhost:5262`). Live API is the default; set `VITE_USE_FIXTURES=true` only for offline UI tests.
+
+Demo farmer: `+923001234567` / OTP `1234`. Demo admin: `admin@happyveggie.pk` / `HappyVeggie!2026`.
 
 Farmer and admin auth sessions must never be shared.

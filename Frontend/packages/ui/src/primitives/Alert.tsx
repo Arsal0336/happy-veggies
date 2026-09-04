@@ -3,6 +3,13 @@ import { cn } from '../utils/cn';
 
 export type AlertVariant = 'info' | 'success' | 'warning' | 'error';
 
+const variants: Record<AlertVariant, string> = {
+  info: 'border-info/30 bg-[var(--hv-color-info-bg)] text-info',
+  success: 'border-success/30 bg-[var(--hv-color-success-bg)] text-success',
+  warning: 'border-warning/30 bg-[var(--hv-color-warning-bg)] text-warning',
+  error: 'border-error/30 bg-[var(--hv-color-error-bg)] text-error',
+};
+
 export type AlertProps = HTMLAttributes<HTMLDivElement> & {
   variant?: AlertVariant;
   title?: string;
@@ -18,11 +25,13 @@ export function Alert({
   ...rest
 }: AlertProps) {
   return (
-    <div className={cn('hv-alert', `hv-alert--${variant}`, className)} role={role} {...rest}>
-      <div>
-        {title && <p className="hv-alert__title">{title}</p>}
-        {children}
-      </div>
+    <div
+      className={cn('rounded-xl border p-3 text-sm', variants[variant], className)}
+      role={role}
+      {...rest}
+    >
+      {title && <p className="font-semibold">{title}</p>}
+      {children}
     </div>
   );
 }

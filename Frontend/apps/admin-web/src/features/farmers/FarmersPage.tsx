@@ -21,7 +21,7 @@ export function FarmersPage() {
     })) ?? [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div className="flex flex-col gap-4">
       <Input
         placeholder="Search name, phone, id…"
         value={q}

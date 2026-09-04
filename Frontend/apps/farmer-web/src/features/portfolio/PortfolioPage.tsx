@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button, EmptyState, ErrorState, LoadingState } from '@hv/ui';
+import { Button, EmptyState, ErrorState, LoadingState, PageHeader } from '@hv/ui';
 import { usePortfolio } from '../../shared/api/hooks';
 
 export function PortfolioPage() {
@@ -25,12 +25,14 @@ export function PortfolioPage() {
 
   return (
     <div className="hv-page">
-      <div className="hv-page__header">
-        <h1 className="hv-page__title">{t('portfolio.title')}</h1>
-        <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}`)}>
-          {t('common.back')}
-        </Button>
-      </div>
+      <PageHeader
+        title={t('portfolio.title')}
+        actions={
+          <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}`)}>
+            {t('common.back')}
+          </Button>
+        }
+      />
 
       {!isOk && (
         <EmptyState

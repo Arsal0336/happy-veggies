@@ -10,7 +10,10 @@ import {
   Input,
   LoadingState,
   MapOrCoords,
+  Page,
+  PageHeader,
   Select,
+  Stepper,
   type AreaUnit,
 } from '@hv/ui';
 import type {
@@ -317,40 +320,26 @@ export function NewFarmPage() {
 
   if (isWorking) {
     return (
-      <div className="hv-page">
+      <Page>
         <Card padding="lg">
           <LoadingState label={workingLabel || t('setup.generatingPlan')} />
           <p className="hv-muted hv-center">{t('setup.confirmHint')}</p>
         </Card>
-      </div>
+      </Page>
     );
   }
 
   return (
-    <div className="hv-page hv-setup">
-      <div className="hv-page__header">
-        <h1 className="hv-page__title">{t('setup.title')}</h1>
+    <Page>
+      <PageHeader title={t('setup.title')}>
         {step !== 'welcome' && (
-          <p className="hv-muted">
+          <p className="m-0 text-sm text-muted">
             {t('setup.progress', { current: progressCurrent, total: questionSteps })}
           </p>
         )}
-      </div>
+      </PageHeader>
 
-      {step !== 'welcome' && (
-        <div
-          className="hv-setup__progress"
-          role="progressbar"
-          aria-valuenow={progressCurrent}
-          aria-valuemin={1}
-          aria-valuemax={questionSteps}
-        >
-          <div
-            className="hv-setup__progress-bar"
-            style={{ width: `${(progressCurrent / questionSteps) * 100}%` }}
-          />
-        </div>
-      )}
+      {step !== 'welcome' && <Stepper current={progressCurrent} total={questionSteps} />}
 
       <Card padding="lg" className="hv-setup__card">
         {step === 'welcome' && (
@@ -625,6 +614,6 @@ export function NewFarmPage() {
           </div>
         )}
       </Card>
-    </div>
+    </Page>
   );
 }

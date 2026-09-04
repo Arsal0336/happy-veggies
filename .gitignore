@@ -30,6 +30,10 @@ Thumbs.db
 *.userosscache
 *.slnx
 
+## Local SQLite demo database
+**/App_Data/
+*.design.db
+
 ## Local script runtime (PIDs, process logs)
 scripts/.runtime/
 

@@ -20,8 +20,6 @@ describe('admin-flow', () => {
 
     expect(await screen.findByRole('heading', { name: /admin sign in/i })).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/email/i), 'admin@happyveggie.pk');
-    await user.type(screen.getByLabelText(/password/i), 'admin123');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {

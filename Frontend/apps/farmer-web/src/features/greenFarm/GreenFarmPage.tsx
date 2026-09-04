@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button, Card, ErrorState, GreenScoreMeter, LoadingState } from '@hv/ui';
+import { Button, Card, ErrorState, GreenScoreMeter, LoadingState, Page, PageHeader } from '@hv/ui';
 import { useGreenScore } from '../../shared/api/hooks';
 
 export function GreenFarmPage() {
@@ -21,13 +21,15 @@ export function GreenFarmPage() {
   }
 
   return (
-    <div className="hv-page">
-      <div className="hv-page__header">
-        <h1 className="hv-page__title">{t('green.title')}</h1>
-        <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}`)}>
-          {t('common.back')}
-        </Button>
-      </div>
+    <Page>
+      <PageHeader
+        title={t('green.title')}
+        actions={
+          <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}`)}>
+            {t('common.back')}
+          </Button>
+        }
+      />
 
       <GreenScoreMeter
         score={score.overallScore}
@@ -59,6 +61,6 @@ export function GreenFarmPage() {
       </ul>
       <p className="hv-muted hv-hint">{t('green.weightsTbd')}</p>
       <p className="hv-muted hv-hint">{score.nonCertificationDisclaimer || t('green.disclaimer')}</p>
-    </div>
+    </Page>
   );
 }

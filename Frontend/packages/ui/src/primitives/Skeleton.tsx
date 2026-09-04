@@ -9,7 +9,7 @@ export type SkeletonProps = HTMLAttributes<HTMLDivElement> & {
 export function Skeleton({ width, height = '1rem', className, style, ...rest }: SkeletonProps) {
   return (
     <div
-      className={cn('hv-skeleton', className)}
+      className={cn('animate-pulse rounded-md bg-neutral-200', className)}
       aria-hidden="true"
       style={{
         width: width ?? '100%',

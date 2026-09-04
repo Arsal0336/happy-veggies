@@ -26,9 +26,7 @@ export function TwinSummaryPanel({
   if (items.length === 0) {
     return (
       <Card className={cn(className)} padding="md">
-        <p style={{ margin: 0, color: 'var(--hv-color-text-muted)', fontSize: 'var(--hv-text-sm)' }}>
-          No twin summary yet.
-        </p>
+        <p className="m-0 text-sm text-muted">No twin summary yet.</p>
       </Card>
     );
   }

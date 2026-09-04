@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import { ApiError } from '@hv/api-types';
-import { Alert, Button } from '@hv/ui';
+import { Alert, Button, Toaster } from '@hv/ui';
 import { useTranslation } from 'react-i18next';
 
 type ToastVariant = 'success' | 'error' | 'info' | 'warning';
@@ -69,7 +69,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   return (
     <NotificationContext.Provider value={{ notify, notifyError }}>
       {children}
-      <div className="hv-toasts" aria-live="polite">
+      <Toaster>
         {toasts.map((toast) => (
           <Alert
             key={toast.id}
@@ -96,7 +96,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             </div>
           </Alert>
         ))}
-      </div>
+      </Toaster>
     </NotificationContext.Provider>
   );
 }

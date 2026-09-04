@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueries } from '@tanstack/react-query';
-import { Button, Card, EmptyState, ErrorState, LoadingState } from '@hv/ui';
+import { Badge, Button, EmptyState, EntityCard, ErrorState, LoadingState, Page, PageHeader } from '@hv/ui';
 import { useFarms } from '../../shared/api/hooks';
 import { alertService } from '../../shared/api/services/alertService';
 
@@ -36,13 +36,15 @@ export function FarmListPage() {
   }, {});
 
   return (
-    <div className="hv-page">
-      <div className="hv-page__header">
-        <h1 className="hv-page__title">{t('farms.title')}</h1>
-        <Button variant="primary" size="sm" onClick={() => navigate('/farms/new')}>
-          {t('farms.add')}
-        </Button>
-      </div>
+    <Page>
+      <PageHeader
+        title={t('farms.title')}
+        actions={
+          <Button variant="primary" size="sm" onClick={() => navigate('/farms/new')}>
+            {t('farms.add')}
+          </Button>
+        }
+      />
 
       {!farms?.length ? (
         <EmptyState
@@ -55,49 +57,32 @@ export function FarmListPage() {
           }
         />
       ) : (
-        <ul className="hv-farm-list">
+        <ul className="m-0 flex list-none flex-col gap-3 p-0">
           {farms.map((farm) => {
             const unread = unreadByFarm[farm.id] ?? 0;
             return (
               <li key={farm.id}>
-                <Card
-                  className="hv-farm-card"
-                  padding="md"
-                  role="link"
-                  tabIndex={0}
-                  onClick={() => navigate(`/farms/${farm.id}`)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') navigate(`/farms/${farm.id}`);
-                  }}
-                >
-                  <div className="hv-row hv-row--between">
-                    <h2 className="hv-farm-card__title">
-                      {farm.name ?? t('common.unnamed')}
-                    </h2>
-                    {unread > 0 && (
-                      <Link
-                        to={`/farms/${farm.id}/alerts`}
-                        className="hv-alert-badge"
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label={t('alerts.unreadCount', { count: unread })}
-                      >
+                <EntityCard
+                  title={farm.name ?? t('common.unnamed')}
+                  subtitle={
+                    farm.area
+                      ? `${farm.regionLabel ?? farm.regionCode} — ${farm.area.value} ${farm.area.unit}`
+                      : (farm.regionLabel ?? farm.regionCode)
+                  }
+                  meta={`${farm.lat.toFixed(3)}, ${farm.lng.toFixed(3)}`}
+                  trailing={
+                    unread > 0 ? (
+                      <Badge tone="error" aria-label={t('alerts.unreadCount', { count: unread })}>
                         {unread}
-                      </Link>
-                    )}
-                  </div>
-                  <p className="hv-muted">
-                    {farm.regionLabel ?? farm.regionCode}
-                    {farm.area
-                      ? ` — ${farm.area.value} ${farm.area.unit}`
-                      : ''}
-                  </p>
-                  <p className="hv-muted hv-text-sm">
-                    {farm.lat.toFixed(3)}, {farm.lng.toFixed(3)}
-                  </p>
-                  <div className="hv-row" style={{ gap: '0.75rem' }}>
+                      </Badge>
+                    ) : null
+                  }
+                  onClick={() => navigate(`/farms/${farm.id}`)}
+                >
+                  <div className="flex gap-3">
                     <Link
                       to={`/farms/${farm.id}`}
-                      className="hv-link"
+                      className="text-sm text-primary-600"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {t('farms.open')}
@@ -105,19 +90,19 @@ export function FarmListPage() {
                     {unread > 0 && (
                       <Link
                         to={`/farms/${farm.id}/alerts`}
-                        className="hv-link"
+                        className="text-sm text-primary-600"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {t('alerts.title')}
                       </Link>
                     )}
                   </div>
-                </Card>
+                </EntityCard>
               </li>
             );
           })}
         </ul>
       )}
-    </div>
+    </Page>
   );
 }

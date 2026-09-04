@@ -25,8 +25,7 @@ public sealed class AdminAuditLogConfiguration : IEntityTypeConfiguration<AdminA
         builder.Property(x => x.TargetId)
             .HasMaxLength(200);
 
-        builder.Property(x => x.MetadataJson)
-            .HasColumnType("nvarchar(max)");
+        builder.Property(x => x.MetadataJson);
 
         builder.Property(x => x.Timestamp).IsRequired();
 

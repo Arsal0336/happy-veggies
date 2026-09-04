@@ -24,21 +24,19 @@ export function FormField({
   const errorId = htmlFor ? `${htmlFor}-error` : undefined;
 
   return (
-    <div className={cn('hv-form-field', className)}>
-      <label className="hv-form-field__label" htmlFor={htmlFor}>
+    <div className={cn('flex flex-col gap-1.5', className)}>
+      <label className="text-sm font-medium text-foreground" htmlFor={htmlFor}>
         {label}
-        {required && (
-          <span aria-hidden="true"> *</span>
-        )}
+        {required && <span aria-hidden="true"> *</span>}
       </label>
       {children}
       {hint && !error && (
-        <span className="hv-form-field__hint" id={hintId}>
+        <span className="text-xs text-muted" id={hintId}>
           {hint}
         </span>
       )}
       {error && (
-        <span className="hv-form-field__error" id={errorId} role="alert">
+        <span className="text-xs text-error" id={errorId} role="alert">
           {error}
         </span>
       )}

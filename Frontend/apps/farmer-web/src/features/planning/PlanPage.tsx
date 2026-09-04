@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { Language } from '@hv/api-types';
-import { Alert, Button, Card, EmptyState, ErrorState, LoadingState, PlanSectionList } from '@hv/ui';
+import { Alert, Button, Card, EmptyState, ErrorState, LoadingState, Page, PageHeader, PlanSectionList } from '@hv/ui';
 import { useGeneratePlan, usePlan, usePlanHistory } from '../../shared/api/hooks';
 import { useAuth } from '../auth/AuthProvider';
 import { useNotifications } from '../../shared/notifications/NotificationProvider';
@@ -43,13 +43,15 @@ export function PlanPage() {
   const historyItems = (history ?? []).filter((h) => h.id !== plan?.id);
 
   return (
-    <div className="hv-page">
-      <div className="hv-page__header">
-        <h1 className="hv-page__title">{t('plan.title')}</h1>
-        <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}`)}>
-          {t('common.back')}
-        </Button>
-      </div>
+    <Page>
+      <PageHeader
+        title={t('plan.title')}
+        actions={
+          <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}`)}>
+            {t('common.back')}
+          </Button>
+        }
+      />
 
       <p className="hv-muted hv-hint">{t('plan.pdfDeferred')}</p>
 
@@ -128,6 +130,6 @@ export function PlanPage() {
           </ul>
         </section>
       )}
-    </div>
+    </Page>
   );
 }

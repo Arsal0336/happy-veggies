@@ -21,6 +21,7 @@ public class StubLlmProviderTests
         Assert.NotEmpty(result.Content);
         Assert.Equal("stub", result.Model);
         Assert.True(result.PromptTokens > 0);
+        Assert.DoesNotContain("stub response", result.Content, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("advisory", result.Content, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -38,6 +39,7 @@ public class StubLlmProviderTests
         Assert.True(result.IsValid);
         Assert.Equal("stub", result.Model);
         Assert.Contains("planSections", result.RawJson);
+        Assert.DoesNotContain("stub plan", result.RawJson, StringComparison.OrdinalIgnoreCase);
 
         // Validate with our schema validator
         var validation = HappyVeggie.Application.AI.Schemas.PlanJsonSchema.Validate(result.RawJson);

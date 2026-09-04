@@ -20,11 +20,9 @@ public sealed class AssistantMessageConfiguration : IEntityTypeConfiguration<Ass
             .IsRequired();
 
         builder.Property(x => x.Content)
-            .HasColumnType("nvarchar(max)")
             .IsRequired();
 
-        builder.Property(x => x.CitationsJson)
-            .HasColumnType("nvarchar(max)");
+        builder.Property(x => x.CitationsJson);
 
         builder.Property(x => x.CreatedAt).IsRequired();
 

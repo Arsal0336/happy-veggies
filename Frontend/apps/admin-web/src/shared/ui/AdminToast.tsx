@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Alert } from '@hv/ui';
+import { Alert, Toaster } from '@hv/ui';
 
 type AdminToastContextValue = {
   showSuccess: (message: string) => void;
@@ -40,17 +40,9 @@ export function AdminToastProvider({ children }: { children: ReactNode }) {
   return (
     <AdminToastContext.Provider value={value}>
       {message && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '1rem',
-            insetInlineEnd: '1rem',
-            zIndex: 1000,
-            maxWidth: '22rem',
-          }}
-        >
+        <Toaster>
           <Alert variant={variant} title={message} />
-        </div>
+        </Toaster>
       )}
       {children}
     </AdminToastContext.Provider>
