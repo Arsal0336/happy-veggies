@@ -92,14 +92,29 @@ type PlanContent = Record<string, unknown>;
                         {{ num(cell(row, 'estimatedYield') ?? cell(row, 'expectedYield')) }}
                       </td>
                       <td class="py-2.5 pe-3">{{ dash(cell(row, 'unit') ?? cell(row, 'yieldUnit')) }}</td>
-                      <td class="py-2.5 pe-3 tabular-nums">{{ money(cell(row, 'ratePerUnit'), cell(row, 'currency')) }}</td>
-                      <td class="py-2.5 pe-3 font-semibold tabular-nums">
-                        {{ money(cell(row, 'referenceGrossValue'), cell(row, 'currency')) }}
+                      <td class="py-2.5 pe-3 tabular-nums">
+                        {{ rateMoney(cell(row, 'ratePerUnit'), cell(row, 'currency'), cell(row, 'rateUnit') || cell(row, 'unit') || cell(row, 'yieldUnit')) }}
+                      </td>
+                      <td class="py-2.5 pe-3 font-semibold tabular-nums text-[var(--hv-color-primary-800)]">
+                        {{ money(rowGross(row), cell(row, 'currency')) }}
                       </td>
                       <td class="py-2.5">{{ dash(cell(row, 'confidence')) }}</td>
                     </tr>
                   }
                 </tbody>
+                <tfoot>
+                  @if (yieldTotalGross(); as total) {
+                    <tr class="border-t-2 border-[var(--hv-color-primary-200)] bg-[var(--hv-color-primary-50)]">
+                      <td class="py-3 pe-3 font-bold" colspan="6">
+                        {{ 'plan.yieldTable.totalGross' | translate }}
+                      </td>
+                      <td class="py-3 pe-3 font-bold tabular-nums text-[var(--hv-color-primary-900)]">
+                        {{ money(total, yieldCurrency()) }}
+                      </td>
+                      <td class="py-3"></td>
+                    </tr>
+                  }
+                </tfoot>
               </table>
             </div>
             <p class="mt-3 text-sm text-muted">{{ 'plan.yieldTable.disclaimer' | translate }}</p>
@@ -217,8 +232,9 @@ export class PlanSections {
     const mappedYields = yields.map((y) => this.normalizeYieldRow(y));
     const mappedEcon = economics.map((e) => this.normalizeEconRow(e));
 
+    let rows: PlanContent[];
     if (mappedEcon.length && mappedYields.length) {
-      return mappedYields.map((y, i) => {
+      rows = mappedYields.map((y, i) => {
         const match =
           mappedEcon.find((e) => String(this.val(e, 'zoneId')) === String(this.val(y, 'zoneId'))) ??
           mappedEcon[i];
@@ -231,9 +247,47 @@ export class PlanSections {
           unit: this.val(y, 'unit') ?? this.val(match, 'yieldUnit') ?? this.val(match, 'unit'),
         };
       });
+    } else if (mappedEcon.length) {
+      rows = mappedEcon;
+    } else {
+      rows = mappedYields;
     }
-    if (mappedEcon.length) return mappedEcon;
-    return mappedYields;
+
+    return rows.map((row) => ({
+      ...row,
+      referenceGrossValue: this.rowGross(row),
+    }));
+  }
+
+  /** Expected amount = yield × rate per unit (e.g. kg × PKR/kg). */
+  rowGross(row: PlanContent): number | null {
+    const stored = this.toNum(this.val(row, 'referenceGrossValue'));
+    if (stored != null) return stored;
+    const yieldAmt = this.toNum(
+      this.val(row, 'estimatedYield') ?? this.val(row, 'expectedYield'),
+    );
+    const rate = this.toNum(this.val(row, 'ratePerUnit'));
+    if (yieldAmt == null || rate == null) return null;
+    return yieldAmt * rate;
+  }
+
+  yieldTotalGross(): number | null {
+    const amounts = this.yieldRows()
+      .map((r) => this.rowGross(r))
+      .filter((n): n is number => n != null);
+    if (!amounts.length) return null;
+    return amounts.reduce((a, b) => a + b, 0);
+  }
+
+  yieldCurrency(): string {
+    const row = this.yieldRows().find((r) => this.val(r, 'currency'));
+    return String(this.val(row, 'currency') ?? 'PKR');
+  }
+
+  private toNum(value: unknown): number | null {
+    if (value == null || value === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
   }
 
   private asRows(value: unknown): PlanContent[] {
@@ -276,7 +330,9 @@ export class PlanSections {
       yieldUnit: this.val(e, 'yieldUnit') ?? this.val(e, 'unit'),
       unit: this.val(e, 'yieldUnit') ?? this.val(e, 'unit'),
       ratePerUnit: this.val(e, 'ratePerUnit'),
+      rateUnit: this.val(e, 'rateUnit'),
       currency: this.val(e, 'currency') ?? 'PKR',
+      yieldInRateUnit: this.val(e, 'yieldInRateUnit'),
       referenceGrossValue: this.val(e, 'referenceGrossValue'),
       confidence: this.val(e, 'confidence'),
     };
@@ -322,6 +378,15 @@ export class PlanSections {
     if (Number.isNaN(n)) return String(value);
     const cur = currency ? String(currency) : 'PKR';
     return `${cur} ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  }
+
+  rateMoney(value: unknown, currency: unknown, unit: unknown): string {
+    if (value == null || value === '') return '—';
+    const n = Number(value);
+    if (Number.isNaN(n)) return String(value);
+    const cur = currency ? String(currency) : 'PKR';
+    const u = unit ? String(unit) : 'kg';
+    return `${cur} ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}/${u}`;
   }
 
   weatherLine(status: PlanContent): string {

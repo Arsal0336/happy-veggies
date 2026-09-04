@@ -8,9 +8,11 @@ import { HvEmptyState } from '../../../shared/ui/hv-empty-state';
 import { HvCard } from '../../../shared/ui/hv-card';
 import { HvButton } from '../../../shared/ui/hv-button';
 import { HvInput } from '../../../shared/ui/hv-input';
+import { HvSelect, HvSelectOption } from '../../../shared/ui/hv-select';
 import { HvAlert } from '../../../shared/ui/hv-alert';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { AdminApiService } from '../../../core/api/admin.service';
+import { CURRENCY_OPTIONS, RATE_UNIT_OPTIONS } from '../../../shared/catalogs/units';
 
 type Rate = {
   id: string;
@@ -26,6 +28,8 @@ type Rate = {
   isActive?: boolean;
 };
 
+type Crop = { id: string; nameEn?: string; nameUr?: string; enabled?: boolean };
+
 @Component({
   selector: 'app-admin-rates-page',
   imports: [
@@ -37,6 +41,7 @@ type Rate = {
     HvCard,
     HvButton,
     HvInput,
+    HvSelect,
     HvAlert,
   ],
   template: `
@@ -45,12 +50,17 @@ type Rate = {
 
       <hv-card>
         <h2 class="mb-3 font-semibold">{{ 'admin.rates.add' | translate }}</h2>
+        <p class="mb-3 text-sm text-muted">{{ 'admin.rates.unitHint' | translate }}</p>
         <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" (submit)="$event.preventDefault(); create()">
-          <hv-input labelKey="admin.catalog.cropId" [(value)]="cropId" />
+          <hv-select
+            labelKey="admin.catalog.cropId"
+            [options]="cropOptions()"
+            [(value)]="cropId"
+          />
           <hv-input labelKey="admin.rates.ratePerUnit" type="number" [(value)]="ratePerUnit" />
-          <hv-input labelKey="admin.rates.unit" [(value)]="unit" />
-          <hv-input labelKey="admin.rates.currency" [(value)]="currency" />
-          <hv-input labelKey="admin.rates.period" [(value)]="period" />
+          <hv-select labelKey="admin.rates.unit" [options]="rateUnitOptions" [(value)]="unit" />
+          <hv-select labelKey="admin.rates.currency" [options]="currencyOptions" [(value)]="currency" />
+          <hv-select labelKey="admin.rates.period" [options]="periodOptions()" [(value)]="period" />
           <hv-input labelKey="admin.rates.source" [(value)]="sourceLabel" />
           <div class="flex items-end">
             <hv-button type="submit" labelKey="admin.rates.create" [loading]="saving()" />
@@ -91,7 +101,7 @@ type Rate = {
                     <td class="py-2.5 pe-3">
                       {{ rate.currency || 'PKR' }} {{ amount(rate) }}
                     </td>
-                    <td class="py-2.5 pe-3">{{ rate.unit || '—' }}</td>
+                    <td class="py-2.5 pe-3">{{ rate.currency || 'PKR' }}/{{ rate.unit || 'kg' }}</td>
                     <td class="py-2.5 pe-3">{{ rate.periodLabel || rate.period || '—' }}</td>
                     <td class="py-2.5">
                       <hv-button
@@ -117,6 +127,7 @@ export class AdminRatesPage implements OnInit {
   private readonly i18n = inject(TranslateService);
 
   readonly rates = signal<Rate[]>([]);
+  readonly cropOptions = signal<HvSelectOption[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly saving = signal(false);
@@ -128,11 +139,28 @@ export class AdminRatesPage implements OnInit {
   readonly ratePerUnit = signal('');
   readonly unit = signal('kg');
   readonly currency = signal('PKR');
-  readonly period = signal('');
+  readonly period = signal(this.defaultPeriod());
   readonly sourceLabel = signal('');
+
+  readonly rateUnitOptions = RATE_UNIT_OPTIONS;
+  readonly currencyOptions = CURRENCY_OPTIONS;
 
   ngOnInit(): void {
     void this.load();
+  }
+
+  periodOptions(): HvSelectOption[] {
+    const now = new Date();
+    const y = now.getFullYear();
+    const q = Math.floor(now.getMonth() / 3) + 1;
+    const opts: HvSelectOption[] = [];
+    for (let year = y; year >= y - 1; year--) {
+      for (let quarter = 4; quarter >= 1; quarter--) {
+        if (year === y && quarter > q) continue;
+        opts.push({ value: `${year}-Q${quarter}`, label: `${year} Q${quarter}` });
+      }
+    }
+    return opts;
   }
 
   amount(rate: Rate): string {
@@ -144,7 +172,31 @@ export class AdminRatesPage implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      this.rates.set(((await firstValueFrom(this.api.listRates())) as Rate[]) || []);
+      const [rates, crops] = await Promise.all([
+        firstValueFrom(this.api.listRates()) as Promise<Rate[]>,
+        firstValueFrom(this.api.listCrops()) as Promise<Crop[]>,
+      ]);
+      this.rates.set(rates || []);
+      const cropOpts = (crops || [])
+        .filter((c) => c.enabled !== false)
+        .map((c) => ({
+          value: c.id,
+          label: c.nameEn || c.nameUr || c.id,
+        }));
+      this.cropOptions.set(
+        cropOpts.length
+          ? cropOpts
+          : [
+              { value: 'tomato', label: 'Tomato' },
+              { value: 'potato', label: 'Potato' },
+              { value: 'onion', label: 'Onion' },
+              { value: 'cucumber', label: 'Cucumber' },
+              { value: 'capsicum', label: 'Capsicum' },
+            ],
+      );
+      if (!this.cropId() && this.cropOptions().length) {
+        this.cropId.set(this.cropOptions()[0]!.value);
+      }
     } catch (e: any) {
       this.error.set(e?.message || 'Request failed');
     } finally {
@@ -174,9 +226,7 @@ export class AdminRatesPage implements OnInit {
       );
       this.formOk.set(this.i18n.instant('admin.rates.created'));
       this.toast.show(this.i18n.instant('admin.rates.created'), 'success');
-      this.cropId.set('');
       this.ratePerUnit.set('');
-      this.period.set('');
       this.sourceLabel.set('');
       await this.load();
     } catch {
@@ -198,5 +248,10 @@ export class AdminRatesPage implements OnInit {
     } finally {
       this.togglingId.set(null);
     }
+  }
+
+  private defaultPeriod(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-Q${Math.floor(now.getMonth() / 3) + 1}`;
   }
 }

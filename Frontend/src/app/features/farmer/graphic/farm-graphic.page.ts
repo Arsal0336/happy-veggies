@@ -8,6 +8,7 @@ import { HvErrorState } from '../../../shared/ui/hv-error-state';
 import { HvButton } from '../../../shared/ui/hv-button';
 import { TwinApiService } from '../../../core/api/twin.service';
 import { FarmApiService } from '../../../core/api/farm.service';
+import { EconomicsApiService } from '../../../core/api/economics.service';
 import { FarmGraphic } from '../../../shared/ui/farm-graphic';
 
 function toGraphicType(code: string): string {
@@ -63,11 +64,13 @@ export class FarmGraphicPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly twinApi = inject(TwinApiService);
   private readonly farmApi = inject(FarmApiService);
+  private readonly economicsApi = inject(EconomicsApiService);
   private readonly t = inject(TranslateService);
 
   farmId = '';
   readonly farm = signal<any>(null);
   readonly twin = signal<any>(null);
+  readonly economicsByZone = signal<Record<string, any>>({});
   readonly selectedId = signal<string | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
@@ -116,13 +119,50 @@ export class FarmGraphicPage implements OnInit {
 
   graphicZones(): any[] {
     const zones = this.twin()?.zones || this.twin()?.cropZones || [];
-    return zones.map((z: any) => ({
-      id: z.id,
-      areaId: z.productionAreaId || z.areaId,
-      cropName: z.cropFreetext || z.label || '',
-      stage: z.growthStage || '',
-      isExperimental: !!z.isExperimental,
-    }));
+    const econ = this.economicsByZone();
+    return zones.map((z: any) => {
+      const snap = econ[String(z.id)];
+      const twinYield =
+        z.expectedYieldValue ?? z.ExpectedYieldValue ?? z.expectedYield?.value ?? z.expectedYield ?? null;
+      const twinUnit =
+        z.expectedYieldUnit ?? z.ExpectedYieldUnit ?? z.expectedYield?.unit ?? z.yieldUnit ?? null;
+      const yieldValue =
+        twinYield != null && twinYield !== ''
+          ? Number(twinYield)
+          : snap?.expectedYield != null
+            ? Number(snap.expectedYield)
+            : snap?.ExpectedYield != null
+              ? Number(snap.ExpectedYield)
+              : null;
+      const yieldUnit = twinUnit || snap?.yieldUnit || snap?.YieldUnit || null;
+      const ratePerUnit = snap?.ratePerUnit ?? snap?.RatePerUnit ?? null;
+      const currency = snap?.currency ?? snap?.Currency ?? 'PKR';
+      let referenceGrossValue = snap?.referenceGrossValue ?? snap?.ReferenceGrossValue ?? null;
+      if (
+        (referenceGrossValue == null || Number.isNaN(Number(referenceGrossValue))) &&
+        yieldValue != null &&
+        ratePerUnit != null
+      ) {
+        referenceGrossValue = Number(yieldValue) * Number(ratePerUnit);
+      }
+      return {
+        id: z.id,
+        areaId: z.productionAreaId || z.areaId,
+        label: z.label || z.Label || '',
+        cropName: z.cropFreetext || z.cropName || z.CropFreetext || z.label || '',
+        stage: z.growthStage || z.GrowthStage || '',
+        isExperimental: !!(z.isExperimental ?? z.IsExperimental),
+        areaAcres: z.areaCanonicalValue ?? z.AreaCanonicalValue ?? z.area?.value ?? null,
+        yieldValue: yieldValue != null && !Number.isNaN(yieldValue) ? yieldValue : null,
+        yieldUnit,
+        ratePerUnit,
+        currency,
+        referenceGrossValue:
+          referenceGrossValue != null && !Number.isNaN(Number(referenceGrossValue))
+            ? Number(referenceGrossValue)
+            : null,
+      };
+    });
   }
 
   graphicEdges(): any[] {
@@ -138,12 +178,27 @@ export class FarmGraphicPage implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const [farm, twin] = await Promise.all([
+      const [farm, twin, economics] = await Promise.all([
         firstValueFrom(this.farmApi.getFarm(this.farmId)),
         firstValueFrom(this.twinApi.getTwin(this.farmId)),
+        firstValueFrom(this.economicsApi.getFarmEconomics(this.farmId)).catch(() => null),
       ]);
       this.farm.set(farm);
       this.twin.set(twin);
+      const data = economics as any;
+      const list = Array.isArray(data?.items)
+        ? data.items
+        : Array.isArray(data?.snapshots)
+          ? data.snapshots
+          : Array.isArray(data)
+            ? data
+            : [];
+      const map: Record<string, any> = {};
+      for (const item of list) {
+        const id = String(item.cropZoneId ?? item.CropZoneId ?? item.zoneId ?? '');
+        if (id) map[id] = item;
+      }
+      this.economicsByZone.set(map);
     } catch (e: any) {
       this.error.set(e?.message || this.t.instant('common.error'));
     } finally {

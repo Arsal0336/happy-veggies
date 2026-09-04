@@ -180,6 +180,17 @@
     "confirmDelete": "Delete this production area and its zones?",
     "emptyHint": "Add an open field, shed, greenhouse, tunnel, or experimental area."
   },
+  "units": {
+    "kg": "Kilogram (kg)",
+    "maund": "Maund (40 kg)",
+    "ton": "Ton (1000 kg)",
+    "kgPerAcre": "kg / acre",
+    "maundPerAcre": "Maund / acre",
+    "tonPerAcre": "Ton / acre",
+    "acre": "Acre",
+    "kanal": "Kanal",
+    "marla": "Marla"
+  },
   "zones": {
     "title": "Crop zones",
     "add": "Add zone",
@@ -193,9 +204,21 @@
     "applyVariety": "Apply variety",
     "plantingDate": "Planting date",
     "growthStage": "Growth stage",
+    "growthStageNone": "Not set",
+    "areaUnit": "Area unit",
+    "expectedYield": "Expected yield",
+    "expectedYieldHint": "Total or per-acre. Converted to the government rate unit for expected amount.",
+    "yieldUnit": "Yield unit",
     "neighbours": "Neighbour compatibility",
     "neighbourWarnings": "Neighbour warnings",
-    "confirmDelete": "Delete this crop zone?"
+    "confirmDelete": "Delete this crop zone?",
+    "stages": {
+      "seedling": "Seedling",
+      "vegetative": "Vegetative",
+      "flowering": "Flowering",
+      "fruiting": "Fruiting",
+      "harvest": "Harvest"
+    }
   },
   "twin": {
     "title": "Digital twin",
@@ -231,8 +254,10 @@
     "empty": "No economics snapshots yet",
     "disclaimer": "Government rates are historical reference only — not a price guarantee.",
     "yield": "Expected yield",
-    "rate": "Reference rate",
-    "gross": "Reference gross value"
+    "rate": "Reference rate (per unit)",
+    "gross": "Expected amount",
+    "totalGross": "Total expected amount",
+    "convertedYield": "Yield in rate unit"
   },
   "plan": {
     "title": "Farm plan",
@@ -269,10 +294,11 @@
       "area": "Area (acres)",
       "yield": "Expected yield",
       "unit": "Unit",
-      "rate": "Gov. rate",
-      "gross": "Reference gross",
+      "rate": "Rate (per unit)",
+      "gross": "Expected amount",
+      "totalGross": "Total expected amount",
       "confidence": "Confidence",
-      "disclaimer": "Advisory estimates only — not a guaranteed harvest or sale price. Verify with local markets and agronomists."
+      "disclaimer": "Expected amount converts yield into the government rate unit (kg / maund / ton), including per-acre yields × zone acres. Advisory only."
     },
     "warnings": {
       "title": "Compatibility warnings",
@@ -387,6 +413,13 @@
     "openFull": "Full view",
     "hint": "Tap an area or crop zone — schematic digital twin view, not a survey map.",
     "neighbours": "Neighbour relations",
+    "yield": {
+      "title": "Yield & expected amount",
+      "chip": "{{count}} zones with yield",
+      "totalChip": "Est. total {{amount}}",
+      "refTotal": "Total expected amount",
+      "note": "Expected amount = yield × government rate per kg/unit (not live market prices). See Farm Plan for the full table."
+    },
     "legend": {
       "openField": "Open field",
       "greenhouse": "Greenhouse",
@@ -515,7 +548,8 @@
       "create": "Create",
       "listTitle": "Reference rates",
       "ratePerUnit": "Rate per unit",
-      "unit": "Unit",
+      "unit": "Rate unit",
+      "unitHint": "Pick the mass unit the rate is quoted in (usually PKR/kg). Yield in other units is converted before expected amount.",
       "currency": "Currency",
       "period": "Period",
       "source": "Source",
@@ -524,8 +558,8 @@
       "activate": "Activate",
       "deactivate": "Deactivate",
       "empty": "No rates yet",
-      "emptyHint": "Create a rate with crop id, period, and amount.",
-      "required": "Crop id, period, and a non-negative rate are required.",
+      "emptyHint": "Create a rate with crop, period, unit, and amount.",
+      "required": "Crop, period, and a non-negative rate are required.",
       "created": "Rate created.",
       "createFailed": "Could not create rate.",
       "updateFailed": "Could not update rate."

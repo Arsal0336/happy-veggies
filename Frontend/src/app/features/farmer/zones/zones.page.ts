@@ -9,6 +9,7 @@ import { HvEmptyState } from '../../../shared/ui/hv-empty-state';
 import { HvCard } from '../../../shared/ui/hv-card';
 import { HvButton } from '../../../shared/ui/hv-button';
 import { HvInput } from '../../../shared/ui/hv-input';
+import { HvSelect } from '../../../shared/ui/hv-select';
 import { HvBadge } from '../../../shared/ui/hv-badge';
 import { FarmApiService } from '../../../core/api/farm.service';
 import { NeighbourApiService } from '../../../core/api/neighbour.service';
@@ -16,6 +17,7 @@ import { SuggestionApiService } from '../../../core/api/suggestion.service';
 import { TwinApiService } from '../../../core/api/twin.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ToastService } from '../../../shared/ui/toast.service';
+import { YIELD_UNIT_OPTIONS } from '../../../shared/catalogs/units';
 
 @Component({
   selector: 'app-zones-page',
@@ -28,6 +30,7 @@ import { ToastService } from '../../../shared/ui/toast.service';
     HvCard,
     HvButton,
     HvInput,
+    HvSelect,
     HvBadge,
   ],
   template: `
@@ -77,6 +80,11 @@ import { ToastService } from '../../../shared/ui/toast.service';
                           · {{ 'zones.variety' | translate }}: {{ zone.seedVarietyId }}
                         }
                       </p>
+                      @if (zoneYieldLabel(zone); as y) {
+                        <p class="mt-1 text-sm font-medium text-[var(--hv-color-primary-800)]">
+                          {{ 'zones.expectedYield' | translate }}: {{ y }}
+                        </p>
+                      }
                       @for (w of warningsFor(zone.id); track $index) {
                         <p class="text-xs text-muted">{{ w.reason }}</p>
                       }
@@ -120,8 +128,30 @@ import { ToastService } from '../../../shared/ui/toast.service';
               (valueChange)="onCropIdChange()"
             />
             <hv-input labelKey="farms.area" type="number" [(value)]="areaValue" />
+            <hv-select
+              labelKey="zones.areaUnit"
+              [options]="areaUnitOptions"
+              [(value)]="areaUnit"
+            />
             <hv-input labelKey="zones.plantingDate" type="date" [(value)]="plantingDate" />
-            <hv-input labelKey="zones.growthStage" [(value)]="growthStage" />
+            <hv-select
+              labelKey="zones.growthStage"
+              [options]="growthStageOptions"
+              [(value)]="growthStage"
+            />
+            <div class="grid gap-3 sm:grid-cols-2">
+              <hv-input
+                labelKey="zones.expectedYield"
+                type="number"
+                hintKey="zones.expectedYieldHint"
+                [(value)]="expectedYield"
+              />
+              <hv-select
+                labelKey="zones.yieldUnit"
+                [options]="yieldUnitOptions"
+                [(value)]="yieldUnit"
+              />
+            </div>
 
             @if (varieties().length) {
               <div class="space-y-2">
@@ -191,9 +221,27 @@ export class ZonesPage implements OnInit {
   readonly cropId = signal('');
   readonly seedVarietyId = signal('');
   readonly areaValue = signal('1');
+  readonly areaUnit = signal('kanal');
   readonly plantingDate = signal('');
   readonly growthStage = signal('');
+  readonly expectedYield = signal('');
+  readonly yieldUnit = signal('kg');
   readonly editingZoneId = signal<string | null>(null);
+
+  readonly yieldUnitOptions = YIELD_UNIT_OPTIONS;
+  readonly areaUnitOptions = [
+    { value: 'acre', labelKey: 'units.acre' },
+    { value: 'kanal', labelKey: 'units.kanal' },
+    { value: 'marla', labelKey: 'units.marla' },
+  ];
+  readonly growthStageOptions = [
+    { value: '', labelKey: 'zones.growthStageNone' },
+    { value: 'seedling', labelKey: 'zones.stages.seedling' },
+    { value: 'vegetative', labelKey: 'zones.stages.vegetative' },
+    { value: 'flowering', labelKey: 'zones.stages.flowering' },
+    { value: 'fruiting', labelKey: 'zones.stages.fruiting' },
+    { value: 'harvest', labelKey: 'zones.stages.harvest' },
+  ];
 
   ngOnInit(): void {
     this.farmId = this.route.snapshot.paramMap.get('farmId') || '';
@@ -209,6 +257,13 @@ export class ZonesPage implements OnInit {
     const value = zone.area?.value ?? zone.areaInputValue ?? '—';
     const unit = zone.area?.unit ?? zone.areaInputUnit ?? '';
     return `${value} ${unit}`.trim();
+  }
+
+  zoneYieldLabel(zone: any): string | null {
+    const value = zone.expectedYieldValue ?? zone.ExpectedYieldValue;
+    if (value == null || value === '') return null;
+    const unit = zone.expectedYieldUnit ?? zone.ExpectedYieldUnit ?? 'kg';
+    return `${Number(value).toLocaleString()} ${unit}`;
   }
 
   relationFor(zoneId: string): string | null {
@@ -230,8 +285,11 @@ export class ZonesPage implements OnInit {
     this.cropId.set('');
     this.seedVarietyId.set('');
     this.areaValue.set('1');
+    this.areaUnit.set('kanal');
     this.plantingDate.set('');
     this.growthStage.set('');
+    this.expectedYield.set('');
+    this.yieldUnit.set('kg');
     this.editingZoneId.set(null);
     this.varieties.set([]);
   }
@@ -243,8 +301,14 @@ export class ZonesPage implements OnInit {
     this.cropId.set(zone.cropId ?? '');
     this.seedVarietyId.set(zone.seedVarietyId ?? '');
     this.areaValue.set(String(zone.area?.value ?? zone.areaInputValue ?? 1));
+    this.areaUnit.set(String(zone.area?.unit ?? zone.areaInputUnit ?? 'kanal').toLowerCase());
     this.plantingDate.set(zone.plantingDate ? String(zone.plantingDate).slice(0, 10) : '');
     this.growthStage.set(zone.growthStage ?? '');
+    const y = zone.expectedYieldValue ?? zone.ExpectedYieldValue;
+    this.expectedYield.set(y != null && y !== '' ? String(y) : '');
+    this.yieldUnit.set(
+      String(zone.expectedYieldUnit ?? zone.ExpectedYieldUnit ?? 'kg').toLowerCase() || 'kg',
+    );
     void this.loadVarieties();
   }
 
@@ -296,21 +360,27 @@ export class ZonesPage implements OnInit {
     if (!this.label().trim()) return;
     this.saving.set(true);
     try {
-      const body = {
+      const yieldRaw = this.expectedYield().trim();
+      const yieldNum = yieldRaw === '' ? undefined : Number(yieldRaw);
+      const body: Record<string, unknown> = {
         label: this.label().trim(),
         cropFreetext: this.crop().trim() || this.label().trim(),
         cropId: this.cropId().trim() || undefined,
         seedVarietyId: this.seedVarietyId() || undefined,
         areaInputValue: Number(this.areaValue()) || 1,
-        areaInputUnit: 'kanal',
+        areaInputUnit: this.areaUnit() || 'kanal',
         plantingDate: this.plantingDate().trim() || undefined,
         growthStage: this.growthStage().trim() || undefined,
       };
+      if (yieldNum != null && Number.isFinite(yieldNum)) {
+        body['expectedYieldValue'] = yieldNum;
+        body['expectedYieldUnit'] = this.yieldUnit() || 'kg';
+      }
       if (this.editingZoneId()) {
         await firstValueFrom(
           this.farms.updateZone(this.farmId, this.areaId, this.editingZoneId()!, body),
         );
-        this.toast.success(this.t.instant('zones.applyVariety'));
+        this.toast.success(this.t.instant('common.save'));
       } else {
         await firstValueFrom(this.farms.createZone(this.farmId, this.areaId, body));
         this.toast.success(this.t.instant('zones.add'));

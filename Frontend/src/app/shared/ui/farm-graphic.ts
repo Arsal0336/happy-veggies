@@ -16,6 +16,14 @@ export type FarmGraphicZone = {
   cropName: string;
   stage: string;
   isExperimental?: boolean;
+  /** Optional zone display name (e.g. Tomato block A) */
+  label?: string;
+  areaAcres?: number | null;
+  yieldValue?: number | null;
+  yieldUnit?: string | null;
+  ratePerUnit?: number | null;
+  currency?: string | null;
+  referenceGrossValue?: number | null;
 };
 
 export type FarmNeighbourEdge = {
@@ -36,6 +44,7 @@ type LayoutRect = {
   stroke: string;
   label: string;
   sub?: string;
+  yieldLine?: string;
   experimental?: boolean;
 };
 
@@ -102,7 +111,7 @@ const AREA_COLORS: Record<string, { fill: string; stroke: string }> = {
     .schematic__chip {
       display: inline-flex;
       align-items: center;
-      max-width: 12rem;
+      max-width: 14rem;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -113,6 +122,14 @@ const AREA_COLORS: Record<string, { fill: string; stroke: string }> = {
       color: var(--hv-color-primary-800);
       font-size: 0.65rem;
       font-weight: 600;
+    }
+    .schematic__chip--total {
+      max-width: 18rem;
+      border-color: var(--hv-color-primary-400);
+      background: var(--hv-color-primary-50);
+      color: var(--hv-color-primary-900);
+      font-size: 0.7rem;
+      font-weight: 700;
     }
     .schematic__stage {
       position: relative;
@@ -146,6 +163,101 @@ const AREA_COLORS: Record<string, { fill: string; stroke: string }> = {
       font-size: 9px;
       font-weight: 500;
       pointer-events: none;
+    }
+    .schematic__yield {
+      fill: #fff8db;
+      font-size: 10px;
+      font-weight: 700;
+      pointer-events: none;
+      text-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+    }
+    .schematic__yield-panel {
+      margin: 0;
+      padding: 0.75rem 1rem 1rem;
+      border-top: 1px solid var(--hv-color-border);
+      background: linear-gradient(180deg, var(--hv-color-primary-50), transparent);
+    }
+    .schematic__yield-title {
+      margin: 0 0 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--hv-color-primary-900);
+    }
+    .schematic__yield-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .schematic__yield-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) auto auto;
+      gap: 0.4rem 0.65rem;
+      align-items: baseline;
+      font-size: 0.8rem;
+      padding: 0.4rem 0.55rem;
+      border-radius: var(--hv-radius-md);
+      background: var(--hv-color-surface);
+      border: 1px solid var(--hv-color-border);
+    }
+    @media (max-width: 520px) {
+      .schematic__yield-row {
+        grid-template-columns: 1fr 1fr;
+      }
+      .schematic__yield-row .value,
+      .schematic__yield-row .money {
+        grid-column: span 1;
+      }
+    }
+    .schematic__yield-row strong {
+      font-weight: 700;
+      color: var(--hv-color-text);
+    }
+    .schematic__yield-row .muted {
+      color: var(--hv-color-text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .schematic__yield-row .value {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--hv-color-primary-800);
+      white-space: nowrap;
+    }
+    .schematic__yield-row .money {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: #1a5c32;
+      white-space: nowrap;
+    }
+    .schematic__yield-total {
+      margin-top: 0.55rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: var(--hv-radius-md);
+      background: linear-gradient(135deg, var(--hv-color-primary-100), var(--hv-color-primary-50));
+      border: 1px solid var(--hv-color-primary-200);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.35rem 1rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--hv-color-primary-900);
+    }
+    .schematic__yield-total strong {
+      font-family: var(--hv-font-display);
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .schematic__yield-note {
+      margin: 0.55rem 0 0;
+      font-size: 0.7rem;
+      color: var(--hv-color-text-muted);
     }
     .schematic__edge-good { stroke: #2a7a42; }
     .schematic__edge-avoid { stroke: #c23b2e; }
@@ -206,6 +318,15 @@ const AREA_COLORS: Record<string, { fill: string; stroke: string }> = {
           }
           @if (greenScore() != null && greenScore() !== '') {
             <span class="schematic__chip">{{ 'green.title' | translate }} {{ greenScore() }}</span>
+          }
+          @if (yieldMoneyTotal(); as total) {
+            <span class="schematic__chip schematic__chip--total">
+              {{ 'graphic.yield.totalChip' | translate: { amount: total } }}
+            </span>
+          } @else if (yieldChipCount(); as n) {
+            @if (n > 0) {
+              <span class="schematic__chip">{{ 'graphic.yield.chip' | translate: { count: n } }}</span>
+            }
           }
         </div>
       </header>
@@ -300,6 +421,15 @@ const AREA_COLORS: Record<string, { fill: string; stroke: string }> = {
                     {{ truncate(plot.sub, 28) }}
                   </text>
                 }
+                @if (plot.yieldLine) {
+                  <text
+                    class="schematic__yield"
+                    [attr.x]="plot.x + 12"
+                    [attr.y]="plot.y + (plot.sub ? 54 : 38)"
+                  >
+                    {{ truncate(plot.yieldLine, 34) }}
+                  </text>
+                }
                 @if (plot.experimental) {
                   <circle
                     [attr.cx]="plot.x + plot.w - 16"
@@ -337,6 +467,29 @@ const AREA_COLORS: Record<string, { fill: string; stroke: string }> = {
             </span>
           }
         </div>
+
+        @if (yieldRows().length) {
+          <section class="schematic__yield-panel" [attr.aria-label]="'graphic.yield.title' | translate">
+            <h3 class="schematic__yield-title">{{ 'graphic.yield.title' | translate }}</h3>
+            <ul class="schematic__yield-list">
+              @for (row of yieldRows(); track row.id) {
+                <li class="schematic__yield-row">
+                  <strong>{{ row.zone }}</strong>
+                  <span class="muted">{{ row.crop }}</span>
+                  <span class="value">{{ row.yieldText }}</span>
+                  <span class="money">{{ row.moneyText }}</span>
+                </li>
+              }
+            </ul>
+            @if (yieldMoneyTotal(); as total) {
+              <div class="schematic__yield-total">
+                <span>{{ 'graphic.yield.refTotal' | translate }}</span>
+                <strong>{{ total }}</strong>
+              </div>
+            }
+            <p class="schematic__yield-note">{{ 'graphic.yield.note' | translate }}</p>
+          </section>
+        }
 
         @if ((neighbourEdges() || []).length) {
           <ul class="schematic__edges" [attr.aria-label]="'graphic.neighbours' | translate">
@@ -390,9 +543,101 @@ export class FarmGraphic {
 
   zoneLabel(zoneId: string): string {
     const zone = this.zones().find((z) => z.id === zoneId);
+    if (zone?.label?.trim()) return zone.label.trim();
     if (zone?.cropName?.trim()) return zone.cropName.trim();
     if (zone) return zone.stage?.trim() || 'Zone';
     return '—';
+  }
+
+  yieldChipCount(): number {
+    return this.yieldRows().filter((r) => r.hasYield).length;
+  }
+
+  yieldRows(): Array<{
+    id: string;
+    zone: string;
+    crop: string;
+    yieldText: string;
+    moneyText: string;
+    hasYield: boolean;
+    gross: number | null;
+    currency: string;
+  }> {
+    return this.zones()
+      .filter((z) => !!(z.cropName || z.label || z.yieldValue != null))
+      .map((z) => {
+        const hasYield = z.yieldValue != null && !Number.isNaN(Number(z.yieldValue));
+        const unit = (z.yieldUnit || '').trim();
+        const yieldText = hasYield
+          ? `${this.formatNum(z.yieldValue!)}${unit ? ` ${unit}` : ''}`
+          : '—';
+        const areaBit =
+          z.areaAcres != null && !Number.isNaN(Number(z.areaAcres))
+            ? ` · ${this.formatNum(z.areaAcres)} ac`
+            : '';
+        const currency = (z.currency || 'PKR').trim() || 'PKR';
+        const gross = this.resolveGross(z);
+        const moneyText = gross != null ? `${currency} ${this.formatMoney(gross)}` : '—';
+        return {
+          id: z.id,
+          zone: (z.label || z.cropName || 'Zone').trim(),
+          crop: [z.cropName, z.stage].filter(Boolean).join(' · ') || '—',
+          yieldText: `${yieldText}${areaBit}`,
+          moneyText,
+          hasYield,
+          gross,
+          currency,
+        };
+      });
+  }
+
+  /** Expected amount = stored gross, or yield × rate per unit. */
+  resolveGross(zone: FarmGraphicZone): number | null {
+    if (zone.referenceGrossValue != null && !Number.isNaN(Number(zone.referenceGrossValue))) {
+      return Number(zone.referenceGrossValue);
+    }
+    const yieldAmt =
+      zone.yieldValue != null && !Number.isNaN(Number(zone.yieldValue))
+        ? Number(zone.yieldValue)
+        : null;
+    const rate =
+      zone.ratePerUnit != null && !Number.isNaN(Number(zone.ratePerUnit))
+        ? Number(zone.ratePerUnit)
+        : null;
+    if (yieldAmt == null || rate == null) return null;
+    return yieldAmt * rate;
+  }
+
+  yieldMoneyTotal(): string | null {
+    const rows = this.yieldRows().filter((r) => r.gross != null);
+    if (!rows.length) return null;
+    const currency = rows[0]!.currency || 'PKR';
+    const sum = rows.reduce((acc, r) => acc + (r.gross || 0), 0);
+    return `${currency} ${this.formatMoney(sum)}`;
+  }
+
+  formatNum(value: number): string {
+    return Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+
+  formatMoney(value: number): string {
+    return Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+
+  formatYieldLine(zone: FarmGraphicZone): string | undefined {
+    const gross = this.resolveGross(zone);
+    const hasYield = zone.yieldValue != null && !Number.isNaN(Number(zone.yieldValue));
+    if (!hasYield && gross == null) return undefined;
+    const unit = (zone.yieldUnit || '').trim();
+    const yieldPart = hasYield
+      ? `${this.formatNum(zone.yieldValue!)}${unit ? ` ${unit}` : ''}`
+      : '';
+    if (gross != null) {
+      const cur = (zone.currency || 'PKR').trim() || 'PKR';
+      const moneyPart = `${cur} ${this.formatMoney(gross)}`;
+      return yieldPart ? `${yieldPart} · ${moneyPart}` : moneyPart;
+    }
+    return yieldPart || undefined;
   }
 
   relationLabel(relation: string): string {
@@ -501,8 +746,11 @@ export class FarmGraphic {
           h: zoneH,
           fill: 'rgb(255 255 255 / 0.22)',
           stroke: 'rgb(255 255 255 / 0.55)',
-          label: zone.cropName || zone.stage || 'Zone',
-          sub: zone.stage || undefined,
+          label: zone.label || zone.cropName || zone.stage || 'Zone',
+          sub: [zone.cropName && zone.label ? zone.cropName : null, zone.stage]
+            .filter(Boolean)
+            .join(' · ') || undefined,
+          yieldLine: this.formatYieldLine(zone),
           experimental: !!zone.isExperimental,
         };
         zoneRects.set(zone.id, zonePlot);

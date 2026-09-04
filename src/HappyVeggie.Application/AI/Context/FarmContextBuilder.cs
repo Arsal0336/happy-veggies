@@ -195,6 +195,7 @@ public sealed class FarmContextBuilder
                     snap.ExpectedYield,
                     snap.YieldUnit,
                     snap.RatePerUnit,
+                    snap.RateUnit,
                     snap.Currency,
                     snap.ReferenceGrossValue,
                     snap.Period));
@@ -372,7 +373,7 @@ public sealed class FarmContextBuilder
             {
                 sb.AppendLine(
                     $"  - {e.ZoneLabel} ({e.CropId}): yield={e.ExpectedYield} {e.YieldUnit}, " +
-                    $"rate={e.RatePerUnit} {e.Currency}/{e.YieldUnit}, gross≈{e.ReferenceGrossValue} {e.Currency} (period {e.Period})");
+                    $"rate={e.RatePerUnit} {e.Currency}/{e.RateUnit}, gross≈{e.ReferenceGrossValue} {e.Currency} (period {e.Period})");
             }
         }
         else if (ctx.Economics is not null)

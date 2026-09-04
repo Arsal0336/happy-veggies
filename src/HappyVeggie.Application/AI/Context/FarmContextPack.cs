@@ -106,6 +106,7 @@ public sealed record ZoneEconomicsContext(
     decimal ExpectedYield,
     string YieldUnit,
     decimal RatePerUnit,
+    string RateUnit,
     string Currency,
     decimal ReferenceGrossValue,
     string Period);

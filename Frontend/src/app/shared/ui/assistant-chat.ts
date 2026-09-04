@@ -47,6 +47,7 @@ export type ChatMessage = {
       flex: 1;
       min-height: 0;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 1rem;
       display: flex;
       flex-direction: column;
@@ -66,6 +67,9 @@ export type ChatMessage = {
     }
     .bubble {
       max-width: min(96%, 36rem);
+      width: fit-content;
+      min-width: 0;
+      box-sizing: border-box;
       border-radius: 1rem;
       padding: 0.75rem 0.9rem;
       font-size: 0.9rem;
@@ -79,13 +83,23 @@ export type ChatMessage = {
       color: #fff;
       border-bottom-right-radius: 0.35rem;
       white-space: pre-wrap;
+      max-width: min(92%, 28rem);
     }
     .bubble--assistant {
       margin-inline-end: auto;
+      width: min(96%, 36rem);
+      max-width: min(96%, 36rem);
+      overflow: hidden;
       background: var(--hv-color-neutral-50);
       border: 1px solid var(--hv-color-border);
       border-bottom-left-radius: 0.35rem;
       color: var(--hv-color-text);
+    }
+    .bubble__body {
+      min-width: 0;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .bubble__toolbar {
       display: flex;
@@ -152,26 +166,50 @@ export type ChatMessage = {
       font-size: inherit;
     }
     .bubble__body .md-table-wrap {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
       overflow-x: auto;
-      margin: 0 0 0.75rem;
-      border-radius: 0.5rem;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      margin: 0.35rem 0 0.85rem;
+      border-radius: 0.65rem;
       border: 1px solid var(--hv-color-border);
+      background: #fff;
+      box-shadow: inset 0 0 0 1px rgb(31 92 50 / 0.04);
     }
     .bubble__body .md-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.82rem;
+      width: max-content;
+      min-width: 100%;
+      max-width: none;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.78rem;
+      line-height: 1.4;
     }
     .bubble__body .md-table th,
     .bubble__body .md-table td {
-      border: 1px solid var(--hv-color-border);
-      padding: 0.45rem 0.6rem;
+      border-bottom: 1px solid var(--hv-color-border);
+      border-inline-end: 1px solid var(--hv-color-border);
+      padding: 0.5rem 0.65rem;
       text-align: start;
       vertical-align: top;
+      white-space: nowrap;
+    }
+    .bubble__body .md-table th:last-child,
+    .bubble__body .md-table td:last-child {
+      border-inline-end: 0;
+    }
+    .bubble__body .md-table tbody tr:last-child td {
+      border-bottom: 0;
     }
     .bubble__body .md-table th {
       background: var(--hv-color-primary-50);
       font-weight: 700;
+      color: var(--hv-color-primary-900);
+      position: sticky;
+      top: 0;
     }
     .bubble__body .md-table tr:nth-child(even) td {
       background: rgb(31 92 50 / 0.03);

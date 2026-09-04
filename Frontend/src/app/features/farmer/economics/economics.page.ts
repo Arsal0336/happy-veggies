@@ -41,7 +41,15 @@ import { EconomicsApiService } from '../../../core/api/economics.service';
         @if (!snapshots().length) {
           <hv-empty-state titleKey="economics.empty" />
         } @else {
-          <ul class="m-0 flex list-none flex-col gap-3 p-0">
+          @if (totalGross(); as total) {
+            <hv-card>
+              <p class="m-0 text-sm text-muted">{{ 'economics.totalGross' | translate }}</p>
+              <p class="mt-1 font-display text-2xl font-semibold text-[var(--hv-color-primary-900)]">
+                {{ total }}
+              </p>
+            </hv-card>
+          }
+          <ul class="m-0 mt-3 flex list-none flex-col gap-3 p-0">
             @for (s of snapshots(); track snapshotKey(s)) {
               <li>
                 <hv-card>
@@ -55,14 +63,20 @@ import { EconomicsApiService } from '../../../core/api/economics.service';
                   </p>
                   <p class="text-sm">
                     {{ 'economics.rate' | translate }}:
-                    {{ s.ratePerUnit ?? '—' }} {{ s.currency || 'PKR' }}/{{ s.yieldUnit || 'unit' }}
+                    {{ s.ratePerUnit ?? '—' }} {{ s.currency || 'PKR' }}/{{ s.rateUnit || s.RateUnit || 'kg' }}
                     @if (s.period) {
                       ({{ s.period }})
                     }
                   </p>
-                  <p class="text-sm">
+                  @if (s.yieldInRateUnit != null || s.YieldInRateUnit != null) {
+                    <p class="text-xs text-muted">
+                      {{ 'economics.convertedYield' | translate }}:
+                      {{ s.yieldInRateUnit ?? s.YieldInRateUnit }} {{ s.rateUnit || s.RateUnit || 'kg' }}
+                    </p>
+                  }
+                  <p class="text-base font-semibold text-[var(--hv-color-primary-800)]">
                     {{ 'economics.gross' | translate }}:
-                    {{ s.referenceGrossValue ?? '—' }} {{ s.currency || 'PKR' }}
+                    {{ formatMoney(grossOf(s), s.currency) }}
                   </p>
                   @if (s.sourceLabel) {
                     <p class="mt-1 text-xs text-muted">{{ s.sourceLabel }}</p>
@@ -98,7 +112,44 @@ export class EconomicsPage implements OnInit {
   }
 
   snapshotKey(s: any): string {
-    return `${s.cropId || s.cropName || 'crop'}-${s.period || ''}`;
+    return `${s.cropZoneId || s.cropId || s.cropName || 'crop'}-${s.period || ''}`;
+  }
+
+  grossOf(s: any): number | null {
+    const stored = Number(s.referenceGrossValue ?? s.ReferenceGrossValue);
+    if (Number.isFinite(stored)) return stored;
+    const y = Number(s.expectedYield ?? s.ExpectedYield);
+    const r = Number(s.ratePerUnit ?? s.RatePerUnit);
+    if (Number.isFinite(y) && Number.isFinite(r)) return y * r;
+    return null;
+  }
+
+  formatMoney(value: unknown, currency?: string): string {
+    if (value == null || value === '') return '—';
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '—';
+    const cur = currency || 'PKR';
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: cur,
+        maximumFractionDigits: 0,
+      }).format(n);
+    } catch {
+      return `${cur} ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    }
+  }
+
+  totalGross(): string | null {
+    const amounts = this.snapshots()
+      .map((s) => this.grossOf(s))
+      .filter((n): n is number => n != null);
+    if (!amounts.length) return null;
+    const currency = this.snapshots()[0]?.currency || this.snapshots()[0]?.Currency || 'PKR';
+    return this.formatMoney(
+      amounts.reduce((a, b) => a + b, 0),
+      currency,
+    );
   }
 
   async load(): Promise<void> {
@@ -106,7 +157,7 @@ export class EconomicsPage implements OnInit {
     this.error.set(null);
     try {
       const data: any = await firstValueFrom(this.api.getFarmEconomics(this.farmId));
-      this.snapshots.set(data?.snapshots || (Array.isArray(data) ? data : []) || []);
+      this.snapshots.set(data?.items || data?.snapshots || (Array.isArray(data) ? data : []) || []);
       this.disclaimer.set(data?.disclaimer || null);
     } catch (e: any) {
       this.error.set(e?.message || this.t.instant('common.error'));

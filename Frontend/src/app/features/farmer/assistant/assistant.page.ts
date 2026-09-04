@@ -29,7 +29,7 @@ const CITATION_KEYS: Record<string, string> = {
     AssistantChat,
   ],
   template: `
-    <div class="hv-page flex min-h-[calc(100dvh-6.5rem)] flex-col gap-3">
+    <div class="hv-page flex min-h-[calc(100dvh-var(--hv-shell-header,3.35rem)-var(--hv-shell-nav,4.35rem)-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] flex-col gap-3">
       <hv-page-header titleKey="assistant.title" subtitleKey="assistant.subtitle">
         <a [routerLink]="['/farms', farmId]">
           <hv-button variant="ghost" labelKey="common.back" />

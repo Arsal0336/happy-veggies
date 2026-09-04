@@ -15,8 +15,10 @@ import { HvDrawer } from '../../../shared/ui/hv-drawer';
 import { FarmApiService } from '../../../core/api/farm.service';
 import { TwinApiService } from '../../../core/api/twin.service';
 import { AlertApiService } from '../../../core/api/alert.service';
+import { EconomicsApiService } from '../../../core/api/economics.service';
 import { SuggestionApiService } from '../../../core/api/suggestion.service';
 import { ToastService } from '../../../shared/ui/toast.service';
+import { expectedAmount } from '../../../shared/catalogs/units';
 
 function toGraphicType(code: string): string {
   if (code === 'tunnel_polyhouse') return 'tunnel';
@@ -179,6 +181,7 @@ export class FarmHomePage implements OnInit {
   private readonly farms = inject(FarmApiService);
   private readonly twinApi = inject(TwinApiService);
   private readonly alertApi = inject(AlertApiService);
+  private readonly economicsApi = inject(EconomicsApiService);
   private readonly suggestionsApi = inject(SuggestionApiService);
   private readonly toast = inject(ToastService);
   private readonly t = inject(TranslateService);
@@ -187,6 +190,7 @@ export class FarmHomePage implements OnInit {
   readonly farm = signal<any>(null);
   readonly twin = signal<any>(null);
   readonly alerts = signal<any[]>([]);
+  readonly economicsByZone = signal<Record<string, any>>({});
   readonly suggestions = signal<any[]>([]);
   readonly loading = signal(true);
   readonly refreshing = signal(false);
@@ -299,13 +303,77 @@ export class FarmHomePage implements OnInit {
 
   graphicZones(): any[] {
     const zones = this.twin()?.zones || this.twin()?.cropZones || [];
-    return zones.map((z: any) => ({
+    const econ = this.economicsByZone();
+    return zones.map((z: any) => this.mapGraphicZone(z, econ[String(z.id)]));
+  }
+
+  private mapGraphicZone(z: any, snap?: any): any {
+    const twinYield =
+      z.expectedYieldValue ?? z.ExpectedYieldValue ?? z.expectedYield?.value ?? z.expectedYield ?? null;
+    const twinUnit =
+      z.expectedYieldUnit ?? z.ExpectedYieldUnit ?? z.expectedYield?.unit ?? z.yieldUnit ?? null;
+    const yieldValue =
+      twinYield != null && twinYield !== ''
+        ? Number(twinYield)
+        : snap?.expectedYield != null
+          ? Number(snap.expectedYield)
+          : snap?.ExpectedYield != null
+            ? Number(snap.ExpectedYield)
+            : null;
+    const yieldUnit =
+      twinUnit ||
+      snap?.yieldUnit ||
+      snap?.YieldUnit ||
+      null;
+    const ratePerUnit = snap?.ratePerUnit ?? snap?.RatePerUnit ?? null;
+    const currency = snap?.currency ?? snap?.Currency ?? 'PKR';
+    const rateUnit = snap?.rateUnit ?? snap?.RateUnit ?? 'kg';
+    const areaAcres = z.areaCanonicalValue ?? z.AreaCanonicalValue ?? z.area?.value ?? null;
+    let referenceGrossValue = snap?.referenceGrossValue ?? snap?.ReferenceGrossValue ?? null;
+    if (referenceGrossValue == null || Number.isNaN(Number(referenceGrossValue))) {
+      referenceGrossValue = expectedAmount(
+        yieldValue,
+        yieldUnit,
+        ratePerUnit != null ? Number(ratePerUnit) : null,
+        rateUnit,
+        Number(areaAcres) || 0,
+      );
+    }
+    return {
       id: z.id,
       areaId: z.productionAreaId || z.areaId,
-      cropName: z.cropFreetext || z.label || '',
-      stage: z.growthStage || '',
-      isExperimental: !!z.isExperimental,
-    }));
+      label: z.label || z.Label || '',
+      cropName: z.cropFreetext || z.cropName || z.CropFreetext || z.label || '',
+      stage: z.growthStage || z.GrowthStage || '',
+      isExperimental: !!(z.isExperimental ?? z.IsExperimental),
+      areaAcres,
+      yieldValue: yieldValue != null && !Number.isNaN(yieldValue) ? yieldValue : null,
+      yieldUnit,
+      ratePerUnit,
+      rateUnit,
+      currency,
+      referenceGrossValue:
+        referenceGrossValue != null && !Number.isNaN(Number(referenceGrossValue))
+          ? Number(referenceGrossValue)
+          : null,
+    };
+  }
+
+  private indexEconomics(raw: unknown): Record<string, any> {
+    const data = raw as any;
+    const list = Array.isArray(data?.items)
+      ? data.items
+      : Array.isArray(data?.snapshots)
+        ? data.snapshots
+        : Array.isArray(data)
+          ? data
+          : [];
+    const map: Record<string, any> = {};
+    for (const item of list) {
+      const id = String(item.cropZoneId ?? item.CropZoneId ?? item.zoneId ?? '');
+      if (id) map[id] = item;
+    }
+    return map;
   }
 
   graphicEdges(): any[] {
@@ -321,16 +389,18 @@ export class FarmHomePage implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const [farm, twin, alerts, suggestions] = await Promise.all([
+      const [farm, twin, alerts, suggestions, economics] = await Promise.all([
         firstValueFrom(this.farms.getFarm(this.farmId)),
         firstValueFrom(this.twinApi.getTwin(this.farmId)).catch(() => null),
         firstValueFrom(this.alertApi.listAlerts(this.farmId)).catch(() => []),
         firstValueFrom(this.suggestionsApi.listCropSuggestions(this.farmId)).catch(() => []),
+        firstValueFrom(this.economicsApi.getFarmEconomics(this.farmId)).catch(() => null),
       ]);
       this.farm.set(farm);
       this.twin.set(twin);
       this.alerts.set((alerts as any[]) || []);
       this.suggestions.set((suggestions as any[]) || []);
+      this.economicsByZone.set(this.indexEconomics(economics));
     } catch (e: any) {
       this.error.set(e?.message || this.t.instant('farms.notFound'));
     } finally {

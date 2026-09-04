@@ -115,7 +115,9 @@ public sealed class CropPlanningService
                 expectedYield = econ?.ExpectedYield ?? displayYield,
                 yieldUnit = econ?.YieldUnit ?? displayUnit,
                 ratePerUnit = econ?.RatePerUnit,
+                rateUnit = econ?.RateUnit,
                 currency = econ?.Currency ?? "PKR",
+                yieldInRateUnit = econ?.YieldInRateUnit,
                 referenceGrossValue = econ?.ReferenceGrossValue,
                 period = econ?.Period,
                 sourceLabel = econ?.SourceLabel

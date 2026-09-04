@@ -21,6 +21,7 @@ public sealed class EconomicsController : ControllerBase
 
     /// <summary>
     /// Compute-on-read farm economics. Government rates are historical_reference (C-006).
+    /// Expected amount converts yield into the rate unit (kg / maund / t) before multiplying.
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<FarmEconomicsResponse>> Get(
@@ -31,18 +32,21 @@ public sealed class EconomicsController : ControllerBase
         var snapshots = await _economics.CalculateForFarmAsync(farmId, cancellationToken);
 
         var items = snapshots.Select(s => new FarmEconomicItemDto(
+            s.CropZoneId,
             s.CropId,
             s.ExpectedYield,
             s.YieldUnit,
             s.RatePerUnit,
+            s.RateUnit,
             s.Currency,
             s.ReferenceGrossValue,
+            s.YieldInRateUnit,
             s.Period,
             s.SourceLabel,
             RateLabel: "historical_reference")).ToList();
 
         return Ok(new FarmEconomicsResponse(
-            Disclaimer: "Government rates are historical_reference (C-006) and must not be treated as live market prices.",
+            Disclaimer: "Government rates are historical_reference (C-006). Expected amount = converted yield × rate. Not live market prices.",
             RatesLabel: "historical_reference",
             Items: items));
     }
@@ -54,12 +58,15 @@ public sealed record FarmEconomicsResponse(
     IReadOnlyList<FarmEconomicItemDto> Items);
 
 public sealed record FarmEconomicItemDto(
+    Guid CropZoneId,
     string CropId,
     decimal ExpectedYield,
     string YieldUnit,
     decimal RatePerUnit,
+    string RateUnit,
     string Currency,
     decimal ReferenceGrossValue,
+    decimal YieldInRateUnit,
     string Period,
     string? SourceLabel,
     string RateLabel);
