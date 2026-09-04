@@ -23,10 +23,9 @@ public sealed class CropCycleService
     {
         await _ownershipGuard.EnsureOwnerAsync(farmId, cancellationToken);
 
-        return await _db.CropCycles
+        var rows = await _db.CropCycles
             .AsNoTracking()
             .Where(c => c.CropZone.FarmId == farmId && !c.CropZone.IsDeleted)
-            .OrderByDescending(c => c.UpdatedAt)
             .Select(c => new CropCycleDto(
                 c.Id,
                 c.CropZoneId,
@@ -43,6 +42,8 @@ public sealed class CropCycleService
                 c.CreatedAt,
                 c.UpdatedAt))
             .ToListAsync(cancellationToken);
+
+        return rows.OrderByDescending(c => c.UpdatedAt).ToList();
     }
 
     public async Task<CropCycleDto> RecordActualsAsync(

@@ -16,6 +16,7 @@ public static class DemoDataSeeder
     {
         await SeedAdminAsync(db, cancellationToken);
         await SeedDemoFarmerAsync(db, cancellationToken);
+        await SeedDemoFarmAsync(db, cancellationToken);
         await SeedGovernmentRatesAsync(db, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -61,6 +62,52 @@ public static class DemoDataSeeder
             Phone = DemoFarmerPhone,
             Name = "Demo Farmer",
             Language = "en",
+            CreatedAt = now,
+            UpdatedAt = now
+        });
+    }
+
+    private static async Task SeedDemoFarmAsync(HappyVeggieDbContext db, CancellationToken cancellationToken)
+    {
+        var farmerId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0002");
+        var farmId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0003");
+        var exists = await db.Farms.AnyAsync(f => f.Id == farmId || f.FarmerId == farmerId, cancellationToken);
+        if (exists)
+        {
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        db.Farms.Add(new Farm
+        {
+            Id = farmId,
+            FarmerId = farmerId,
+            Name = "Green Valley Farm",
+            Lat = 33.6844m,
+            Lng = 73.0479m,
+            RegionCode = "ISB",
+            RegionLabel = "Islamabad",
+            AreaAcres = 5m,
+            AreaInputValue = 5m,
+            AreaInputUnit = "acres",
+            SoilType = "loam",
+            WaterAccess = true,
+            WaterSource = "tube_well",
+            PreferredCropFreeText = "tomato",
+            IsNewFarmSetup = false,
+            CreatedAt = now,
+            UpdatedAt = now
+        });
+
+        db.ProductionAreas.Add(new ProductionArea
+        {
+            Id = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0004"),
+            FarmId = farmId,
+            TypeCode = "open_field",
+            Name = "Open Field",
+            AreaInputValue = 5m,
+            AreaInputUnit = "acres",
+            AreaCanonicalValue = 5m,
             CreatedAt = now,
             UpdatedAt = now
         });

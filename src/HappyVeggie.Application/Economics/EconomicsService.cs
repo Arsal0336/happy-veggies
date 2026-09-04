@@ -24,11 +24,12 @@ public sealed class EconomicsService
         if (zone?.CropId is null || zone.ExpectedYieldValue is null)
             return null;
 
-        var rate = await _db.GovernmentCropRates
+        var rates = await _db.GovernmentCropRates
             .AsNoTracking()
             .Where(r => r.CropId == zone.CropId && r.IsActive)
-            .OrderByDescending(r => r.CreatedAt)
-            .FirstOrDefaultAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
+
+        var rate = rates.OrderByDescending(r => r.CreatedAt).FirstOrDefault();
 
         if (rate is null)
             return null;

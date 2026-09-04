@@ -52,13 +52,16 @@ public sealed class FarmAssistantService
         var context = await _contextBuilder.BuildAsync(farmId, cancellationToken);
         var contextText = FarmContextBuilder.ToPromptText(context);
 
-        var history = await _db.AssistantMessages.AsNoTracking()
+        var historyRows = await _db.AssistantMessages.AsNoTracking()
             .Where(m => m.ThreadId == thread.Id)
+            .ToListAsync(cancellationToken);
+
+        var history = historyRows
             .OrderByDescending(m => m.CreatedAt)
             .Take(_options.ConversationWindowTurns * 2)
             .OrderBy(m => m.CreatedAt)
             .Select(m => new LlmMessage(m.Role.ToString().ToLowerInvariant(), m.Content))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         var protectedTypes = context.ProductionAreas
             .Select(a => a.TypeCode)

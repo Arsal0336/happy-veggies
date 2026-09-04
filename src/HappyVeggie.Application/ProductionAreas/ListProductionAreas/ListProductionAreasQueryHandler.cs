@@ -21,11 +21,14 @@ public sealed class ListProductionAreasQueryHandler : IRequestHandler<ListProduc
     {
         await _ownershipGuard.EnsureOwnerAsync(request.FarmId, cancellationToken);
 
-        return await _db.ProductionAreas
+        var rows = await _db.ProductionAreas
             .AsNoTracking()
             .Where(a => a.FarmId == request.FarmId && !a.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        return rows
             .OrderBy(a => a.CreatedAt)
             .Select(a => a.ToDto())
-            .ToListAsync(cancellationToken);
+            .ToList();
     }
 }
