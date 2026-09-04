@@ -34,7 +34,8 @@
     "history": "Learning",
     "portfolio": "Portfolio",
     "graphic": "Farm graphic",
-    "alerts": "Alerts"
+    "alerts": "Alerts",
+    "more": "More"
   },
   "lang": {
     "title": "Choose your language",
@@ -53,7 +54,7 @@
     "subtitle": "Sign in with your phone number",
     "otpSentTo": "We sent a code to {{phone}}",
     "changePhone": "Change phone number",
-    "demoHint": "Fixture mode: any 4–8 digit code works.",
+    "demoHint": "Demo OTP: 1234. Sample phone +923001234567.",
     "phoneRequired": "Enter your phone number",
     "codeRequired": "Enter the verification code",
     "otpFailed": "Could not send OTP",
@@ -62,7 +63,11 @@
     "adminLogin": "Admin sign in",
     "adminEmail": "Email",
     "adminPassword": "Password",
-    "adminSubmit": "Sign in"
+    "adminSubmit": "Sign in",
+    "adminDemoHint": "Demo: admin@happyveggie.pk / HappyVeggie!2026. MFA / SSO is TBD (GAP-044).",
+    "adminRequired": "Email and password are required",
+    "adminPasswordShort": "Password must be at least 6 characters",
+    "adminFailed": "Login failed. Check your credentials."
   },
   "farms": {
     "title": "My farms",

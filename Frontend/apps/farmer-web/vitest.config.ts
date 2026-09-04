@@ -4,11 +4,14 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    dedupe: ['react', 'react-dom'],
+    dedupe: ['react', 'react-dom', 'react-router-dom'],
   },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
     css: true,
+  },
+  css: {
+    postcss: './postcss.config.js',
   },
 });

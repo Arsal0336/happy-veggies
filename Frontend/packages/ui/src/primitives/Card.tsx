@@ -8,9 +8,22 @@ export type CardProps = HTMLAttributes<HTMLDivElement> & {
   children?: ReactNode;
 };
 
+const pad: Record<CardPadding, string> = {
+  sm: 'p-3',
+  md: 'p-4',
+  lg: 'p-6',
+};
+
 export function Card({ padding = 'md', className, children, ...rest }: CardProps) {
   return (
-    <div className={cn('hv-card', `hv-card--pad-${padding}`, className)} {...rest}>
+    <div
+      className={cn(
+        'rounded-xl border border-border bg-surface text-foreground shadow-sm',
+        pad[padding],
+        className,
+      )}
+      {...rest}
+    >
       {children}
     </div>
   );

@@ -8,7 +8,7 @@ import { I18nextProvider, createFarmerI18n } from '@hv/i18n';
 import { AuthProvider } from '../features/auth/AuthProvider';
 import { NotificationProvider } from '../shared/notifications/NotificationProvider';
 import { AppRouter } from '../app/AppRouter';
-import { clearAuthSession } from '../shared/api/authStorage';
+import { clearAuthSession, setStoredLanguage } from '../shared/api/authStorage';
 
 function TestProviders({
   children,
@@ -44,6 +44,7 @@ describe('farm-flow: OTP login → farms (fixtures)', () => {
     clearAuthSession();
     localStorage.clear();
     sessionStorage.clear();
+    setStoredLanguage('en');
   });
 
   it('logs in with mock OTP and shows farm list', async () => {

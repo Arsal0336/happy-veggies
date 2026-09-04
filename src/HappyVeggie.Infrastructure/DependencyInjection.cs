@@ -10,19 +10,27 @@ namespace HappyVeggie.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        string contentRootPath)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
-        }
+        var runtime = DatabaseProviderSelector.Resolve(configuration, contentRootPath);
+        services.AddSingleton(runtime);
 
         services.AddDbContext<HappyVeggieDbContext>(options =>
-            options.UseSqlServer(connectionString));
+        {
+            if (runtime.IsSqlite)
+            {
+                options.UseSqlite(runtime.ConnectionString);
+            }
+            else
+            {
+                options.UseSqlServer(runtime.ConnectionString);
+            }
+        });
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<HappyVeggieDbContext>());
 
-        // OTP: mock or live based on config
         var useMockOtp = configuration.GetSection("Otp:UseMock").Value != "false";
         if (useMockOtp)
             services.AddScoped<IOtpProvider, MockOtpProvider>();
@@ -34,10 +42,6 @@ public static class DependencyInjection
         services.AddScoped<IAdminAuditService, AdminAuditService>();
         services.AddScoped<IFeatureFlagService, FeatureFlagService>();
 
-        // Weather / soil adapters:
-        // Default = stubs (safe for CI/dev). Live* implementations throw NotImplementedException (vendor TBD)
-        // and are selected only when Weather:UseLive=true / Soil:UseLive=true.
-        // Runtime enrichment intent is also reflected by feature flags weather.enrichment / soil.enrichment.
         var useLiveWeather = string.Equals(
             configuration["Weather:UseLive"], "true", StringComparison.OrdinalIgnoreCase);
         if (useLiveWeather)
@@ -52,9 +56,6 @@ public static class DependencyInjection
         else
             services.AddScoped<ISoilProvider, StubSoilProvider>();
 
-        // LLM options + provider:
-        // Default = StubLlmProvider. LiveLlmProvider (vendor TBD / GAP-003) only when Llm:UseLive=true.
-        // Runtime intent also reflected by feature flag llm.live (checked inside LiveLlmProvider).
         services.Configure<HappyVeggie.Application.AI.Options.LlmProviderOptions>(
             configuration.GetSection(HappyVeggie.Application.AI.Options.LlmProviderOptions.SectionName));
         services.Configure<HappyVeggie.Application.Common.Options.ProviderOptions>(

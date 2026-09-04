@@ -16,11 +16,14 @@ export function Pagination({ page, pageSize, total, onChange, className }: Pagin
   const to = Math.min(safePage * pageSize, total);
 
   return (
-    <nav className={cn('hv-pagination', className)} aria-label="Pagination">
+    <nav
+      className={cn('flex flex-wrap items-center justify-between gap-3 text-sm text-muted', className)}
+      aria-label="Pagination"
+    >
       <span>
         {from}–{to} of {total}
       </span>
-      <div className="hv-pagination__controls">
+      <div className="flex items-center gap-2">
         <Button
           variant="secondary"
           size="sm"

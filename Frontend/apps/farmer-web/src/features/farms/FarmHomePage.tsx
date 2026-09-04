@@ -1,14 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   AlertList,
+  Badge,
   Button,
   Card,
   ErrorState,
   FarmGraphic,
   FarmGraphicLegend,
   LoadingState,
+  Page,
+  PageHeader,
+  Section,
+  StatCard,
   TwinSummaryPanel,
   type ProductionAreaType,
 } from '@hv/ui';
@@ -65,9 +70,7 @@ export function FarmHomePage() {
 
   if (farmLoading || twinLoading) return <LoadingState label={t('common.loading')} />;
   if (farmError || !farm) {
-    return (
-      <ErrorState title={t('farms.notFound')} onRetry={() => void refetch()} />
-    );
+    return <ErrorState title={t('farms.notFound')} onRetry={() => void refetch()} />;
   }
 
   const weatherStatus = twin?.weather?.providerStatus;
@@ -95,57 +98,62 @@ export function FarmHomePage() {
   };
 
   return (
-    <div className="hv-page">
-      <div className="hv-page__header">
-        <h1 className="hv-page__title">{farm.name ?? t('common.unnamed')}</h1>
-        <div className="hv-row">
-          <Button
-            size="sm"
-            variant="secondary"
-            loading={refreshTwin.isPending}
-            onClick={() => void onRefresh()}
-          >
-            {t('twin.refresh')}
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => navigate(`/farms/${farmId}/edit`)}>
-            {t('common.edit')}
-          </Button>
-        </div>
+    <Page>
+      <PageHeader
+        title={farm.name ?? t('common.unnamed')}
+        actions={
+          <>
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={refreshTwin.isPending}
+              onClick={() => void onRefresh()}
+            >
+              {t('twin.refresh')}
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => navigate(`/farms/${farmId}/edit`)}>
+              {t('common.edit')}
+            </Button>
+          </>
+        }
+      >
+        <p className="m-0 text-sm text-muted">
+          {farm.regionLabel ?? farm.regionCode} · {farm.lat.toFixed(3)}, {farm.lng.toFixed(3)}
+        </p>
+      </PageHeader>
+
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard label={t('twin.weather')} value={weather ?? '—'} hint={weatherStatus} />
+        <StatCard label={t('twin.water')} value={water ?? '—'} />
+        <StatCard
+          label={t('green.title')}
+          value={twin?.greenSummary?.overallScore ?? '—'}
+          hint={soilStatus ? `${t('twin.soil')}: ${soilStatus}` : undefined}
+        />
+        <StatCard
+          label={t('alerts.title')}
+          value={unread}
+          hint={t('alerts.unreadCount', { count: unread })}
+        />
       </div>
 
-      <p className="hv-muted">
-        {farm.regionLabel ?? farm.regionCode} · {farm.lat.toFixed(3)}, {farm.lng.toFixed(3)}
-      </p>
+      <Button variant="primary" onClick={() => navigate(`/farms/${farmId}/plan`)}>
+        {t('plan.generate')}
+      </Button>
 
-      {(weatherStatus || soilStatus) && (
-        <p className="hv-muted hv-hint">
-          {weatherStatus ? `${t('twin.weather')}: ${weatherStatus}` : null}
-          {weatherStatus && soilStatus ? ' · ' : null}
-          {soilStatus
-            ? `${t('twin.soil')}: ${soilStatus}`
-            : twin?.soil?.profileCount != null
-              ? `${t('twin.soil')}: ${twin.soil.profileCount} profiles`
-              : null}
-        </p>
-      )}
+      <TwinSummaryPanel
+        weather={weather}
+        water={water}
+        greenScore={twin?.greenSummary?.overallScore}
+      />
 
       {alerts && alerts.length > 0 && (
-        <section className="hv-section">
-          <div className="hv-row hv-row--between">
-            <h2 className="hv-section-title">
-              {t('alerts.title')}
-              {unread > 0 && (
-                <span
-                  className="hv-alert-badge"
-                  aria-label={t('alerts.unreadCount', { count: unread })}
-                >
-                  {unread}
-                </span>
-              )}
-            </h2>
-            <Link to={`/farms/${farmId}/alerts`} className="hv-link">
+        <Section title={t('alerts.title')}>
+          <div className="flex items-center justify-between">
+            {unread > 0 && <Badge tone="error">{unread}</Badge>}
+            <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}/alerts`)}>
               {t('alerts.viewAll')}
-            </Link>
+            </Button>
           </div>
           <AlertList
             markReadLabel={t('alerts.markRead')}
@@ -165,16 +173,10 @@ export function FarmHomePage() {
               message: a.message,
             }))}
           />
-        </section>
+        </Section>
       )}
 
-      <TwinSummaryPanel
-        weather={weather}
-        water={water}
-        greenScore={twin?.greenSummary?.overallScore}
-      />
-
-      <section className="hv-section">
+      <Section>
         <FarmGraphic
           farmName={farm.name ?? t('common.unnamed')}
           selectedId={selectedZoneId ?? undefined}
@@ -204,39 +206,22 @@ export function FarmHomePage() {
           onSelectZone={(zoneId) => setSelectedZoneId(zoneId)}
         />
         <FarmGraphicLegend />
-      </section>
-
-      <nav className="hv-quick-links">
-        <Link to={`/farms/${farmId}/graphic`}>{t('nav.graphic')}</Link>
-        <Link to={`/farms/${farmId}/areas`}>{t('nav.areas')}</Link>
-        <Link to={`/farms/${farmId}/water`}>{t('nav.water')}</Link>
-        <Link to={`/farms/${farmId}/soil`}>{t('nav.soil')}</Link>
-        <Link to={`/farms/${farmId}/weather`}>{t('nav.weather')}</Link>
-        <Link to={`/farms/${farmId}/economics`}>{t('nav.economics')}</Link>
-        <Link to={`/farms/${farmId}/plan`}>{t('nav.plan')}</Link>
-        <Link to={`/farms/${farmId}/alerts`}>{t('nav.alerts')}</Link>
-        <Link to={`/farms/${farmId}/assistant`}>{t('nav.assistant')}</Link>
-        <Link to={`/farms/${farmId}/green`}>{t('nav.green')}</Link>
-        <Link to={`/farms/${farmId}/experimental`}>{t('nav.experimental')}</Link>
-        <Link to={`/farms/${farmId}/history`}>{t('nav.history')}</Link>
-        <Link to={`/farms/${farmId}/portfolio`}>{t('nav.portfolio')}</Link>
-      </nav>
+      </Section>
 
       {suggestions?.suggestions?.length ? (
-        <section className="hv-section">
-          <h2 className="hv-section-title">{t('suggestions.title')}</h2>
-          <ul className="hv-stack">
+        <Section title={t('suggestions.title')}>
+          <ul className="m-0 flex list-none flex-col gap-3 p-0">
             {suggestions.suggestions.map((s) => (
               <li key={s.cropId}>
                 <Card padding="sm">
                   <strong>{s.cropName ?? s.cropId}</strong>
-                  <p className="hv-muted">{s.reason}</p>
-                  <span className="hv-badge-inline">{s.source}</span>
+                  <p className="m-0 text-sm text-muted">{s.reason}</p>
+                  <Badge tone="default">{s.source}</Badge>
                 </Card>
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
       ) : null}
 
       <ZoneDrawer
@@ -246,6 +231,6 @@ export function FarmHomePage() {
         neighbourLabels={neighbourLabels}
         onClose={() => setSelectedZoneId(null)}
       />
-    </div>
+    </Page>
   );
 }

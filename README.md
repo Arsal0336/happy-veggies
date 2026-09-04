@@ -172,7 +172,7 @@ Providers are **interfaces only**. Composition root selects stub vs live. Secret
 
 ## Quick start
 
-**Prerequisites:** .NET 10 SDK, Node 20+, pnpm 9+, SQL Server (or LocalDB) as configured in appsettings.
+**Prerequisites:** .NET 10 SDK, Node 20+, pnpm 9+ (or Corepack). SQL Server is optional — if it is unreachable, the API uses a local **SQLite** file under `src/HappyVeggie.Api/App_Data/`.
 
 ### Run everything (Windows)
 
@@ -183,10 +183,20 @@ Providers are **interfaces only**. Composition root selects stub vs live. Secret
 | Service | URL |
 |---|---|
 | API | http://localhost:5262 |
+| Swagger | http://localhost:5262/swagger |
 | Farmer web | http://localhost:5173 |
 | Admin web | http://localhost:5174 |
 
+**Demo logins**
+
+| Role | Credentials |
+|---|---|
+| Farmer | Phone `+923001234567`, OTP `1234` (`Otp:UseMock=true`) |
+| Admin | `admin@happyveggie.pk` / `HappyVeggie!2026` |
+
 Logs: `scripts/.runtime/`
+
+Remote SQL Server belongs in gitignored `src/HappyVeggie.Api/appsettings.Local.json`. Set `Database:Provider` to `Auto` (default), `SqlServer`, or `Sqlite`.
 
 ### Stop everything
 
@@ -209,7 +219,7 @@ pnpm dev:farmer   # :5173
 pnpm dev:admin    # :5174
 ```
 
-Demo OTP is mocked for the hackathon (`OTP_MODE=mock`, e.g. code `1234`) so judges can complete the farmer journey without an SMS vendor. The API contract is identical for live OTP.
+Demo OTP is mocked (`Otp:UseMock`, code **1234**) so judges can complete the farmer journey without SMS. The API contract is identical for live OTP.
 
 ---
 
@@ -232,12 +242,12 @@ happy-veggies/
 ## Demo narrative (judges)
 
 1. Open **Farmer web** → choose **اردو** or **English**.  
-2. Sign in with a Pakistani mobile number and demo OTP.  
+2. Sign in with `+923001234567` and demo OTP **1234**.  
 3. Create a farm: GPS, area, crop, soil/water (new-farmer path if needed).  
 4. Generate a **custom crop plan** — calendar, inputs, advisory yield.  
 5. Open the **Digital Twin**: production areas, weather/soil context, green score.  
 6. Ask the **AI Farm Assistant** a farm-specific question.  
-7. (Optional) **Admin web** — catalogs, flags, operations.
+7. (Optional) **Admin web** — `admin@happyveggie.pk` / `HappyVeggie!2026` — catalogs, flags, operations. Explore APIs at `/swagger`.
 
 Time-to-plan target: **under ~60 seconds** from complete inputs.
 

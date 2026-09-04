@@ -34,7 +34,8 @@
     "history": "سیکھنا",
     "portfolio": "پورٹ فولیو",
     "graphic": "فارم گرافک",
-    "alerts": "الرٹس"
+    "alerts": "الرٹس",
+    "more": "مزید"
   },
   "lang": {
     "title": "اپنی زبان منتخب کریں",
@@ -53,7 +54,7 @@
     "subtitle": "اپنے فون نمبر سے سائن ان کریں",
     "otpSentTo": "ہم نے {{phone}} پر کوڈ بھیجا",
     "changePhone": "فون نمبر تبدیل کریں",
-    "demoHint": "فکسچر موڈ: کوئی بھی 4–8 ہندسوں کا کوڈ کام کرتا ہے۔",
+    "demoHint": "ڈیمو او ٹی پی: 1234۔ نمونہ فون +923001234567۔",
     "phoneRequired": "اپنا فون نمبر درج کریں",
     "codeRequired": "تصدیقی کوڈ درج کریں",
     "otpFailed": "او ٹی پی نہیں بھیجا جا سکا",
@@ -62,7 +63,11 @@
     "adminLogin": "ایڈمن سائن ان",
     "adminEmail": "ای میل",
     "adminPassword": "پاس ورڈ",
-    "adminSubmit": "سائن ان"
+    "adminSubmit": "سائن ان",
+    "adminDemoHint": "ڈیمو: admin@happyveggie.pk / HappyVeggie!2026۔ MFA / SSO ابھی TBD (GAP-044) ہے۔",
+    "adminRequired": "ای میل اور پاس ورڈ درکار ہیں",
+    "adminPasswordShort": "پاس ورڈ کم از کم 6 حروف کا ہو",
+    "adminFailed": "سائن ان ناکام۔ اسناد چیک کریں۔"
   },
   "farms": {
     "title": "میرے فارم",

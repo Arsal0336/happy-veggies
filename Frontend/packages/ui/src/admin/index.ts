@@ -1,5 +1,5 @@
 export { AdminShell } from './AdminShell';
-export type { AdminShellProps, AdminNavItem } from './AdminShell';
+export type { AdminShellProps, AdminNavItem, AdminNavGroup } from './AdminShell';
 
 export { FarmersTable } from './FarmersTable';
 export type { FarmersTableProps, FarmerRow } from './FarmersTable';

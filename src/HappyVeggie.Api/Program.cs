@@ -4,24 +4,34 @@ using HappyVeggie.Api.Options;
 using HappyVeggie.Api.RateLimiting;
 using HappyVeggie.Application;
 using HappyVeggie.Infrastructure;
+using HappyVeggie.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
-// GAP-071: default host structured logging (category + scopes); console provider only.
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Title = "Happy Veggie API";
+        document.Info.Description =
+            "Demo farmer: +923001234567 OTP 1234. Demo admin: admin@happyveggie.pk / HappyVeggie!2026. Use HTTP Bearer JWT from those logins.";
+        return Task.CompletedTask;
+    });
+});
 builder.Services.AddControllers();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<HappyVeggie.Application.Common.Interfaces.ICurrentFarmerService, HappyVeggie.Api.Services.CurrentFarmerService>();
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration, builder.Environment.ContentRootPath);
 builder.Services.AddHappyVeggieRateLimiting(builder.Configuration);
 
 var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
@@ -58,12 +68,21 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+await DatabaseInitializer.InitializeAsync(app.Services);
+
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-if (app.Environment.IsDevelopment())
+var swaggerEnabled = app.Environment.IsDevelopment()
+    || string.Equals(app.Configuration["Swagger:Enabled"], "true", StringComparison.OrdinalIgnoreCase);
+if (swaggerEnabled)
 {
     app.MapOpenApi();
+    app.MapScalarApiReference("/swagger", options =>
+    {
+        options.Title = "Happy Veggie API";
+        options.WithDocumentDownloadType(DocumentDownloadType.Json);
+    });
 }
 
 app.UseCors();

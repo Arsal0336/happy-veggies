@@ -18,9 +18,6 @@ public sealed class TwinSnapshotConfiguration : IEntityTypeConfiguration<TwinSna
         builder.Property(x => x.TwinJson)
             .IsRequired();
 
-        builder.Property(x => x.TwinJson)
-            .HasColumnType("nvarchar(max)");
-
         builder.Property(x => x.RefreshedAt)
             .IsRequired();
 

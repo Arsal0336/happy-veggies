@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthGate } from './AuthGate';
+import { LanguageGate } from './LanguageGate';
 import { AppLayout } from './AppLayout';
 import { LanguagePage } from '../features/auth/LanguagePage';
 import { PhonePage } from '../features/auth/PhonePage';
@@ -29,9 +30,30 @@ export function AppRouter() {
   return (
     <Routes>
       <Route path="/lang" element={<LanguagePage />} />
-      <Route path="/auth/phone" element={<PhonePage />} />
-      <Route path="/auth/otp" element={<OtpPage />} />
-      <Route path="/auth/profile" element={<ProfilePage />} />
+      <Route
+        path="/auth/phone"
+        element={
+          <LanguageGate>
+            <PhonePage />
+          </LanguageGate>
+        }
+      />
+      <Route
+        path="/auth/otp"
+        element={
+          <LanguageGate>
+            <OtpPage />
+          </LanguageGate>
+        }
+      />
+      <Route
+        path="/auth/profile"
+        element={
+          <LanguageGate>
+            <ProfilePage />
+          </LanguageGate>
+        }
+      />
 
       <Route
         element={

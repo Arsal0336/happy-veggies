@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    host: true,
     proxy: {
       '/api': {
         target: 'http://localhost:5262',
@@ -13,9 +14,9 @@ export default defineConfig({
     },
   },
   resolve: {
-    dedupe: ['react', 'react-dom'],
+    dedupe: ['react', 'react-dom', 'react-router-dom'],
   },
   optimizeDeps: {
-    include: ['@hv/ui', '@hv/api-types', '@hv/i18n'],
+    include: ['@hv/ui', '@hv/api-types', '@hv/i18n', 'lucide-react'],
   },
 });

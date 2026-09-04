@@ -57,7 +57,9 @@ function fixturesOn(): boolean {
 /** Fixture login: fixed credentials OR any email + password length >= 6. */
 export function validateFixtureLogin(email: string, password: string): boolean {
   const trimmed = email.trim().toLowerCase();
-  if (trimmed === 'admin@happyveggie.pk' && password === 'admin123') return true;
+  if (trimmed === 'admin@happyveggie.pk' && (password === 'admin123' || password === 'HappyVeggie!2026')) {
+    return true;
+  }
   return trimmed.includes('@') && password.length >= 6;
 }
 

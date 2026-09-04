@@ -19,7 +19,7 @@ describe('farmer-web app shell', () => {
       </AppProviders>,
     );
 
-    expect(await screen.findByText(/Happy Veggie|ہیپی ویجی/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Happy Veggie|ہیپی ویجی/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /english|انگریزی/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /urdu|اردو/i })).toBeInTheDocument();
   });

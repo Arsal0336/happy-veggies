@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AssistantChat, Button, ErrorState, LoadingState } from '@hv/ui';
+import { AssistantChat, Button, ErrorState, LoadingState, Page, PageHeader } from '@hv/ui';
 import { usePostAssistantMessage, useThread } from '../../shared/api/hooks';
 import { useNotifications } from '../../shared/notifications/NotificationProvider';
 
@@ -41,13 +41,15 @@ export function AssistantPage() {
     t('assistant.disclaimer', { defaultValue: FALLBACK_DISCLAIMER });
 
   return (
-    <div className="hv-page">
-      <div className="hv-page__header">
-        <h1 className="hv-page__title">{t('assistant.title')}</h1>
-        <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}`)}>
-          {t('common.back')}
-        </Button>
-      </div>
+    <Page>
+      <PageHeader
+        title={t('assistant.title')}
+        actions={
+          <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}`)}>
+            {t('common.back')}
+          </Button>
+        }
+      />
       <AssistantChat
         messages={messages}
         loading={postMessage.isPending}
@@ -66,6 +68,6 @@ export function AssistantPage() {
         }}
       />
       <p className="hv-muted hv-hint hv-section">{lastDisclaimer}</p>
-    </div>
+    </Page>
   );
 }

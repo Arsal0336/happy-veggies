@@ -106,6 +106,7 @@ export function AssistantChat({
 
       <form className="hv-assistant__form" onSubmit={submit}>
         <Input
+          className="flex-1"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder={placeholder}

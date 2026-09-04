@@ -18,10 +18,16 @@ export function ErrorState({
   className,
 }: ErrorStateProps) {
   return (
-    <div className={cn('hv-state', className)} role="alert">
-      <h3 className="hv-state__title">{title}</h3>
-      {message && <p className="hv-state__body">{message}</p>}
-      <div className="hv-state__actions">
+    <div
+      className={cn(
+        'flex flex-col items-center gap-2 rounded-xl border border-error/20 bg-[var(--hv-color-error-bg)] px-6 py-8 text-center',
+        className,
+      )}
+      role="alert"
+    >
+      <h3 className="text-lg font-semibold text-error">{title}</h3>
+      {message && <p className="max-w-sm text-sm text-muted">{message}</p>}
+      <div className="mt-2 flex gap-2">
         {onRetry && (
           <Button variant="secondary" onClick={onRetry}>
             Retry

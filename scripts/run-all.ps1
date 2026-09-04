@@ -62,10 +62,40 @@ foreach ($svc in $script:Services) {
 $started | ConvertTo-Json | Set-Content -Encoding utf8 $script:PidFile
 
 Write-Host ""
+Write-Host "Waiting for API health..."
+$healthy = $false
+$deadline = (Get-Date).AddSeconds(90)
+while ((Get-Date) -lt $deadline) {
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:5262/api/v1/system/health" -UseBasicParsing -TimeoutSec 3
+        if ($response.StatusCode -eq 200) {
+            $healthy = $true
+            break
+        }
+    }
+    catch {
+        Start-Sleep -Seconds 2
+        continue
+    }
+    Start-Sleep -Seconds 2
+}
+
+if (-not $healthy) {
+    Write-Host "API did not become healthy within 90s. Check $script:RuntimeDir\api.out.log"
+}
+else {
+    Write-Host "API is healthy (SQLite or SQL Server is ready)."
+}
+
+Write-Host ""
 Write-Host "Happy Veggie is starting:"
 Write-Host "  API        http://localhost:5262"
+Write-Host "  Swagger    http://localhost:5262/swagger"
 Write-Host "  Farmer web http://localhost:5173"
 Write-Host "  Admin web  http://localhost:5174"
+Write-Host ""
+Write-Host "Demo farmer: +923001234567  OTP 1234"
+Write-Host "Demo admin:  admin@happyveggie.pk / HappyVeggie!2026"
 Write-Host ""
 Write-Host "Logs: $script:RuntimeDir"
 Write-Host "Stop with: .\scripts\stop-all.ps1"
