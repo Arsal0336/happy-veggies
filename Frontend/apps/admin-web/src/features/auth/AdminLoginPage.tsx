@@ -41,7 +41,7 @@ export function AdminLoginPage() {
   return (
     <AuthLayout
       title={t('auth.adminLogin', 'Admin sign in')}
-      lead="Happy Veggie admin portal"
+      lead="Manage farmers, rates, and AI visibility for Happy Veggie."
       hint={t('auth.adminDemoHint', `Demo: ${DEMO_EMAIL} / ${DEMO_PASSWORD}. MFA / SSO is TBD (GAP-044).`)}
     >
       <form className="hv-stack" onSubmit={onSubmit}>

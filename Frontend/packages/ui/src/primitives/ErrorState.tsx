@@ -20,7 +20,7 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center gap-2 rounded-xl border border-error/20 bg-[var(--hv-color-error-bg)] px-6 py-8 text-center',
+        'flex flex-col items-center gap-2 rounded-xl border border-error bg-[var(--hv-color-error-bg)] px-6 py-8 text-center',
         className,
       )}
       role="alert"

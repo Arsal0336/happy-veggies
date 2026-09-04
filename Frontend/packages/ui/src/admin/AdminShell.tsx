@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
+import { Leaf, LogOut } from 'lucide-react';
 import { Button } from '../primitives/Button';
 import { Avatar } from '../layouts/Avatar';
 import { cn } from '../utils/cn';
@@ -31,8 +32,10 @@ export type AdminShellProps = {
 
 function navLinkClass(active: boolean) {
   return cn(
-    'block w-full rounded-md px-3 py-2 text-start text-sm no-underline',
-    active ? 'bg-white/15 font-semibold text-white' : 'text-primary-50 hover:bg-white/10',
+    'block w-full rounded-lg px-3 py-2 text-start text-sm no-underline transition-colors',
+    active
+      ? 'bg-white/15 font-semibold text-white shadow-sm'
+      : 'text-primary-100 hover:bg-white/10 hover:text-white',
   );
 }
 
@@ -52,14 +55,34 @@ export function AdminShell({
       : [{ id: 'main', label: '', items: navItems ?? [] }];
 
   return (
-    <div className={cn('grid min-h-screen bg-background lg:grid-cols-[16rem_1fr]', className)}>
-      <nav className="flex flex-col gap-4 bg-primary-800 px-3 py-6 text-primary-foreground" aria-label="Admin">
-        <p className="m-0 px-3 text-lg font-bold">{brand}</p>
-        <div className="flex flex-1 flex-col gap-5">
+    <div className={cn('grid min-h-screen lg:grid-cols-[15.5rem_1fr]', className)}>
+      <nav
+        className="relative flex flex-col gap-5 overflow-hidden bg-primary-900 px-3 py-6 text-primary-foreground"
+        aria-label="Admin"
+      >
+        <div
+          className="pointer-events-none absolute inset-0 opacity-40"
+          style={{
+            background:
+              'radial-gradient(ellipse at top left, rgb(61 158 88 / 0.35), transparent 55%)',
+          }}
+        />
+        <div className="relative flex items-center gap-2.5 px-3">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/15">
+            <Leaf className="h-4 w-4" aria-hidden />
+          </span>
+          <div>
+            <p className="m-0 font-display text-base font-bold leading-tight">Happy Veggie</p>
+            <p className="m-0 text-[0.65rem] font-medium uppercase tracking-wider text-primary-200">
+              Admin
+            </p>
+          </div>
+        </div>
+        <div className="relative flex flex-1 flex-col gap-5 overflow-y-auto">
           {groups.map((group) => (
             <div key={group.id}>
               {group.label ? (
-                <p className="mb-1 px-3 text-[0.65rem] font-semibold uppercase tracking-wider text-primary-200">
+                <p className="mb-1.5 px-3 text-[0.65rem] font-semibold uppercase tracking-wider text-primary-300">
                   {group.label}
                 </p>
               ) : null}
@@ -96,26 +119,27 @@ export function AdminShell({
             variant="ghost"
             size="sm"
             onClick={onLogout}
-            className="justify-start text-primary-50 hover:bg-white/10 hover:text-white"
+            className="relative justify-start gap-2 text-primary-100 hover:bg-white/10 hover:text-white"
           >
+            <LogOut className="h-4 w-4" aria-hidden />
             Log out
           </Button>
         )}
       </nav>
       <div className="flex min-w-0 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-border bg-surface px-6 py-4">
+        <header className="flex items-center justify-between gap-3 border-b border-border bg-surface px-6 py-4 backdrop-blur-md">
           <div>
-            <p className="m-0 text-xs text-muted">{brand}</p>
-            <h1 className="m-0 text-2xl font-semibold">{title}</h1>
+            <p className="m-0 text-xs font-medium uppercase tracking-wider text-muted">{brand}</p>
+            <h1 className="m-0 font-display text-2xl font-bold tracking-tight">{title}</h1>
           </div>
           {userLabel ? (
-            <div className="flex items-center gap-2 text-sm text-muted">
+            <div className="flex items-center gap-2.5 rounded-full border border-border bg-surface px-2 py-1.5 pe-3 shadow-sm">
               <Avatar name={userLabel} />
-              <span className="hidden sm:inline">{userLabel}</span>
+              <span className="hidden text-sm font-medium text-muted sm:inline">{userLabel}</span>
             </div>
           ) : null}
         </header>
-        <main className="flex-1 px-6 py-5">{children}</main>
+        <main className="hv-rise flex-1 px-6 py-6">{children}</main>
       </div>
     </div>
   );

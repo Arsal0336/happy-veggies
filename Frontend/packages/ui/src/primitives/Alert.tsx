@@ -4,10 +4,10 @@ import { cn } from '../utils/cn';
 export type AlertVariant = 'info' | 'success' | 'warning' | 'error';
 
 const variants: Record<AlertVariant, string> = {
-  info: 'border-info/30 bg-[var(--hv-color-info-bg)] text-info',
-  success: 'border-success/30 bg-[var(--hv-color-success-bg)] text-success',
-  warning: 'border-warning/30 bg-[var(--hv-color-warning-bg)] text-warning',
-  error: 'border-error/30 bg-[var(--hv-color-error-bg)] text-error',
+  info: 'border-info bg-[var(--hv-color-info-bg)] text-info',
+  success: 'border-success bg-[var(--hv-color-success-bg)] text-success',
+  warning: 'border-warning bg-[var(--hv-color-warning-bg)] text-warning',
+  error: 'border-error bg-[var(--hv-color-error-bg)] text-error',
 };
 
 export type AlertProps = HTMLAttributes<HTMLDivElement> & {

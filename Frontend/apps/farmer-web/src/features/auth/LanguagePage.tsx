@@ -18,7 +18,7 @@ export function LanguagePage() {
   };
 
   return (
-    <AuthLayout title={t('common.appName')} lead={t('lang.title')} hint={t('lang.subtitle')}>
+    <AuthLayout title={t('lang.title')} lead={t('lang.subtitle')}>
       <div className="hv-stack">
         <Button variant="primary" onClick={() => void choose('en')}>
           {t('lang.english')}

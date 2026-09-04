@@ -1,5 +1,5 @@
+import { LoaderCircle } from 'lucide-react';
 import { cn } from '../utils/cn';
-import { Skeleton } from './Skeleton';
 
 export type LoadingStateProps = {
   label?: string;
@@ -9,13 +9,15 @@ export type LoadingStateProps = {
 export function LoadingState({ label = 'Loading…', className }: LoadingStateProps) {
   return (
     <div
-      className={cn('flex flex-col items-center gap-3 py-10 text-sm text-muted', className)}
+      className={cn('flex flex-col items-center gap-3 py-14 text-sm text-muted', className)}
       role="status"
       aria-live="polite"
       aria-busy="true"
     >
-      <Skeleton width="3rem" height="3rem" className="rounded-full" />
-      <p>{label}</p>
+      <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary-100 text-primary-700">
+        <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
+      </span>
+      <p className="m-0 font-medium">{label}</p>
     </div>
   );
 }

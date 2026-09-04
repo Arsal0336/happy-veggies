@@ -9,7 +9,7 @@ export type CardProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 const pad: Record<CardPadding, string> = {
-  sm: 'p-3',
+  sm: 'p-3.5',
   md: 'p-4',
   lg: 'p-6',
 };
@@ -18,7 +18,7 @@ export function Card({ padding = 'md', className, children, ...rest }: CardProps
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-surface text-foreground shadow-sm',
+        'rounded-2xl border border-border bg-surface text-foreground shadow-sm',
         pad[padding],
         className,
       )}

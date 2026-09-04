@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQueries } from '@tanstack/react-query';
+import { MapPin, Plus } from 'lucide-react';
 import { Badge, Button, EmptyState, EntityCard, ErrorState, LoadingState, Page, PageHeader } from '@hv/ui';
 import { useFarms } from '../../shared/api/hooks';
 import { alertService } from '../../shared/api/services/alertService';
@@ -41,10 +42,15 @@ export function FarmListPage() {
         title={t('farms.title')}
         actions={
           <Button variant="primary" size="sm" onClick={() => navigate('/farms/new')}>
+            <Plus className="h-4 w-4" aria-hidden />
             {t('farms.add')}
           </Button>
         }
-      />
+      >
+        <p className="m-0 text-sm text-muted">
+          Open a farm for twin insights, plans, and alerts.
+        </p>
+      </PageHeader>
 
       {!farms?.length ? (
         <EmptyState
@@ -69,20 +75,27 @@ export function FarmListPage() {
                       ? `${farm.regionLabel ?? farm.regionCode} — ${farm.area.value} ${farm.area.unit}`
                       : (farm.regionLabel ?? farm.regionCode)
                   }
-                  meta={`${farm.lat.toFixed(3)}, ${farm.lng.toFixed(3)}`}
+                  meta={
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3 w-3" aria-hidden />
+                      {farm.lat.toFixed(3)}, {farm.lng.toFixed(3)}
+                    </span>
+                  }
                   trailing={
                     unread > 0 ? (
                       <Badge tone="error" aria-label={t('alerts.unreadCount', { count: unread })}>
                         {unread}
                       </Badge>
-                    ) : null
+                    ) : (
+                      <Badge tone="success">Live</Badge>
+                    )
                   }
                   onClick={() => navigate(`/farms/${farm.id}`)}
                 >
-                  <div className="flex gap-3">
+                  <div className="flex gap-4">
                     <Link
                       to={`/farms/${farm.id}`}
-                      className="text-sm text-primary-600"
+                      className="text-sm font-semibold text-primary-700 no-underline hover:underline"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {t('farms.open')}
@@ -90,7 +103,7 @@ export function FarmListPage() {
                     {unread > 0 && (
                       <Link
                         to={`/farms/${farm.id}/alerts`}
-                        className="text-sm text-primary-600"
+                        className="text-sm font-semibold text-error no-underline hover:underline"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {t('alerts.title')}

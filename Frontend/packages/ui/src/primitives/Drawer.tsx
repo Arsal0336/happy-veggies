@@ -34,21 +34,25 @@ export function Drawer({
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-neutral-900/40" role="presentation" onClick={onClose} />
+      <div
+        className="fixed inset-0 z-40 bg-neutral-900/45 backdrop-blur-[2px]"
+        role="presentation"
+        onClick={onClose}
+      />
       <aside
         className={cn(
-          'fixed inset-y-0 z-50 flex w-[min(22rem,92vw)] flex-col bg-surface shadow-lg',
+          'fixed inset-y-0 z-50 flex w-[min(22rem,92vw)] flex-col border-border bg-surface shadow-lg',
           side === 'start'
-            ? 'left-0 rtl:left-auto rtl:right-0'
-            : 'right-0 rtl:right-auto rtl:left-0',
+            ? 'left-0 border-e rtl:left-auto rtl:right-0'
+            : 'right-0 border-s rtl:right-auto rtl:left-0',
           className,
         )}
         role="dialog"
         aria-modal="true"
         aria-labelledby="hv-drawer-title"
       >
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 id="hv-drawer-title" className="text-lg font-semibold">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
+          <h2 id="hv-drawer-title" className="font-display text-lg font-semibold tracking-tight">
             {title}
           </h2>
           <button
