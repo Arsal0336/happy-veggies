@@ -829,11 +829,33 @@ export interface ExperimentalOutcomeRequest {
   predictedYieldUnit?: string | null;
 }
 
-/** Portfolio optimizer — BLOCKED GAP-054 */
-export interface PortfolioBlockedResponse {
-  status: 'blocked' | string;
-  reason: string;
+/** Portfolio optimizer — PyPortfolioOpt (GAP-054) */
+export interface PortfolioAllocation {
+  cropId: string;
+  cropName: string;
+  areaType?: string | null;
+  weight: number;
+  allocatedAcres: number;
+  suitability: number;
+  waterFit: number;
+  greenFactor: number;
 }
+
+export interface PortfolioResponse {
+  status: 'ok' | 'degraded' | 'empty' | 'blocked' | string;
+  reason?: string | null;
+  engine: string;
+  method: string;
+  farmId: string;
+  totalAreaAcres: number;
+  disclaimer: string;
+  allocations: PortfolioAllocation[];
+  expectedPortfolioReturn?: number | null;
+  portfolioVolatility?: number | null;
+}
+
+/** @deprecated use PortfolioResponse */
+export type PortfolioBlockedResponse = PortfolioResponse;
 
 /* ── Admin ────────────────────────────────────────────────── */
 

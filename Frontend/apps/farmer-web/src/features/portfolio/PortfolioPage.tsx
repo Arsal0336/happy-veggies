@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Button, EmptyState, ErrorState, LoadingState } from '@hv/ui';
 import { usePortfolio } from '../../shared/api/hooks';
 
-/** GAP-054 — portfolio optimizer blocked until TBD-11 algorithm decision. */
 export function PortfolioPage() {
   const { farmId = '' } = useParams();
   const { t } = useTranslation();
@@ -21,6 +20,9 @@ export function PortfolioPage() {
     );
   }
 
+  const allocations = data?.allocations ?? [];
+  const isOk = data?.status === 'ok' && allocations.length > 0;
+
   return (
     <div className="hv-page">
       <div className="hv-page__header">
@@ -29,10 +31,33 @@ export function PortfolioPage() {
           {t('common.back')}
         </Button>
       </div>
-      <EmptyState
-        title={t('portfolio.blocked')}
-        description={data?.reason ?? t('portfolio.reason')}
-      />
+
+      {!isOk && (
+        <EmptyState
+          title={t('portfolio.blocked')}
+          description={data?.reason ?? t('portfolio.reason')}
+        />
+      )}
+
+      {isOk && (
+        <>
+          <p className="hv-muted">
+            {t('portfolio.method')}: {data.method} · {data.engine} · {data.totalAreaAcres} acres
+          </p>
+          <ul className="hv-list">
+            {allocations.map((row) => (
+              <li key={row.cropId} className="hv-list__item">
+                <strong>{row.cropName}</strong>
+                <span>
+                  {(row.weight * 100).toFixed(1)}% · {row.allocatedAcres} acres
+                </span>
+                {row.areaType ? <span className="hv-muted">{row.areaType}</span> : null}
+              </li>
+            ))}
+          </ul>
+          <p className="hv-disclaimer">{data.disclaimer}</p>
+        </>
+      )}
     </div>
   );
 }

@@ -34,10 +34,28 @@ public static class DependencyInjection
         services.AddScoped<IAdminAuditService, AdminAuditService>();
         services.AddScoped<IFeatureFlagService, FeatureFlagService>();
 
-        // Weather / soil adapters:
-        // Default = stubs (safe for CI/dev). Live* implementations throw NotImplementedException (vendor TBD)
-        // and are selected only when Weather:UseLive=true / Soil:UseLive=true.
-        // Runtime enrichment intent is also reflected by feature flags weather.enrichment / soil.enrichment.
+        // Weather / soil adapters (TBD-04 Open-Meteo, TBD-05 ISRIC SoilGrids).
+        // Default = stubs (CI-safe). Live selected when Weather:UseLive / Soil:UseLive = true.
+        services.AddHttpClient(LiveWeatherProvider.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri(
+                configuration["Weather:BaseUrl"] ?? "https://api.open-meteo.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddHttpClient(LiveSoilProvider.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri(
+                configuration["Soil:BaseUrl"] ?? "https://rest.isric.org/");
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+        services.AddHttpClient(Services.PyPortfolioOptClient.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri(
+                configuration["Portfolio:BaseUrl"] ?? "http://127.0.0.1:8091/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<IPortfolioOptimizerClient, Services.PyPortfolioOptClient>();
+
         var useLiveWeather = string.Equals(
             configuration["Weather:UseLive"], "true", StringComparison.OrdinalIgnoreCase);
         if (useLiveWeather)

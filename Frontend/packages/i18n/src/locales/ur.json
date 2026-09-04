@@ -279,8 +279,9 @@
   },
   "portfolio": {
     "title": "پورٹ فولیو",
-    "blocked": "پورٹ فولیو بلاک ہے",
-    "reason": "GAP-054 الگورتھم TBD (GAP-003 TBD-11)"
+    "blocked": "پورٹ فولیو دستیاب نہیں",
+    "reason": "PyPortfolioOpt سائیڈ کار شروع کریں یا Portfolio:UseLive چیک کریں۔",
+    "method": "طریقہ"
   },
   "alerts": {
     "title": "الرٹس",

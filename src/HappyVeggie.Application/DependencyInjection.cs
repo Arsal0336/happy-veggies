@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<GreenScore.GreenFarmScoringService>();
         services.AddScoped<Alerts.AlertEvaluationService>();
         services.AddScoped<CropCycles.CropCycleService>();
+        services.AddScoped<Portfolio.PortfolioService>();
 
         // AI services
         services.AddScoped<AI.Context.FarmContextBuilder>();

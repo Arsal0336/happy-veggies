@@ -26,6 +26,7 @@ public sealed class FarmTwinController : ControllerBase
     private readonly GreenTipService _greenTipService;
     private readonly IApplicationDbContext _db;
     private readonly AlertEvaluationService _alertEvaluation;
+    private readonly Application.Portfolio.PortfolioService _portfolio;
 
     public FarmTwinController(
         ISender sender,
@@ -33,7 +34,8 @@ public sealed class FarmTwinController : ControllerBase
         FarmOwnershipGuard ownershipGuard,
         GreenTipService greenTipService,
         IApplicationDbContext db,
-        AlertEvaluationService alertEvaluation)
+        AlertEvaluationService alertEvaluation,
+        Application.Portfolio.PortfolioService portfolio)
     {
         _sender = sender;
         _greenScore = greenScore;
@@ -41,6 +43,7 @@ public sealed class FarmTwinController : ControllerBase
         _greenTipService = greenTipService;
         _db = db;
         _alertEvaluation = alertEvaluation;
+        _portfolio = portfolio;
     }
 
     [HttpGet("twin")]
@@ -140,16 +143,14 @@ public sealed class FarmTwinController : ControllerBase
     }
 
     /// <summary>
-    /// Portfolio optimizer — BLOCKED (GAP-054 / TBD-11). Algorithm not defined.
+    /// Portfolio optimizer via PyPortfolioOpt sidecar (GAP-054 / TBD-11).
     /// </summary>
     [HttpGet("portfolio")]
-    public IActionResult GetPortfolio(Guid farmId)
+    public async Task<ActionResult<Application.Portfolio.FarmPortfolioDto>> GetPortfolio(
+        Guid farmId,
+        CancellationToken cancellationToken)
     {
-        return Ok(new
-        {
-            status = "blocked",
-            reason = "GAP-054 algorithm TBD (GAP-003 TBD-11)",
-            httpHint = 501
-        });
+        var result = await _portfolio.GetAsync(farmId, cancellationToken);
+        return Ok(result);
     }
 }

@@ -279,8 +279,9 @@
   },
   "portfolio": {
     "title": "Portfolio optimizer",
-    "blocked": "Portfolio optimizer blocked",
-    "reason": "GAP-054 algorithm TBD (GAP-003 TBD-11)"
+    "blocked": "Portfolio unavailable",
+    "reason": "Start the PyPortfolioOpt sidecar (services/portfolio-optimizer) or check Portfolio:UseLive.",
+    "method": "Method"
   },
   "alerts": {
     "title": "Alerts",
