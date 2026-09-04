@@ -1,16 +1,25 @@
+using System.Text.Json;
 using HappyVeggie.Application.Common.Interfaces;
 using HappyVeggie.Application.DigitalTwin.Dtos;
+using HappyVeggie.Application.GreenScore;
 using Microsoft.EntityFrameworkCore;
 
 namespace HappyVeggie.Application.DigitalTwin.Services;
 
 public sealed class DigitalTwinAssembler
 {
-    private readonly IApplicationDbContext _db;
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
-    public DigitalTwinAssembler(IApplicationDbContext db)
+    private readonly IApplicationDbContext _db;
+    private readonly GreenFarmScoringService _greenScore;
+
+    public DigitalTwinAssembler(IApplicationDbContext db, GreenFarmScoringService greenScore)
     {
         _db = db;
+        _greenScore = greenScore;
     }
 
     public async Task<FarmTwinDto> AssembleAsync(Guid farmId, CancellationToken cancellationToken)
@@ -76,15 +85,24 @@ public sealed class DigitalTwinAssembler
             .AsNoTracking()
             .FirstOrDefaultAsync(t => t.FarmId == farmId, cancellationToken);
 
-        var waterSources = await _db.WaterSources
+        var waterRows = await _db.WaterSources
             .AsNoTracking()
             .Where(w => w.FarmId == farmId && !w.IsDeleted)
-            .Select(w => new WaterSourceBriefDto(w.Id, w.Type, w.IrrigationMethod))
             .ToListAsync(cancellationToken);
 
-        var soilCount = await _db.SoilProfiles
+        var waterSources = waterRows
+            .Select(w => new WaterSourceBriefDto(w.Id, w.Type, w.IrrigationMethod))
+            .ToList();
+
+        var primaryWater = waterRows.FirstOrDefault();
+        var reliability = primaryWater?.ReliabilityValue is { } r
+            ? r >= 0.75m ? "reliable" : r >= 0.4m ? "moderate" : "limited"
+            : primaryWater?.SeasonalAvailability;
+
+        var soilProfiles = await _db.SoilProfiles
             .AsNoTracking()
-            .CountAsync(s => s.FarmId == farmId && !s.IsDeleted, cancellationToken);
+            .Where(s => s.FarmId == farmId && !s.IsDeleted)
+            .ToListAsync(cancellationToken);
 
         var planRows = await _db.FarmPlans
             .AsNoTracking()
@@ -102,17 +120,50 @@ public sealed class DigitalTwinAssembler
             farm.AreaAcres, farm.AreaInputValue, farm.AreaInputUnit,
             farm.IsNewFarmSetup);
 
-        // Weather/soil statuses come from TwinSnapshot after RefreshTwin (GAP-020).
-        // Water/soil summaries come from live WaterSources / SoilProfiles rows (GAP-024).
-        var weather = twinSnapshot is not null
-            ? new WeatherSummaryDto(twinSnapshot.WeatherProviderStatus)
-            : null;
+        var twinPayload = ParseTwinJson(twinSnapshot?.TwinJson);
 
-        var water = new WaterSummaryDto(waterSources.Count, waterSources);
-        var soil = new SoilSummaryDto(soilCount);
+        var weather = twinSnapshot is null
+            ? null
+            : new WeatherSummaryDto(
+                twinSnapshot.WeatherProviderStatus,
+                twinPayload?.Weather?.TemperatureC,
+                twinPayload?.Weather?.HumidityPercent,
+                twinPayload?.Weather?.WindSpeedKmh,
+                twinPayload?.Weather?.RainfallMm,
+                twinPayload?.Weather?.Condition,
+                twinPayload?.Weather?.Condition ?? twinSnapshot.WeatherProviderStatus,
+                twinPayload?.Weather?.ObservedAt);
 
-        // GreenSummaryDto is a placeholder until green scoring is wired into the twin DTO (TASK-120).
-        GreenSummaryDto? green = null;
+        var water = new WaterSummaryDto(
+            waterSources.Count,
+            waterSources,
+            reliability,
+            primaryWater?.IrrigationMethod);
+
+        var primarySoil = soilProfiles.FirstOrDefault();
+        var soil = new SoilSummaryDto(
+            soilProfiles.Count,
+            twinSnapshot?.SoilProviderStatus,
+            twinPayload?.Soil?.SoilType ?? primarySoil?.SoilType,
+            twinPayload?.Soil?.Texture ?? primarySoil?.Texture,
+            twinPayload?.Soil?.PhLevel ?? primarySoil?.PhValue,
+            twinPayload?.Soil?.OrganicMatterPercent ?? primarySoil?.OrganicMatterValue);
+
+        var greenResult = await _greenScore.CalculateAsync(farmId, cancellationToken);
+        var green = new GreenSummaryDto(
+            greenResult.Score,
+            greenResult.MaxScore,
+            greenResult.NonCertificationDisclaimer,
+            greenResult.WeightsNote,
+            greenResult.ComputedAt,
+            greenResult.Factors.Select(f => new GreenFactorSummaryDto(
+                f.Key,
+                f.Label,
+                f.Available,
+                f.Points,
+                f.MaxPoints,
+                f.Explanation,
+                f.DataQuality)).ToList());
 
         return new FarmTwinDto(
             farmDto, areas, zones, edges,
@@ -121,5 +172,48 @@ public sealed class DigitalTwinAssembler
             latestPlan,
             LayoutMode: "auto",
             TwinRefreshedAt: twinSnapshot?.RefreshedAt);
+    }
+
+    private static TwinJsonPayload? ParseTwinJson(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<TwinJsonPayload>(json, JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private sealed class TwinJsonPayload
+    {
+        public TwinWeatherPayload? Weather { get; set; }
+        public TwinSoilPayload? Soil { get; set; }
+    }
+
+    private sealed class TwinWeatherPayload
+    {
+        public string? Status { get; set; }
+        public decimal? TemperatureC { get; set; }
+        public decimal? HumidityPercent { get; set; }
+        public decimal? WindSpeedKmh { get; set; }
+        public decimal? RainfallMm { get; set; }
+        public string? Condition { get; set; }
+        public DateTimeOffset? ObservedAt { get; set; }
+    }
+
+    private sealed class TwinSoilPayload
+    {
+        public string? Status { get; set; }
+        public string? SoilType { get; set; }
+        public string? Texture { get; set; }
+        public decimal? PhLevel { get; set; }
+        public decimal? OrganicMatterPercent { get; set; }
     }
 }

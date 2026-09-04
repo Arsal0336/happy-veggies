@@ -9,7 +9,7 @@
 |------|------------------|---------------|-------|
 | Backend entities/CRUD shell | DONE | **PARTIAL → much improved** | Soft-delete HTTP done; providers still stub by default |
 | Twin refresh | DONE | **PARTIAL (stub-wired)** | Calls weather/soil providers; live vendors TBD |
-| Plans / Assistant | DONE | **PARTIAL (grounded + stub LLM)** | Live LLM adapter slot only (vendor BLOCKED) |
+| Plans / Assistant | DONE | **PARTIAL (stub en/ur + DashScope live)** | `LiveLlmProvider` wired to Qwen; needs `Llm:UseLive` + API key |
 | Green score | DONE | **PARTIAL** | Factors + disclaimer; weights TBD-06 |
 | Experimental | DONE | **PARTIAL → loop min** | Approve + outcome → CropCycle |
 | Admin portal | DONE | **PARTIAL → writes live** | Catalog mutations, review, twin, flags, analytics; MFA BLOCKED |

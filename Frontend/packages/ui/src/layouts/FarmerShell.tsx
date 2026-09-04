@@ -83,13 +83,13 @@ export function FarmerShell({
 
   return (
     <div className={cn('flex min-h-screen flex-col', className)}>
-      <header className="sticky top-0 z-20 border-b border-border bg-white/90 backdrop-blur-md">
+      <header className="sticky top-0 z-20 border-b border-border bg-white/90 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-md">
         <div className="mx-auto flex max-w-xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-primary-foreground shadow-sm">
               <Leaf className="h-4 w-4" aria-hidden />
             </span>
-            <div className="min-w-0">
+            <div className="flex min-w-0 flex-col gap-0.5">
               <NavLink
                 to={farmsHref}
                 className="block truncate font-display text-lg font-bold tracking-tight text-primary-800 no-underline"
@@ -114,10 +114,10 @@ export function FarmerShell({
         </div>
       </header>
 
-      <main className="hv-rise mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-5">{children}</main>
+      <main className="hv-rise mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-6">{children}</main>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        className="fixed inset-x-0 bottom-0 z-20 px-3 pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
         aria-label="Main"
       >
         <div className="mx-auto flex max-w-xl overflow-hidden rounded-2xl border border-border bg-white/95 shadow-nav backdrop-blur-md">

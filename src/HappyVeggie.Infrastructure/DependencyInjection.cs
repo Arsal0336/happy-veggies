@@ -63,6 +63,10 @@ public static class DependencyInjection
 
         var useLiveLlm = string.Equals(
             configuration["Llm:UseLive"], "true", StringComparison.OrdinalIgnoreCase);
+        services.AddHttpClient(LiveLlmProvider.HttpClientName, client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
         if (useLiveLlm)
             services.AddScoped<ILlmProvider, LiveLlmProvider>();
         else

@@ -7,7 +7,7 @@ Application/domain code depends on **interfaces only**. Composition root selects
 
 | Interface | Stub | Live slot | Flag / config |
 |-----------|------|-----------|---------------|
-| `ILlmProvider` | `StubLlmProvider` | `LiveLlmProvider` (NotImplemented until GAP-003 / TBD-02) | `Llm:UseLive` + flag `llm.live` |
+| `ILlmProvider` | `StubLlmProvider` (en/ur twin-grounded templates) | `LiveLlmProvider` (Alibaba DashScope / Qwen OpenAI-compatible) | `Llm:UseLive` + flag `llm.live` + `Llm:ApiKey` |
 | `IWeatherProvider` | `StubWeatherProvider` | `LiveWeatherProvider` (TBD-04) | `Weather:Enabled` / `weather.enrichment` |
 | `ISoilProvider` | `StubSoilProvider` | `LiveSoilProvider` (TBD-05) | `Soil:Enabled` / `soil.enrichment` |
 | `IOtpProvider` | `MockOtpProvider` | `LiveOtpProvider` (TBD-03; currently throws) | `Otp:UseMock` |
@@ -40,11 +40,12 @@ See also `docs/implementation/10-Observability.md`.
 
 ## LLM DI (GAP-030)
 
-- Default: `StubLlmProvider` (safe for CI/dev). Optionally writes `LlmUsageLogs` with `model=stub`, `EstimatedCostUsd=0`.
-- `Llm:UseLive=true` → register `LiveLlmProvider` only.
-- Live method bodies check flag `llm.live` + `Llm:ApiKey`; otherwise `InvalidOperationException`.
-- Vendor not selected yet → `NotImplementedException("LLM vendor TBD (GAP-003)")` after logging the attempt.
+- Default: `StubLlmProvider` (safe for CI/dev). Optionally writes `LlmUsageLogs` with `model=stub`, `EstimatedCostUsd=0`. Urdu plan/assistant bodies when context language is `ur`.
+- `Llm:UseLive=true` → register `LiveLlmProvider` (DashScope OpenAI-compatible Chat Completions).
+- Live checks: `Llm:ApiKey` required; `llm.live` flag **or** `Llm:UseLive` allows the call.
+- Config: `Llm:Model` (default `qwen-plus`), `Llm:Endpoint` (default `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`).
 - Usage table: `LlmUsageLogs` (`Id`, `FarmId?`, `Purpose`, `Model`, `PromptTokens`, `CompletionTokens`, `EstimatedCostUsd`, `CreatedAt`).
+- Judge script: `docs/DEMO-PITCH.md`.
 
 ## Dev / test
 - Default: stubs/mock OTP
