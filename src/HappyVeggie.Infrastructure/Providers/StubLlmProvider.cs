@@ -81,13 +81,14 @@ public sealed class StubLlmProvider : ILlmProvider
         var region = ctx.Region ?? (ctx.Language == "ur" ? "آپ کے علاقے" : "your region");
         var q = question.ToLowerInvariant();
         var ur = ctx.Language == "ur";
+        var weatherNote = FormatWeatherNote(ctx, ur);
 
         string body;
         if (q.Contains("water") || q.Contains("irrig") || q.Contains("پانی") || q.Contains("آبپاشی"))
         {
             body = ur
-                ? $"{region} میں {crop} کے لیے ٹھنڈے اوقات میں آبپاشی کریں اور بھاری مٹی پر کھڑا پانی نہ رہنے دیں۔ تعدد کو ڈیجیٹل ٹوئن کی بارش اور پانی کے ذرائع کے مطابق رکھیں۔"
-                : $"For {crop} in {region}, irrigate in the cool hours and avoid standing water on heavy soils. Match frequency to the latest twin rainfall and water-source notes.";
+                ? $"{region} میں {crop} کے لیے ٹھنڈے اوقات میں آبپاشی کریں اور بھاری مٹی پر کھڑا پانی نہ رہنے دیں۔ {weatherNote} تعدد کو ڈیجیٹل ٹوئن کی بارش اور پانی کے ذرائع کے مطابق رکھیں۔"
+                : $"For {crop} in {region}, irrigate in the cool hours and avoid standing water on heavy soils. {weatherNote} Match frequency to the latest twin rainfall and water-source notes.";
         }
         else if (q.Contains("fertil") || q.Contains("npk") || q.Contains("nutrient") || q.Contains("کھاد"))
         {
@@ -110,8 +111,8 @@ public sealed class StubLlmProvider : ILlmProvider
         else
         {
             body = ur
-                ? $"{region} کے لیے اگلا قدم: {crop} کو موسمی کیلنڈر پر رکھیں، موسم بدلنے پر ڈیجیٹل ٹوئن ریفریش کریں، اور تازہ منصوبے کے مطابق عمل کریں۔"
-                : $"Next action for this farm: keep {crop} on the seasonal calendar for {region}, refresh the digital twin after weather changes, and follow the latest plan sections for planting and inputs.";
+                ? $"{region} کے لیے اگلا قدم: {crop} کو موسمی کیلنڈر پر رکھیں، موسم بدلنے پر ڈیجیٹل ٹوئن ریفریش کریں، اور تازہ منصوبے کے مطابق عمل کریں۔ {weatherNote}"
+                : $"Next action for this farm: keep {crop} on the seasonal calendar for {region}, refresh the digital twin after weather changes, and follow the latest plan sections for planting and inputs. {weatherNote}";
         }
 
         var disclaimer = ur
@@ -119,6 +120,31 @@ public sealed class StubLlmProvider : ILlmProvider
             : "This is AI-generated advisory content. Not professional agricultural advice.";
 
         return $"{body}\n\n{disclaimer}";
+    }
+
+    private static string FormatWeatherNote(FarmContext ctx, bool ur)
+    {
+        if (ctx.TempC is null && string.IsNullOrWhiteSpace(ctx.Condition) && ctx.RainfallMm is null)
+        {
+            return ur
+                ? "ٹوئن پر تازہ موسمی ڈیٹا دستیاب نہیں — ریفریش کے بعد دوبارہ چیک کریں۔"
+                : "Twin weather data is not available yet — refresh the twin and check again.";
+        }
+
+        var parts = new List<string>();
+        if (ctx.TempC is not null)
+            parts.Add(ur ? $"درجہ حرارت ≈ {ctx.TempC:0.#}°C" : $"≈ {ctx.TempC:0.#}°C");
+        if (!string.IsNullOrWhiteSpace(ctx.Condition))
+            parts.Add(ctx.Condition!);
+        if (ctx.RainfallMm is not null)
+            parts.Add(ur ? $"بارش ≈ {ctx.RainfallMm:0.#} mm" : $"rainfall ≈ {ctx.RainfallMm:0.#} mm");
+        if (ctx.Humidity is not null)
+            parts.Add(ur ? $"نمی ≈ {ctx.Humidity:0.#}%" : $"humidity ≈ {ctx.Humidity:0.#}%");
+
+        var summary = string.Join(ur ? "، " : ", ", parts);
+        return ur
+            ? $"موجودہ ٹوئن موسم: {summary}۔"
+            : $"Current twin weather: {summary}.";
     }
 
     private static string BuildPlanJson(FarmContext ctx)
@@ -233,7 +259,16 @@ public sealed class StubLlmProvider : ILlmProvider
     private static int EstimateTokens(IReadOnlyList<LlmMessage> messages)
         => Math.Max(1, messages.Sum(m => m.Content.Length / 4));
 
-    private sealed record FarmContext(string? Crop, string? Region, string? AreaType, string? Soil, string Language)
+    private sealed record FarmContext(
+        string? Crop,
+        string? Region,
+        string? AreaType,
+        string? Soil,
+        string Language,
+        decimal? TempC = null,
+        decimal? Humidity = null,
+        decimal? RainfallMm = null,
+        string? Condition = null)
     {
         public static FarmContext FromMessages(IReadOnlyList<LlmMessage> messages)
         {
@@ -245,7 +280,21 @@ public sealed class StubLlmProvider : ILlmProvider
             var language = blob.Contains("\"ur\"", StringComparison.OrdinalIgnoreCase) || blob.Contains("Urdu", StringComparison.OrdinalIgnoreCase)
                 ? "ur"
                 : "en";
-            return new FarmContext(crop, region, area, soil, language);
+            var tempC = ParseDecimal(First(blob, @"tempC=([0-9]+(?:\.[0-9]+)?)", null));
+            var humidity = ParseDecimal(First(blob, @"humidity%?=([0-9]+(?:\.[0-9]+)?)", null));
+            var rainfall = ParseDecimal(First(blob, @"rainfallMm=([0-9]+(?:\.[0-9]+)?)", null));
+            var condition = First(blob, @"condition=([A-Za-z][A-Za-z \-]{1,40})", null);
+            if (string.Equals(condition, "n/a", StringComparison.OrdinalIgnoreCase))
+                condition = null;
+            return new FarmContext(crop, region, area, soil, language, tempC, humidity, rainfall, condition);
+        }
+
+        private static decimal? ParseDecimal(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return null;
+            return decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var value)
+                ? value
+                : null;
         }
 
         private static string? First(string blob, string pattern, string? fallbackPattern)

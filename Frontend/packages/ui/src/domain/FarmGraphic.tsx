@@ -74,6 +74,18 @@ export function FarmGraphic({
 
   const sorted = [...areas].sort((a, b) => b.relativeSize - a.relativeSize);
 
+  const zoneLabel = (zoneId: string) => {
+    const zone = zones.find((z) => z.id === zoneId);
+    if (zone?.cropName?.trim()) return zone.cropName.trim();
+    if (zone) return zone.stage?.trim() || 'Zone';
+    return 'Unknown zone';
+  };
+
+  const relationLabel = (relation: string) =>
+    relation
+      .replace(/[_-]+/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
   return (
     <div className={cn('hv-farm-graphic', className)}>
       <header className="hv-farm-graphic__header">
@@ -145,8 +157,13 @@ export function FarmGraphic({
       {neighbourEdges && neighbourEdges.length > 0 && (
         <ul className="hv-farm-edges" aria-label="Neighbour relations">
           {neighbourEdges.map((edge, i) => (
-            <li key={`${edge.fromZoneId}-${edge.toZoneId}-${i}`}>
-              {edge.fromZoneId} → {edge.toZoneId}: {edge.relation}
+            <li key={`${edge.fromZoneId}-${edge.toZoneId}-${i}`} className="hv-farm-edges__item">
+              <span className="hv-farm-edges__from">{zoneLabel(edge.fromZoneId)}</span>
+              <span className="hv-farm-edges__arrow" aria-hidden>
+                →
+              </span>
+              <span className="hv-farm-edges__to">{zoneLabel(edge.toZoneId)}</span>
+              <span className="hv-farm-edges__relation">{relationLabel(edge.relation)}</span>
             </li>
           ))}
         </ul>

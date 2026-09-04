@@ -82,8 +82,8 @@ export function FarmerShell({
   const farmReady = Boolean(homeHref && planHref && assistantHref);
 
   return (
-    <div className={cn('flex min-h-screen flex-col', className)}>
-      <header className="sticky top-0 z-20 border-b border-border bg-white/90 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-md">
+    <div className={cn('flex min-h-dvh flex-col', className)}>
+      <header className="sticky top-0 z-20 shrink-0 border-b border-border bg-white/90 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-md">
         <div className="mx-auto flex max-w-xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-600 text-primary-foreground shadow-sm">
@@ -114,13 +114,15 @@ export function FarmerShell({
         </div>
       </header>
 
-      <main className="hv-rise mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-6">{children}</main>
+      <main className="hv-rise mx-auto flex w-full max-w-xl min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-6 pb-[calc(6.75rem+env(safe-area-inset-bottom,0px))]">
+        {children}
+      </main>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 px-3 pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-20 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
         aria-label="Main"
       >
-        <div className="mx-auto flex max-w-xl overflow-hidden rounded-2xl border border-border bg-white/95 shadow-nav backdrop-blur-md">
+        <div className="pointer-events-auto mx-auto flex max-w-xl overflow-hidden rounded-2xl border border-border bg-white/95 shadow-nav backdrop-blur-md">
           <NavLink to={farmsHref} end className={tabClass}>
             {({ isActive }) => (
               <>

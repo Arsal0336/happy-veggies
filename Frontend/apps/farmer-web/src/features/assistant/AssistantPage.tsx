@@ -7,6 +7,26 @@ import { useNotifications } from '../../shared/notifications/NotificationProvide
 const FALLBACK_DISCLAIMER =
   'AI-generated. Not professional agricultural advice.';
 
+const CITATION_KEYS: Record<string, string> = {
+  weather_data: 'assistant.citations.weather',
+  soil_data: 'assistant.citations.soil',
+  growth_stage: 'assistant.citations.growthStage',
+  protected_area: 'assistant.citations.protectedArea',
+  compatibility_table: 'assistant.citations.compatibility',
+};
+
+function citationLabel(raw: string, t: (key: string, opts?: { defaultValue?: string }) => string) {
+  const key = CITATION_KEYS[raw];
+  if (key) return t(key, { defaultValue: humanizeCitation(raw) });
+  return humanizeCitation(raw);
+}
+
+function humanizeCitation(raw: string) {
+  return raw
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function AssistantPage() {
   const { farmId = '' } = useParams();
   const { t } = useTranslation();
@@ -31,7 +51,10 @@ export function AssistantPage() {
       id: m.id,
       role: (m.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
       content: m.content,
-      citations: m.citations?.map((c) => ({ label: c })),
+      citations: m.citations?.map((c) => ({
+        id: c,
+        label: citationLabel(c, t),
+      })),
     })) ?? [];
 
   const lastDisclaimer =
@@ -41,7 +64,7 @@ export function AssistantPage() {
     t('assistant.disclaimer', { defaultValue: FALLBACK_DISCLAIMER });
 
   return (
-    <Page>
+    <Page className="flex min-h-0 flex-1 flex-col gap-3">
       <PageHeader
         title={t('assistant.title')}
         actions={
@@ -51,10 +74,16 @@ export function AssistantPage() {
         }
       />
       <AssistantChat
+        className="min-h-0 w-full flex-1"
         messages={messages}
         loading={postMessage.isPending}
         disclaimer={lastDisclaimer}
         placeholder={t('assistant.placeholder')}
+        emptyLabel={t('assistant.emptyPrompt', {
+          defaultValue: 'Ask about irrigation, soil, pests, or your crop plan.',
+        })}
+        thinkingLabel={t('assistant.thinking', { defaultValue: 'Thinking…' })}
+        sendLabel={t('assistant.send')}
         onSend={(text) => {
           postMessage.mutate(
             { threadId: thread.id, text },
@@ -67,7 +96,6 @@ export function AssistantPage() {
           );
         }}
       />
-      <p className="hv-muted hv-hint hv-section">{lastDisclaimer}</p>
     </Page>
   );
 }

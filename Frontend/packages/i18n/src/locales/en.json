@@ -243,8 +243,17 @@
     "placeholder": "Ask about your farm…",
     "send": "Send",
     "empty": "No conversations yet",
+    "emptyPrompt": "Ask about irrigation, soil, pests, or your crop plan.",
+    "thinking": "Thinking…",
     "newThread": "New conversation",
-    "disclaimer": "AI-generated. Not professional agricultural advice."
+    "disclaimer": "AI-generated. Not professional agricultural advice.",
+    "citations": {
+      "weather": "Farm twin weather",
+      "soil": "Soil profile",
+      "growthStage": "Growth stage",
+      "protectedArea": "Protected area",
+      "compatibility": "Crop compatibility"
+    }
   },
   "green": {
     "title": "Green farm",

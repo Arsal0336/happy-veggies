@@ -72,9 +72,13 @@ public sealed class FarmContextBuilder
         if (twin.Weather is not null)
         {
             weather = new WeatherContext(
-                null, null, null, null, null,
+                twin.Weather.TemperatureC,
+                twin.Weather.HumidityPercent,
+                twin.Weather.WindSpeedKmh,
+                twin.Weather.RainfallMm,
+                twin.Weather.Condition ?? twin.Weather.ForecastTrend,
                 twin.Weather.ProviderStatus,
-                twin.TwinRefreshedAt);
+                twin.Weather.ObservedAt ?? twin.TwinRefreshedAt);
         }
         else missingFlags.Add("No weather data available");
 
@@ -164,7 +168,14 @@ public sealed class FarmContextBuilder
         }
 
         if (ctx.Weather is not null)
-            sb.AppendLine($"\nWeather status (from twin snapshot): providerStatus={ctx.Weather.Provider} observedAt={ctx.Weather.ObservedAt}");
+        {
+            sb.AppendLine("\nWeather (from farm twin snapshot — cite as weather_data):");
+            sb.AppendLine(
+                $"  tempC={ctx.Weather.TempC?.ToString() ?? "n/a"}, humidity%={ctx.Weather.Humidity?.ToString() ?? "n/a"}, " +
+                $"windKmh={ctx.Weather.WindKmh?.ToString() ?? "n/a"}, rainfallMm={ctx.Weather.RainfallMm?.ToString() ?? "n/a"}, " +
+                $"condition={ctx.Weather.Condition ?? "n/a"}, providerStatus={ctx.Weather.Provider ?? "n/a"}, " +
+                $"observedAt={ctx.Weather.ObservedAt?.ToString("u") ?? "n/a"}");
+        }
 
         if (ctx.Soil is not null)
             sb.AppendLine($"\nSoil summary: Type={ctx.Soil.SoilType}, Texture={ctx.Soil.Texture}, pH={ctx.Soil.Ph}, OM={ctx.Soil.OrganicMatter}% provenance={ctx.Soil.Provenance}");
