@@ -36,11 +36,14 @@ public sealed class AssistantController : ControllerBase
     {
         await _ownershipGuard.EnsureOwnerAsync(farmId, cancellationToken);
 
-        var threads = await _db.AssistantThreads.AsNoTracking()
+        var threadRows = await _db.AssistantThreads.AsNoTracking()
             .Where(t => t.FarmId == farmId && !t.IsArchived)
-            .OrderByDescending(t => t.LastMessageAt ?? t.CreatedAt)
             .Select(t => new { t.Id, t.Title, t.CreatedAt, t.LastMessageAt })
             .ToListAsync(cancellationToken);
+
+        var threads = threadRows
+            .OrderByDescending(t => t.LastMessageAt ?? t.CreatedAt)
+            .ToList();
 
         return Ok(threads);
     }
@@ -78,11 +81,12 @@ public sealed class AssistantController : ControllerBase
             .FirstOrDefaultAsync(t => t.Id == threadId && t.FarmId == farmId, cancellationToken)
             ?? throw new KeyNotFoundException($"Thread {threadId} not found.");
 
-        var messages = await _db.AssistantMessages.AsNoTracking()
+        var messageRows = await _db.AssistantMessages.AsNoTracking()
             .Where(m => m.ThreadId == threadId)
-            .OrderBy(m => m.CreatedAt)
             .Select(m => new { m.Id, m.Role, m.Content, m.CitationsJson, m.CreatedAt })
             .ToListAsync(cancellationToken);
+
+        var messages = messageRows.OrderBy(m => m.CreatedAt).ToList();
 
         return Ok(new { thread.Id, thread.Title, thread.CreatedAt, Messages = messages });
     }

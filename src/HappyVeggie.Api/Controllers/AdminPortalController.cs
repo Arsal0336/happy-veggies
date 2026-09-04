@@ -73,12 +73,11 @@ public sealed class AdminPortalController : ControllerBase
         }
 
         var farmers = await query
-            .OrderByDescending(f => f.CreatedAt)
-            .Take(50)
             .Select(f => new { f.Id, f.Phone, f.Name, f.Language, f.CreatedAt })
             .ToListAsync(cancellationToken);
 
-        return Ok(farmers);
+        // SQLite cannot ORDER BY DateTimeOffset — sort in memory.
+        return Ok(farmers.OrderByDescending(f => f.CreatedAt).Take(50).ToList());
     }
 
     [HttpGet("farmers/{id:guid}")]
@@ -403,8 +402,6 @@ public sealed class AdminPortalController : ControllerBase
             query = query.Where(p => p.IsFlagged);
 
         var plans = await query
-            .OrderByDescending(p => p.CreatedAt)
-            .Take(50)
             .Select(p => new
             {
                 p.Id,
@@ -419,6 +416,8 @@ public sealed class AdminPortalController : ControllerBase
                 p.ContentJson
             })
             .ToListAsync(cancellationToken);
+
+        plans = plans.OrderByDescending(p => p.CreatedAt).Take(50).ToList();
 
         return Ok(plans);
     }

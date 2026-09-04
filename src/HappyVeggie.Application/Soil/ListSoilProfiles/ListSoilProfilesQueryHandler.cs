@@ -23,9 +23,12 @@ public sealed class ListSoilProfilesQueryHandler
     {
         await _ownershipGuard.EnsureOwnerAsync(request.FarmId, cancellationToken);
 
-        return await _db.SoilProfiles
+        var rows = await _db.SoilProfiles
             .AsNoTracking()
             .Where(s => s.FarmId == request.FarmId && !s.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        return rows
             .OrderBy(s => s.CreatedAt)
             .Select(s => new SoilProfileDto(
                 s.Id,
@@ -48,6 +51,6 @@ public sealed class ListSoilProfilesQueryHandler
                 s.FarmerNotes,
                 s.CreatedAt,
                 s.UpdatedAt))
-            .ToListAsync(cancellationToken);
+            .ToList();
     }
 }

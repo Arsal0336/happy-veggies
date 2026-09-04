@@ -1,1 +1,1 @@
-/* App-specific leftovers; tokens + Tailwind live in @hv/ui/globals.css */
+@import '@hv/ui/globals.css';

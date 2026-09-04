@@ -26,9 +26,11 @@ public sealed class ListWaterSourcesQueryHandler
         var rows = await _db.WaterSources
             .AsNoTracking()
             .Where(w => w.FarmId == request.FarmId && !w.IsDeleted)
-            .OrderBy(w => w.CreatedAt)
             .ToListAsync(cancellationToken);
 
-        return rows.Select(WaterSourceMapping.ToDto).ToList();
+        return rows
+            .OrderBy(w => w.CreatedAt)
+            .Select(WaterSourceMapping.ToDto)
+            .ToList();
     }
 }

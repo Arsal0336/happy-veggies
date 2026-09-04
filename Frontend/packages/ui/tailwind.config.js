@@ -1,9 +1,14 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    './src/**/*.{ts,tsx}',
-    '../../apps/farmer-web/src/**/*.{ts,tsx}',
-    '../../apps/admin-web/src/**/*.{ts,tsx}',
+    path.join(root, 'src/**/*.{ts,tsx}'),
+    path.join(root, '../../apps/farmer-web/src/**/*.{ts,tsx}'),
+    path.join(root, '../../apps/admin-web/src/**/*.{ts,tsx}'),
   ],
   theme: {
     extend: {
@@ -31,6 +36,20 @@ export default {
         warning: 'var(--hv-color-warning)',
         error: 'var(--hv-color-error)',
         info: 'var(--hv-color-info)',
+        // Keep default neutral scale available for utility classes
+        neutral: {
+          0: 'var(--hv-color-neutral-0)',
+          50: 'var(--hv-color-neutral-50)',
+          100: 'var(--hv-color-neutral-100)',
+          200: 'var(--hv-color-neutral-200)',
+          300: 'var(--hv-color-neutral-300)',
+          400: 'var(--hv-color-neutral-400)',
+          500: 'var(--hv-color-neutral-500)',
+          600: 'var(--hv-color-neutral-600)',
+          700: 'var(--hv-color-neutral-700)',
+          800: 'var(--hv-color-neutral-800)',
+          900: 'var(--hv-color-neutral-900)',
+        },
       },
       fontFamily: {
         sans: [

@@ -81,8 +81,8 @@ public sealed class FarmContextBuilder
         // Soil profiles summary (GAP-031)
         var soilRows = await _db.SoilProfiles.AsNoTracking()
             .Where(s => s.FarmId == farmId && !s.IsDeleted)
-            .OrderByDescending(s => s.UpdatedAt)
             .ToListAsync(cancellationToken);
+        soilRows = soilRows.OrderByDescending(s => s.UpdatedAt).ToList();
 
         SoilContext? soil = null;
         if (soilRows.Count > 0)

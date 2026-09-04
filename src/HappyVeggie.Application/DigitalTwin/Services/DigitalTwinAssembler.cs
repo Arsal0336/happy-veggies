@@ -20,9 +20,12 @@ public sealed class DigitalTwinAssembler
             .FirstOrDefaultAsync(f => f.Id == farmId && !f.IsDeleted, cancellationToken)
             ?? throw new KeyNotFoundException($"Farm {farmId} not found.");
 
-        var areas = await _db.ProductionAreas
+        var areaRows = await _db.ProductionAreas
             .AsNoTracking()
             .Where(a => a.FarmId == farmId && !a.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        var areas = areaRows
             .OrderBy(a => a.CreatedAt)
             .Select(a => new ProductionAreaDto(
                 a.Id,
@@ -36,11 +39,14 @@ public sealed class DigitalTwinAssembler
                 a.Ventilation,
                 a.GrowingMedium,
                 a.StructureType))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
-        var zones = await _db.CropZones
+        var zoneRows = await _db.CropZones
             .AsNoTracking()
             .Where(z => z.FarmId == farmId && !z.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        var zones = zoneRows
             .OrderBy(z => z.CreatedAt)
             .Select(z => new CropZoneDto(
                 z.Id,
@@ -58,7 +64,7 @@ public sealed class DigitalTwinAssembler
                 z.ExpectedYieldUnit,
                 z.ExpectedYieldProvenance != null ? z.ExpectedYieldProvenance.Value.ToString() : null,
                 z.IsExperimental))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         var edges = await _db.FieldNeighbourEdges
             .AsNoTracking()
@@ -80,12 +86,15 @@ public sealed class DigitalTwinAssembler
             .AsNoTracking()
             .CountAsync(s => s.FarmId == farmId && !s.IsDeleted, cancellationToken);
 
-        var latestPlan = await _db.FarmPlans
+        var planRows = await _db.FarmPlans
             .AsNoTracking()
             .Where(p => p.FarmId == farmId)
+            .ToListAsync(cancellationToken);
+
+        var latestPlan = planRows
             .OrderByDescending(p => p.Version)
             .Select(p => new PlanSummaryDto(p.Id, p.Version, p.Language, p.CreatedAt))
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefault();
 
         var farmDto = new FarmSummaryDto(
             farm.Id, farm.Name, farm.Lat, farm.Lng,
