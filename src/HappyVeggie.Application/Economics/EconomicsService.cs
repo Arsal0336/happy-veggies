@@ -15,13 +15,21 @@ public sealed class EconomicsService
     /// <summary>
     /// ReferenceGrossValue = ExpectedYield × GovernmentReferenceRate
     /// </summary>
-    public async Task<EconomicSnapshot?> CalculateForZoneAsync(Guid cropZoneId, CancellationToken cancellationToken)
+    public async Task<EconomicSnapshot?> CalculateForZoneAsync(
+        Guid cropZoneId,
+        CancellationToken cancellationToken,
+        decimal? yieldOverride = null,
+        string? unitOverride = null)
     {
         var zone = await _db.CropZones
             .AsNoTracking()
             .FirstOrDefaultAsync(z => z.Id == cropZoneId && !z.IsDeleted, cancellationToken);
 
-        if (zone?.CropId is null || zone.ExpectedYieldValue is null)
+        if (zone?.CropId is null)
+            return null;
+
+        var expectedYield = yieldOverride ?? zone.ExpectedYieldValue;
+        if (expectedYield is null)
             return null;
 
         var rates = await _db.GovernmentCropRates
@@ -34,12 +42,13 @@ public sealed class EconomicsService
         if (rate is null)
             return null;
 
-        var grossValue = zone.ExpectedYieldValue.Value * rate.RatePerUnit;
+        var yieldUnit = unitOverride ?? zone.ExpectedYieldUnit ?? rate.Unit;
+        var grossValue = expectedYield.Value * rate.RatePerUnit;
 
         return new EconomicSnapshot(
             zone.CropId,
-            zone.ExpectedYieldValue.Value,
-            zone.ExpectedYieldUnit ?? rate.Unit,
+            expectedYield.Value,
+            yieldUnit,
             rate.RatePerUnit,
             rate.Currency,
             grossValue,

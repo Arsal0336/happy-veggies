@@ -12,13 +12,13 @@ using Microsoft.Extensions.Options;
 namespace HappyVeggie.Infrastructure.Providers;
 
 /// <summary>
-/// Alibaba Cloud DashScope (Qwen) via OpenAI-compatible Chat Completions API (GAP-030 / TBD-02).
+/// OpenAI-compatible Chat Completions client (Groq by default; also works with DashScope/Qwen).
 /// </summary>
 public sealed class LiveLlmProvider : ILlmProvider
 {
     public const string HttpClientName = "Llm";
-    public const string DefaultEndpoint = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
-    public const string DefaultModel = "qwen-plus";
+    public const string DefaultEndpoint = "https://api.groq.com/openai/v1";
+    public const string DefaultModel = "openai/gpt-oss-120b";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -59,8 +59,11 @@ public sealed class LiveLlmProvider : ILlmProvider
         var completion = await SendChatAsync(messages, options, model, jsonMode: false, jsonSchema: null, cts.Token);
         sw.Stop();
 
-        var content = completion.Choices?.FirstOrDefault()?.Message?.Content?.Trim()
-            ?? throw new InvalidOperationException("DashScope returned an empty chat completion.");
+        var content = completion.Choices?.FirstOrDefault()?.Message?.Content?.Trim();
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new InvalidOperationException("LLM returned an empty chat completion.");
+        }
 
         var promptTokens = completion.Usage?.PromptTokens ?? EstimateTokens(messages);
         var completionTokens = completion.Usage?.CompletionTokens ?? Math.Max(40, content.Length / 4);
@@ -85,7 +88,7 @@ public sealed class LiveLlmProvider : ILlmProvider
         sw.Stop();
 
         var raw = completion.Choices?.FirstOrDefault()?.Message?.Content?.Trim()
-            ?? throw new InvalidOperationException("DashScope returned an empty JSON completion.");
+            ?? throw new InvalidOperationException("LLM returned an empty JSON completion.");
 
         raw = StripMarkdownFence(raw);
         var validation = PlanJsonSchema.Validate(raw);
@@ -98,7 +101,7 @@ public sealed class LiveLlmProvider : ILlmProvider
         return new LlmJsonResponse(raw, validation.IsValid, promptTokens, completionTokens, model, sw.Elapsed);
     }
 
-    private async Task<DashScopeChatCompletion> SendChatAsync(
+    private async Task<OpenAiChatCompletion> SendChatAsync(
         IReadOnlyList<LlmMessage> messages,
         LlmOptions options,
         string model,
@@ -111,7 +114,7 @@ public sealed class LiveLlmProvider : ILlmProvider
         var url = $"{endpoint}/chat/completions";
 
         var apiMessages = messages
-            .Select(m => new DashScopeMessage(NormalizeRole(m.Role), m.Content))
+            .Select(m => new OpenAiMessage(NormalizeRole(m.Role), m.Content))
             .ToList();
 
         if (jsonMode)
@@ -119,24 +122,33 @@ public sealed class LiveLlmProvider : ILlmProvider
             var schemaHint = string.IsNullOrWhiteSpace(jsonSchema)
                 ? "Respond with a single valid JSON object only."
                 : $"Respond with a single valid JSON object only that matches this schema:\n{jsonSchema}";
-            apiMessages.Insert(0, new DashScopeMessage("system", schemaHint));
+            apiMessages.Insert(0, new OpenAiMessage("system", schemaHint));
         }
 
-        // Prefer Urdu body text when the conversation asks for it.
         if (MessagesPreferUrdu(messages))
         {
-            apiMessages.Insert(0, new DashScopeMessage(
+            apiMessages.Insert(0, new OpenAiMessage(
                 "system",
                 "The farmer language is Urdu (ur). Write plan section bodies and assistant replies in clear Urdu (Nastaliq-friendly plain text). Keep JSON keys in English."));
         }
 
+        var maxTokens = options.MaxTokens > 0 ? options.MaxTokens : _options.MaxTokensPerRequest;
         var body = new Dictionary<string, object?>
         {
             ["model"] = model,
             ["messages"] = apiMessages,
-            ["temperature"] = (double)(options.Temperature > 0 ? options.Temperature : _options.Temperature),
-            ["max_tokens"] = options.MaxTokens > 0 ? options.MaxTokens : _options.MaxTokensPerRequest
+            ["temperature"] = (double)(options.Temperature > 0 ? options.Temperature : _options.Temperature)
         };
+
+        // Newer Groq/OpenAI models prefer max_completion_tokens; keep max_tokens for older endpoints.
+        if (UsesMaxCompletionTokens(model, _options.Provider, _options.Endpoint))
+        {
+            body["max_completion_tokens"] = maxTokens;
+        }
+        else
+        {
+            body["max_tokens"] = maxTokens;
+        }
 
         if (jsonMode)
         {
@@ -147,7 +159,8 @@ public sealed class LiveLlmProvider : ILlmProvider
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
         request.Content = new StringContent(JsonSerializer.Serialize(body, JsonOptions), Encoding.UTF8, "application/json");
 
-        _logger.LogInformation("Calling DashScope model {Model} ({Mode})", model, jsonMode ? "json" : "chat");
+        var provider = string.IsNullOrWhiteSpace(_options.Provider) ? "llm" : _options.Provider;
+        _logger.LogInformation("Calling {Provider} model {Model} ({Mode})", provider, model, jsonMode ? "json" : "chat");
 
         using var response = await client.SendAsync(request, cancellationToken);
         var payload = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -155,15 +168,16 @@ public sealed class LiveLlmProvider : ILlmProvider
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogError(
-                "DashScope error {Status}: {Body}",
+                "{Provider} error {Status}: {Body}",
+                provider,
                 (int)response.StatusCode,
                 payload.Length > 500 ? payload[..500] : payload);
             throw new InvalidOperationException(
-                $"DashScope request failed with status {(int)response.StatusCode}. Check Llm:ApiKey, Llm:Endpoint, and model access.");
+                $"LLM request failed with status {(int)response.StatusCode}. Check Llm:ApiKey, Llm:Endpoint, and model access.");
         }
 
-        var completion = JsonSerializer.Deserialize<DashScopeChatCompletion>(payload, JsonOptions)
-            ?? throw new InvalidOperationException("Could not parse DashScope response.");
+        var completion = JsonSerializer.Deserialize<OpenAiChatCompletion>(payload, JsonOptions)
+            ?? throw new InvalidOperationException("Could not parse LLM response.");
 
         return completion;
     }
@@ -190,20 +204,44 @@ public sealed class LiveLlmProvider : ILlmProvider
         if (string.IsNullOrWhiteSpace(_options.ApiKey))
         {
             throw new InvalidOperationException(
-                "Llm:ApiKey is not configured. Set a DashScope API key via user-secrets or environment (Llm__ApiKey).");
+                "Llm:ApiKey is not configured. Set a Groq (or other OpenAI-compatible) API key via appsettings.Local.json, user-secrets, or Llm__ApiKey.");
         }
 
         _logger.LogDebug(
-            "Live LLM ready (Purpose={Purpose}, Model={Model}, Flag={Flag})",
-            purpose, model ?? ResolveModel(null), liveFlag || _options.UseLive);
+            "Live LLM ready (Provider={Provider}, Purpose={Purpose}, Model={Model}, Flag={Flag})",
+            _options.Provider, purpose, model ?? ResolveModel(null), liveFlag || _options.UseLive);
     }
 
     private string ResolveModel(string? overrideModel)
-        => string.IsNullOrWhiteSpace(overrideModel)
-            ? (string.IsNullOrWhiteSpace(_options.Model) || _options.Model == "gpt-4o-mini"
-                ? DefaultModel
-                : _options.Model)
-            : overrideModel;
+    {
+        if (!string.IsNullOrWhiteSpace(overrideModel))
+        {
+            return overrideModel;
+        }
+
+        if (string.IsNullOrWhiteSpace(_options.Model)
+            || _options.Model is "gpt-4o-mini" or "qwen-plus"
+            || _options.Model.StartsWith("llama-3.", StringComparison.OrdinalIgnoreCase))
+        {
+            return DefaultModel;
+        }
+
+        return _options.Model;
+    }
+
+    private static bool UsesMaxCompletionTokens(string model, string? provider, string? endpoint)
+    {
+        if (model.Contains("gpt-oss", StringComparison.OrdinalIgnoreCase)
+            || model.Contains("qwen3", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var providerName = provider ?? string.Empty;
+        var endpointValue = endpoint ?? string.Empty;
+        return providerName.Contains("groq", StringComparison.OrdinalIgnoreCase)
+            || endpointValue.Contains("groq.com", StringComparison.OrdinalIgnoreCase);
+    }
 
     private async Task RecordUsageAsync(
         string purpose,
@@ -217,7 +255,7 @@ public sealed class LiveLlmProvider : ILlmProvider
             return;
         }
 
-        // Rough USD estimate for demo analytics; DashScope billing may differ.
+        // Rough USD estimate for demo analytics; provider billing may differ.
         var cost = (promptTokens * 0.0000004m) + (completionTokens * 0.0000012m);
         await _usageRecorder.RecordAsync(
             purpose,
@@ -263,32 +301,32 @@ public sealed class LiveLlmProvider : ILlmProvider
     private static int EstimateTokens(IReadOnlyList<LlmMessage> messages)
         => Math.Max(1, messages.Sum(m => m.Content.Length / 4));
 
-    private sealed record DashScopeMessage(
+    private sealed record OpenAiMessage(
         [property: JsonPropertyName("role")] string Role,
         [property: JsonPropertyName("content")] string Content);
 
-    private sealed class DashScopeChatCompletion
+    private sealed class OpenAiChatCompletion
     {
         [JsonPropertyName("choices")]
-        public List<DashScopeChoice>? Choices { get; set; }
+        public List<OpenAiChoice>? Choices { get; set; }
 
         [JsonPropertyName("usage")]
-        public DashScopeUsage? Usage { get; set; }
+        public OpenAiUsage? Usage { get; set; }
     }
 
-    private sealed class DashScopeChoice
+    private sealed class OpenAiChoice
     {
         [JsonPropertyName("message")]
-        public DashScopeMessagePayload? Message { get; set; }
+        public OpenAiMessagePayload? Message { get; set; }
     }
 
-    private sealed class DashScopeMessagePayload
+    private sealed class OpenAiMessagePayload
     {
         [JsonPropertyName("content")]
         public string? Content { get; set; }
     }
 
-    private sealed class DashScopeUsage
+    private sealed class OpenAiUsage
     {
         [JsonPropertyName("prompt_tokens")]
         public int PromptTokens { get; set; }

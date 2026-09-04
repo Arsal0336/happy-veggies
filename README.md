@@ -2,13 +2,13 @@
 
 ### AI Farm Digital Twin for Pakistan
 
-**Digitalize your farm. Simulate your decisions. Predict your yield. Optimize every acre.**
+**Digitalize your farm. Arrange crops. Predict yield. Apply market rates. Optimize every acre.**
 
-A living digital replica of a farm that combines weather, soil, water, crops, regional intelligence, and farm performance — then tells the farmer, in Urdu or English, **what to do next**.
+A living digital replica of a farm that combines weather, soil, water, crop zones, regional intelligence, and **government reference rates** — then shows the farmer, in Urdu or English, **expected yield and money in tables**, plus what to do next.
 
 [![Hackathon](https://img.shields.io/badge/Bano%20Qabil%20×%20Alibaba%20Cloud-AI%20Hackathon%202026-1B7A4E)](https://www.alkhidmat.org/about-us/latest/blog/bano-qabil-alibaba-cloud-launch-ai-hackathon-2026)
 [![Impact](https://img.shields.io/badge/Focus-Food%20security%20%26%20rural%20AI-0F766E)](#the-problem)
-[![Stack](https://img.shields.io/badge/Stack-.NET%2010%20%7C%20React%20%7C%20SQL%20Server-0EA5E9)](#architecture)
+[![Stack](https://img.shields.io/badge/Stack-.NET%2010%20%7C%20Angular%20%7C%20SQL%20Server-0EA5E9)](#architecture)
 [![Languages](https://img.shields.io/badge/Languages-English%20%2B%20Urdu%20(RTL)-7C3AED)](#product)
 
 > Built for the **[Alibaba Cloud AI Hackathon 2026](https://www.alkhidmat.org/about-us/latest/blog/bano-qabil-alibaba-cloud-launch-ai-hackathon-2026)** — a nationwide competition by **Bano Qabil** (Alkhidmat Foundation Pakistan) and **Alibaba Cloud** to turn Pakistani talent into practical AI with global reach.
@@ -25,7 +25,7 @@ That is exactly the gap [the hackathon is built to fill](https://www.alkhidmat.o
 
 Agriculture employs a huge share of Pakistan’s workforce. Crop choice, planting windows, water, fertilizer, and neighbour-crop conflicts are still decided with incomplete information — especially for **new farmers**. The cost is wasted water, wasted inputs, and lost yield.
 
-We built a platform that a farmer can open on a phone, authenticate with OTP, describe their land (GPS, area, crop, soil, water), and receive a **personalized, region-aware farming plan in under a minute** — then keep a living **Digital Twin** of that farm so advice stays grounded in *their* fields, not a generic chatbot.
+We built a platform that a farmer can open on a phone, authenticate with OTP, twin their land (GPS, areas, crop zones, soil, water), and get a **personalized Farm Plan with scannable yield and market-value tables** — then keep a living **Digital Twin** so advice stays grounded in *their* fields, not a generic chatbot.
 
 ---
 
@@ -40,34 +40,33 @@ We built a platform that a farmer can open on a phone, authenticate with OTP, de
 
 **Core question the system answers continuously:**
 
-> Given the current state of *this* farm, what should the farmer do next to maximize yield, profitability, and sustainable resource use?
+> Given the current state of *this* farm, what yield and market value should we expect — and what should the farmer do next?
 
 ---
 
 ## The solution
 
-HAPPY VEGGIE is **not** a generic agricultural chatbot. The chat is only the interface.
+HAPPY VEGGIE is **not** a generic agricultural chatbot. The chat is only one interface.
 
 The product is:
 
-> **Farm Digital Twin + Farm Intelligence Engine**
+> **Farm Digital Twin → crop arrangement → yield forecast → government rates → next actions**
 
 ```text
-Soil + Weather + Water + Crop state + Farmer activity
+Soil + Weather + Water + Crop zones + Gov. rates
                     │
                     ▼
            FARM DIGITAL TWIN
      (open field · shed · greenhouse · tunnel · experimental)
                     │
                     ▼
-           AI FARM ASSISTANT  (Urdu / English)
+        YIELD + MARKET TABLES  (farmer-scannable)
                     │
-     ┌─────────┬────┴─────┬──────────┐
-     ▼         ▼          ▼          ▼
-  Advice     Risk      Yield     Green Score
+                    ▼
+     Short plan advice + AI ASSISTANT  (Urdu / English)
 ```
 
-A farm can be a large property with **many production areas** (open field, protected/in-house, experimental). Each area has crop zones. The twin keeps state for every area and for the farm as a whole — then the assistant reasons over that twin.
+A farm can be a large property with **many production areas** (open field, protected/in-house, experimental). Each area has crop zones. The twin keeps state for every area — yield estimates × reference rates become **tables on the Farm Plan**, with short AI prose underneath.
 
 ---
 
@@ -81,10 +80,10 @@ A farm can be a large property with **many production areas** (open field, prote
 | **Urdu + English** | Full UI, including RTL for Urdu |
 | **GPS farm capture** | Location, region, area, preferred crop |
 | **New-farmer wizard** | Soil, budget, water access — start from scratch |
-| **Custom crop plan** | Region- and season-aware plan in ~60 seconds |
+| **Custom crop plan** | Twin-grounded plan with **yield & market tables** + short advice sections |
 | **Farming calendar** | Step-by-step “what to do when” |
 | **Input guidance** | Water, fertilizer, and resource use |
-| **Yield & economics** | Advisory yield and government reference rates |
+| **Yield & economics** | Zone-level expected yield × government reference rates (PKR) |
 | **Digital Twin** | Living replica of the whole farm ecosystem |
 | **AI Farm Assistant** | Per-farm chat grounded in twin context, not generic answers |
 | **Green Farm Score** | Explainable sustainability indicator (decision support, not a certification) |
@@ -103,11 +102,11 @@ Aligned with what [Bano Qabil × Alibaba Cloud](https://www.alkhidmat.org/about-
 | Hackathon expectation | How HAPPY VEGGIE delivers |
 |---|---|
 | Solve a real Pakistani problem | Food production, water, and rural livelihoods |
-| AI that is more than a wrapper | Twin-grounded LLM: plans, assistant, green tips, with stub/live provider ports |
+| AI that is more than a wrapper | Twin-grounded LLM: plans, assistant, green tips; OpenAI-compatible live provider (Groq local default; DashScope/Qwen configurable) |
 | Built to scale | CQRS API, SQL Server, provider adapters, feature flags |
 | Inclusive | Urdu/English, mobile-first, phone OTP |
 | Commercialization-ready | Farmer product + admin ops; not a one-shot notebook |
-| Cloud-native path | Stateless API + swap-in LLM/weather/soil providers (including Alibaba Cloud PAI / dashscope-class endpoints when wired live) |
+| Cloud-native path | Stateless API + swap-in LLM/weather/soil providers (Groq, DashScope-class, or other OpenAI-compatible endpoints) |
 | Global relevance | Digital twins + sustainable intensification apply beyond Pakistan |
 
 **Impact thesis:** better crop choice and input timing → higher yield and lower waste → more produce for households and markets. Predictions are **advisory**, never a legal guarantee.
@@ -117,13 +116,13 @@ Aligned with what [Bano Qabil × Alibaba Cloud](https://www.alkhidmat.org/about-
 ## Architecture
 
 ```text
-┌─────────────────────┐     ┌─────────────────────┐
-│  Farmer web (5173)  │     │  Admin web (5174)   │
-│  React · Vite · i18n│     │  React · Vite       │
-└──────────┬──────────┘     └──────────┬──────────┘
-           │  HTTPS JSON                │
-           └────────────┬───────────────┘
-                        ▼
+┌─────────────────────────────┐
+│  Angular SPA (:4200)        │
+│  Farmer / · Admin /admin    │
+│  Tailwind 3 · EN/UR RTL     │
+└──────────────┬──────────────┘
+               │  HTTPS JSON
+               ▼
            ┌────────────────────────────┐
            │  ASP.NET Core Web API      │
            │  JWT · CQRS · thin APIs    │
@@ -131,7 +130,7 @@ Aligned with what [Bano Qabil × Alibaba Cloud](https://www.alkhidmat.org/about-
            └────────────┬───────────────┘
                         ▼
            ┌────────────────────────────┐
-           │  SQL Server (system of rec)│
+           │  SQL Server / SQLite       │
            └────────────────────────────┘
                         ▲
         ports / adapters│
@@ -163,16 +162,17 @@ Providers are **interfaces only**. Composition root selects stub vs live. Secret
 | API | ASP.NET Core (`.NET 10`) |
 | Application | CQRS command/query handlers |
 | Persistence | Entity Framework Core, SQL Server |
-| Farmer & admin UI | React (functional components), Vite, pnpm workspace |
-| i18n | Shared `@hv/i18n` — English + Urdu RTL |
+| Farmer & admin UI | Angular SPA (`Frontend/`), Tailwind 3, ngx-translate EN/UR RTL |
+| i18n | `Frontend/src/assets/i18n` — English + Urdu (Nastaliq fonts) |
 | Auth | Phone OTP (mock in demo; live SMS gated by config) |
-| Tests | xUnit (backend), Vitest (frontend) |
+| LLM | `ILlmProvider` — stub by default; live OpenAI-compatible (Groq default locally; DashScope/Qwen via config) |
+| Tests | xUnit (backend) |
 
 ---
 
 ## Quick start
 
-**Prerequisites:** .NET 10 SDK, Node 20+, pnpm 9+ (or Corepack). SQL Server is optional — if it is unreachable, the API uses a local **SQLite** file under `src/HappyVeggie.Api/App_Data/`.
+**Prerequisites:** .NET 10 SDK, Node 20+, npm. SQL Server is optional — if it is unreachable, the API uses a local **SQLite** file under `src/HappyVeggie.Api/App_Data/`.
 
 ### Run everything (Windows)
 
@@ -184,8 +184,8 @@ Providers are **interfaces only**. Composition root selects stub vs live. Secret
 |---|---|
 | API | http://localhost:5262 |
 | Swagger | http://localhost:5262/swagger |
-| Farmer web | http://localhost:5173 |
-| Admin web | http://localhost:5174 |
+| App (farmer) | http://localhost:4200 |
+| Admin | http://localhost:4200/admin |
 
 **Demo logins**
 
@@ -198,7 +198,7 @@ Logs: `scripts/.runtime/`
 
 Remote SQL Server belongs in gitignored `src/HappyVeggie.Api/appsettings.Local.json`. Set `Database:Provider` to `Auto` (default), `SqlServer`, or `Sqlite`.
 
-**Secrets:** copy [`src/HappyVeggie.Api/.env.example`](src/HappyVeggie.Api/.env.example) and the frontend `Frontend/apps/*/.env.example` files for required variable names. Put real values in local `.env`, user secrets, or `appsettings.Local.json` — never commit API keys, tokens, passwords, or production signing keys. `.env` and `.env.*` are gitignored (examples and fixture `.env.test` are excepted).
+**Secrets:** copy [`src/HappyVeggie.Api/.env.example`](src/HappyVeggie.Api/.env.example) for required variable names. Put real values in local `.env`, user secrets, or `appsettings.Local.json` — never commit API keys, tokens, passwords, or production signing keys. `.env` and `.env.*` are gitignored (examples and fixture `.env.test` are excepted).
 
 ### Stop everything
 
@@ -214,14 +214,15 @@ Remote SQL Server belongs in gitignored `src/HappyVeggie.Api/appsettings.Local.j
 # API
 dotnet run --project src/HappyVeggie.Api/HappyVeggie.Api.csproj --launch-profile http
 
-# Frontends
+# Frontend (Angular)
 cd Frontend
-pnpm install
-pnpm dev:farmer   # :5173
-pnpm dev:admin    # :5174
+npm install
+npm start   # :4200 — farmer at / · admin at /admin
 ```
 
 Demo OTP is mocked (`Otp:UseMock`, code **1234**) so judges can complete the farmer journey without SMS. The API contract is identical for live OTP.
+
+> **Docs note:** Normative SRS still mandates React FC (§2.7). Shipped UI is Angular — see [docs/README.md](docs/README.md). Authoritative specs live under `docs/HAPPY-VEGGIE-*.md` and `docs/01`–`05`.
 
 ---
 
@@ -231,28 +232,28 @@ Demo OTP is mocked (`Otp:UseMock`, code **1234**) so judges can complete the far
 happy-veggies/
 ├── src/                    # .NET API, domain, application, infrastructure
 ├── tests/                  # Backend tests
-├── Frontend/               # pnpm monorepo — farmer-web, admin-web, shared packages
-├── scripts/                # run-all / stop-all
-├── docs/                   # Architecture & implementation plans
-├── HAPPY-VEGGIE-PRD.md     # Product requirements
-├── HAPPY-VEGGIE-SRS.md     # Authoritative production requirements
-└── HAPPY-VEGGIE-DEV-SPEC.md
+├── Frontend/               # Angular SPA — farmer (/) + admin (/admin)
+├── scripts/                # run-all / stop-all (API :5262 + app :4200)
+└── docs/                   # SoT (SRS, 01–05) + derived pitch/status — see docs/README.md
 ```
 
 ---
 
 ## Demo narrative (judges)
 
-Full talk track + before/after + DashScope live steps: **[docs/DEMO-PITCH.md](docs/DEMO-PITCH.md)**.
+Full talk track: **[docs/DEMO-PITCH.md](docs/DEMO-PITCH.md)**. Document map: **[docs/README.md](docs/README.md)**.
 
-1. Open **Farmer web** → choose **اردو** or **English**.  
+1. Open **http://localhost:4200** → choose **اردو** or **English**.  
 2. Sign in with `+923001234567` and demo OTP **1234**.  
-3. Open seeded **Green Valley Farm** (zones, water/soil, twin, plan, alerts ready).  
+3. Open seeded **Green Valley Farm** — call out the **farm schematic**, twin weather/water/green score, and alerts.  
 4. **Refresh twin** → weather/green update; open alerts (heat / irrigation).  
-5. Open or regenerate the **crop plan**; ask the **AI Farm Assistant** a farm-specific question.  
-6. (Optional) **Admin web** — `admin@happyveggie.pk` / `HappyVeggie!2026` — metrics, plan review, LLM usage. Explore APIs at `/swagger`.
+5. Open or regenerate the **Farm Plan** — lead with **yield & market value tables** (zone, crop, expected yield, gov rate, gross PKR), then short advice sections.  
+6. Ask the **AI Farm Assistant** a farm-specific question (grounded in the twin).  
+7. (Optional) **http://localhost:4200/admin** — `admin@happyveggie.pk` / `HappyVeggie!2026` — metrics, plan review, LLM usage. Explore APIs at `/swagger`.
 
 Time-to-wow target: **under ~90 seconds** from login on the seeded farm.
+
+**LLM honesty:** Local live default is often **Groq** (OpenAI-compatible). **DashScope / Qwen** works when `Llm:Endpoint` + `Llm:Model` + API key are set. Stub remains available for offline demos (`Llm:UseLive=false`).
 
 ---
 

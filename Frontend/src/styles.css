@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap');
+@import './assets/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Noto Nastaliq Urdu';
+  src: url('./assets/fonts/NotoNastaliqUrdu.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Scheherazade New';
+  src: url('./assets/fonts/ScheherazadeNew-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noto Naskh Arabic';
+  src: url('./assets/fonts/NotoNaskhArabic-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --hv-urdu-font: 'Noto Nastaliq Urdu', 'Noto Sans Arabic', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--hv-font-sans);
+  background: var(--hv-color-bg);
+  color: var(--hv-color-text);
+  line-height: var(--hv-leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-urdu,
+[dir='rtl'] body {
+  font-family: var(--hv-urdu-font), var(--hv-font-sans);
+}
+
+[dir='rtl'] .font-display {
+  font-family: var(--hv-urdu-font), var(--hv-font-display);
+}
+
+@layer components {
+  .hv-page {
+    @apply mx-auto w-full max-w-3xl px-4 py-5;
+  }
+
+  .hv-page-wide {
+    @apply mx-auto w-full max-w-6xl px-4 py-5;
+  }
+
+  .hv-focus {
+    @apply outline-none ring-2 ring-[var(--hv-color-focus)] ring-offset-2;
+  }
+}
+
+@keyframes hv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

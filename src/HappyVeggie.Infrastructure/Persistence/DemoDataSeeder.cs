@@ -28,11 +28,11 @@ public static class DemoDataSeeder
     private static readonly Guid EdgeTomatoOnionId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee000c");
     private static readonly Guid EdgeTomatoMarigoldId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee000d");
     private static readonly Guid AlertHeatId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee000e");
+    private static readonly Guid AlertIrrigId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee000f");
     private static readonly Guid ShedAreaId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0010");
     private static readonly Guid ZoneCucumberId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0011");
     private static readonly Guid ExpAreaId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0012");
-    private static readonly Guid AlertIrrigId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee000f");
-    private static readonly Guid AlertCompatId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0010");
+    private static readonly Guid AlertCompatId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0013");
 
     public static async Task SeedAsync(HappyVeggieDbContext db, CancellationToken cancellationToken = default)
     {
@@ -256,6 +256,14 @@ public static class DemoDataSeeder
             });
         }
 
+        // Flush staged zones/areas so later FK lookups (cucumber, edges) hit real rows.
+        if (db.ChangeTracker.Entries().Any(e =>
+                e.State == EntityState.Added &&
+                (e.Entity is CropZone || e.Entity is ProductionArea)))
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
         var shedId = await db.ProductionAreas
             .Where(a => a.FarmId == FarmId && !a.IsDeleted && (a.Id == ShedAreaId || a.TypeCode == "greenhouse"))
             .Select(a => a.Id)
@@ -308,27 +316,30 @@ public static class DemoDataSeeder
             var onionId = await ResolveZoneIdAsync(db, FarmId, "onion", ZoneOnionId, cancellationToken);
             var marigoldId = await ResolveZoneIdAsync(db, FarmId, "marigold", ZoneMarigoldId, cancellationToken);
 
-            db.FieldNeighbourEdges.AddRange(
-                new FieldNeighbourEdge
-                {
-                    Id = EdgeTomatoOnionId,
-                    FarmId = FarmId,
-                    CropZoneAId = tomatoId,
-                    CropZoneBId = onionId,
-                    AdjacencyType = "companion_good",
-                    Source = "demo_seed",
-                    Enabled = true
-                },
-                new FieldNeighbourEdge
-                {
-                    Id = EdgeTomatoMarigoldId,
-                    FarmId = FarmId,
-                    CropZoneAId = tomatoId,
-                    CropZoneBId = marigoldId,
-                    AdjacencyType = "companion_good",
-                    Source = "demo_seed",
-                    Enabled = true
-                });
+            if (tomatoId != Guid.Empty && onionId != Guid.Empty && marigoldId != Guid.Empty)
+            {
+                db.FieldNeighbourEdges.AddRange(
+                    new FieldNeighbourEdge
+                    {
+                        Id = EdgeTomatoOnionId,
+                        FarmId = FarmId,
+                        CropZoneAId = tomatoId,
+                        CropZoneBId = onionId,
+                        AdjacencyType = "companion_good",
+                        Source = "demo_seed",
+                        Enabled = true
+                    },
+                    new FieldNeighbourEdge
+                    {
+                        Id = EdgeTomatoMarigoldId,
+                        FarmId = FarmId,
+                        CropZoneAId = tomatoId,
+                        CropZoneBId = marigoldId,
+                        AdjacencyType = "companion_good",
+                        Source = "demo_seed",
+                        Enabled = true
+                    });
+            }
         }
 
         if (!await db.WaterSources.AnyAsync(w => w.FarmId == FarmId && !w.IsDeleted, cancellationToken))
@@ -514,6 +525,21 @@ public static class DemoDataSeeder
         Guid preferredId,
         CancellationToken cancellationToken)
     {
+        // Prefer the local change tracker so newly Added zones in this SaveChanges batch resolve.
+        var tracked = db.CropZones.Local
+            .FirstOrDefault(z => z.Id == preferredId && z.FarmId == farmId && !z.IsDeleted);
+        if (tracked is not null)
+        {
+            return tracked.Id;
+        }
+
+        tracked = db.CropZones.Local
+            .FirstOrDefault(z => z.FarmId == farmId && !z.IsDeleted && z.CropId == cropId);
+        if (tracked is not null)
+        {
+            return tracked.Id;
+        }
+
         var preferred = await db.CropZones
             .Where(z => z.Id == preferredId && z.FarmId == farmId && !z.IsDeleted)
             .Select(z => z.Id)
@@ -523,11 +549,10 @@ public static class DemoDataSeeder
             return preferred;
         }
 
-        var byCrop = await db.CropZones
+        return await db.CropZones
             .Where(z => z.FarmId == farmId && !z.IsDeleted && z.CropId == cropId)
             .Select(z => z.Id)
             .FirstOrDefaultAsync(cancellationToken);
-        return byCrop != Guid.Empty ? byCrop : preferredId;
     }
 
     private static async Task SeedGovernmentRatesAsync(HappyVeggieDbContext db, CancellationToken cancellationToken)

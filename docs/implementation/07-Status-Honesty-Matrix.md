@@ -9,12 +9,12 @@
 |------|------------------|---------------|-------|
 | Backend entities/CRUD shell | DONE | **PARTIAL → much improved** | Soft-delete HTTP done; providers still stub by default |
 | Twin refresh | DONE | **PARTIAL (stub-wired)** | Calls weather/soil providers; live vendors TBD |
-| Plans / Assistant | DONE | **PARTIAL (stub en/ur + DashScope live)** | `LiveLlmProvider` wired to Qwen; needs `Llm:UseLive` + API key |
+| Plans / Assistant | DONE | **PARTIAL (stub en/ur + OpenAI-compatible live)** | `LiveLlmProvider` (Groq default locally; DashScope/Qwen configurable); needs `Llm:UseLive` + API key |
 | Green score | DONE | **PARTIAL** | Factors + disclaimer; weights TBD-06 |
 | Experimental | DONE | **PARTIAL → loop min** | Approve + outcome → CropCycle |
 | Admin portal | DONE | **PARTIAL → writes live** | Catalog mutations, review, twin, flags, analytics; MFA BLOCKED |
-| Frontend routes/UI | DONE | **PARTIAL → wired** | Water/soil/economics/weather/graphic/alerts; PDF deferred |
-| Integration E2E | DONE (some) | **PARTIAL** | Unit/Vitest green; full live E2E pack incomplete |
+| Frontend routes/UI | DONE | **PARTIAL → wired (Angular SPA)** | Plan yield/market tables; water/soil/economics/weather/graphic/alerts; PDF deferred |
+| Integration E2E | DONE (some) | **PARTIAL** | Backend unit tests green; full live E2E pack incomplete |
 | Water/Soil/Economics HTTP | Implied | **IMPLEMENTED (API+UI)** | Stub twin enrichment |
 | Auth refresh FR-044 | — | **IMPLEMENTED (interim JWT re-issue)** | Full refresh-token store later |
 | Feature flags | — | **IMPLEMENTED** | |

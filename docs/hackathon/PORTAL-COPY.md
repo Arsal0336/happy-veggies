@@ -13,25 +13,25 @@ HAPPY VEGGIE
 
 ## One-liner / tagline
 
-AI farm digital twin that tells Pakistani farmers what to do next — in Urdu or English.
+AI farm digital twin that forecasts yield with government rates and tells Pakistani farmers what to do next — in Urdu or English.
 
 ---
 
 ## Problem (short)
 
-Farmers decide crops, water, and inputs with incomplete, fragmented information. Generic “AI for agri” chatbots ignore farm state, language, and rural phone-first use — leading to wasted water, wasted inputs, and lost yield.
+Farmers decide crops, water, and inputs with incomplete, fragmented information. Generic “AI for agri” chatbots ignore farm state, language, and rural phone-first use — and never make yield vs market rates scannable — leading to wasted water, wasted inputs, and lost yield.
 
 ---
 
 ## Problem (longer)
 
-Pakistan’s agriculture workforce still makes crop choice, planting windows, irrigation, and fertilizer decisions from habit, neighbours, or guesswork. Weather, soil, and water are treated separately; advice is often English-first and desktop-first. Chatbot-only solutions have no lasting farm model. New and smallholder farmers pay the cost in lower yield and higher waste — which hurts rural livelihoods and food security.
+Pakistan’s agriculture workforce still makes crop choice, planting windows, irrigation, and fertilizer decisions from habit, neighbours, or guesswork. Weather, soil, and water are treated separately; advice is often English-first and desktop-first. Chatbot-only solutions have no lasting farm model and bury numbers in paragraphs. New and smallholder farmers pay the cost in lower yield and higher waste — which hurts rural livelihoods and food security.
 
 ---
 
 ## Solution
 
-HAPPY VEGGIE is a **Farm Digital Twin + Farm Intelligence Engine**, not a generic chatbot. Farmers authenticate with phone OTP, describe their land (GPS, area, crop, soil, water), and receive a personalized, region-aware farming plan in about a minute. A living digital twin keeps production areas, crop zones, water, weather/soil context, alerts, and a Green Farm Score. An AI Farm Assistant answers in Urdu or English, grounded in *that* farm’s twin. An admin console supports catalogs, feature flags, audit, and operations.
+HAPPY VEGGIE is a **Farm Digital Twin** that arranges crop zones, **predicts yield**, applies **government reference rates**, and advises next actions — not a generic chatbot. Farmers authenticate with phone OTP, twin their land (GPS, areas, zones, soil, water), and open a Farm Plan with **scannable yield and market-value tables** plus short advice. An AI Farm Assistant answers in Urdu or English, grounded in *that* farm’s twin. An admin console supports catalogs, rates, feature flags, audit, and operations.
 
 ---
 
@@ -43,11 +43,11 @@ Better crop choice and input timing → higher yield and lower waste → more pr
 
 ## Innovation
 
-- Twin-grounded LLM plans and chat (stub or live DashScope/Qwen) — not ChatGPT with a farm wallpaper  
+- Twin → zones → yield × gov rates → tabular Farm Plan + short grounded chat — not ChatGPT with a farm wallpaper  
 - Neighbour / crop compatibility intelligence  
 - Explainable Green Farm Score  
-- Provider architecture (LLM, weather, soil, OTP) with stub/live ports for reliable demos and a clear cloud path  
-- Farmer product + admin ops in one platform  
+- Provider architecture (LLM, weather, soil, OTP) with stub/live ports — OpenAI-compatible live (Groq local / DashScope configurable)  
+- Farmer product + admin ops in one Angular SPA  
 
 ---
 
@@ -55,11 +55,11 @@ Better crop choice and input timing → higher yield and lower waste → more pr
 
 - **API:** ASP.NET Core (.NET 10), JWT, CQRS  
 - **Data:** Entity Framework Core, SQL Server (SQLite fallback for local demo)  
-- **Frontend:** React, Vite, pnpm monorepo — farmer-web + admin-web  
+- **Frontend:** Angular SPA (`Frontend/`) — farmer `/` + admin `/admin` on `:4200`  
 - **i18n:** English + Urdu (RTL)  
 - **Auth:** Phone OTP (mock in demo; live SMS gated by config)  
-- **AI path:** `ILlmProvider` — twin-grounded stub by default; DashScope-compatible / Qwen when `Llm:UseLive` + API key  
-- **Tests:** xUnit (backend), Vitest (frontend)  
+- **AI path:** `ILlmProvider` — twin-grounded stub by default; live OpenAI-compatible (`Llm:UseLive` + API key; Groq default locally; DashScope/Qwen via endpoint)  
+- **Tests:** xUnit (backend)  
 
 ---
 
@@ -73,8 +73,8 @@ Better crop choice and input timing → higher yield and lower waste → more pr
 |---|---|
 | API | http://localhost:5262 |
 | Swagger | http://localhost:5262/swagger |
-| Farmer web | http://localhost:5173 |
-| Admin web | http://localhost:5174 |
+| Farmer app | http://localhost:4200 |
+| Admin | http://localhost:4200/admin |
 
 **Demo logins**
 
@@ -83,10 +83,10 @@ Better crop choice and input timing → higher yield and lower waste → more pr
 | Farmer | Phone `+923001234567`, OTP `1234` (`Otp:UseMock=true`) |
 | Admin | `admin@happyveggie.pk` / `HappyVeggie!2026` |
 
-**Judge path:** language → OTP login → farm / twin → generate plan → AI assistant → optional admin.
+**Judge path:** language → OTP login → farm / twin → **Farm Plan tables (yield/rates)** → AI assistant → optional admin.
 
 Time-to-plan target: under ~60 seconds from complete inputs.  
-Detailed talk track: [PRESENTATION.md](./PRESENTATION.md) · live demo script: [../DEMO-PITCH.md](../DEMO-PITCH.md)
+Detailed talk track: [PRESENTATION.md](./PRESENTATION.md) · live demo script: [../DEMO-PITCH.md](../DEMO-PITCH.md) · docs map: [../README.md](../README.md)
 
 ---
 

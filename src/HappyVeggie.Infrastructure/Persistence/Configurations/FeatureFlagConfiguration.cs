@@ -62,7 +62,7 @@ public sealed class FeatureFlagConfiguration : IEntityTypeConfiguration<FeatureF
             {
                 Id = LlmLiveId,
                 Key = "llm.live",
-                Enabled = false,
+                Enabled = true,
                 Description = "Use live LLM provider instead of stub",
                 UpdatedAt = SeedUpdatedAt
             });

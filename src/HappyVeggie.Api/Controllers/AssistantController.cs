@@ -106,7 +106,16 @@ public sealed class AssistantController : ControllerBase
 
         var now = DateTimeOffset.UtcNow;
 
-        // Save user message
+        // Get farmer language
+        var farmForLang = await _db.Farms.AsNoTracking()
+            .FirstAsync(f => f.Id == farmId, cancellationToken);
+        var farmerForLang = await _db.Farmers.AsNoTracking()
+            .FirstOrDefaultAsync(f => f.Id == farmForLang.FarmerId, cancellationToken);
+
+        // Call AI first so a provider failure does not leave a half-saved turn.
+        var reply = await _assistant.RespondAsync(
+            farmId, threadId, body.Text, farmerForLang?.Language ?? "en", cancellationToken);
+
         var userMsg = new AssistantMessage
         {
             Id = Guid.NewGuid(),
@@ -117,28 +126,22 @@ public sealed class AssistantController : ControllerBase
         };
         _db.AssistantMessages.Add(userMsg);
 
-        // Get farmer language
-        var farmForLang = await _db.Farms.AsNoTracking()
-            .FirstAsync(f => f.Id == farmId, cancellationToken);
-        var farmerForLang = await _db.Farmers.AsNoTracking()
-            .FirstOrDefaultAsync(f => f.Id == farmForLang.FarmerId, cancellationToken);
-
-        // Call AI assistant service
-        var reply = await _assistant.RespondAsync(
-            farmId, threadId, body.Text, farmerForLang?.Language ?? "en", cancellationToken);
-
         var assistantMsg = new AssistantMessage
         {
             Id = Guid.NewGuid(),
             ThreadId = threadId,
             Role = MessageRole.Assistant,
             Content = reply.Content,
-            CitationsJson = JsonSerializer.Serialize(reply.Citations),
+            CitationsJson = JsonSerializer.Serialize(new
+            {
+                citations = reply.Citations,
+                followUps = reply.FollowUpQuestions
+            }),
             CreatedAt = DateTimeOffset.UtcNow
         };
         _db.AssistantMessages.Add(assistantMsg);
 
-        thread.LastMessageAt = now;
+        thread.LastMessageAt = DateTimeOffset.UtcNow;
         await _db.SaveChangesAsync(cancellationToken);
 
         return Ok(new
@@ -150,9 +153,11 @@ public sealed class AssistantController : ControllerBase
                 assistantMsg.Content,
                 assistantMsg.CitationsJson,
                 assistantMsg.CreatedAt,
-                Disclaimer = reply.Disclaimer
+                Disclaimer = reply.Disclaimer,
+                FollowUpQuestions = reply.FollowUpQuestions
             },
-            Disclaimer = reply.Disclaimer
+            Disclaimer = reply.Disclaimer,
+            FollowUpQuestions = reply.FollowUpQuestions
         });
     }
 }

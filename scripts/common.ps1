@@ -3,30 +3,7 @@ $ErrorActionPreference = "Stop"
 $script:RepoRoot = Split-Path -Parent $PSScriptRoot
 $script:RuntimeDir = Join-Path $PSScriptRoot ".runtime"
 $script:PidFile = Join-Path $script:RuntimeDir "pids.json"
-$script:PnpmShimDir = Join-Path $env:LOCALAPPDATA "pnpm-shims"
-
-function Ensure-PnpmOnPath {
-    $nodeDir = Join-Path $env:ProgramFiles "nodejs"
-    $pathParts = @()
-    if (Test-Path $script:PnpmShimDir) { $pathParts += $script:PnpmShimDir }
-    if (Test-Path $nodeDir) { $pathParts += $nodeDir }
-    $pathParts += $env:Path
-    $env:Path = ($pathParts -join ";")
-
-    if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
-        $corepack = Get-Command corepack.cmd -ErrorAction SilentlyContinue
-        if (-not $corepack) { $corepack = Get-Command corepack -ErrorAction SilentlyContinue }
-        if ($corepack) {
-            if (-not (Test-Path $script:PnpmShimDir)) {
-                New-Item -ItemType Directory -Path $script:PnpmShimDir | Out-Null
-            }
-            & $corepack.Source enable --install-directory $script:PnpmShimDir
-            $env:Path = "$script:PnpmShimDir;$env:Path"
-        }
-    }
-}
-
-Ensure-PnpmOnPath
+$script:LegacyPorts = @(5173, 5174)
 
 function Get-CommandPath([string]$Name) {
     $cmd = Get-Command $Name -ErrorAction SilentlyContinue
@@ -34,18 +11,17 @@ function Get-CommandPath([string]$Name) {
     return $null
 }
 
-function Resolve-PnpmPath {
-    foreach ($name in @("pnpm.cmd", "pnpm.exe", "pnpm")) {
+function Resolve-NpmPath {
+    foreach ($name in @("npm.cmd", "npm.exe", "npm")) {
         $path = Get-CommandPath $name
         if ($path) { return $path }
     }
 
-    $userPnpm = Join-Path $env:APPDATA "npm\pnpm.cmd"
-    if (Test-Path $userPnpm) { return $userPnpm }
-
-    $corepack = Get-CommandPath "corepack.cmd"
-    if (-not $corepack) { $corepack = Get-CommandPath "corepack" }
-    if ($corepack) { return $corepack }
+    $nodeDir = Join-Path $env:ProgramFiles "nodejs"
+    foreach ($name in @("npm.cmd", "npm.exe")) {
+        $candidate = Join-Path $nodeDir $name
+        if (Test-Path $candidate) { return $candidate }
+    }
 
     return $null
 }
@@ -58,12 +34,19 @@ function Resolve-DotnetPath {
     return $null
 }
 
-$script:DotnetPath = Resolve-DotnetPath
-$script:PnpmPath = Resolve-PnpmPath
-$script:PnpmUsesCorepack = $false
-if ($script:PnpmPath -and ((Split-Path -Leaf $script:PnpmPath) -match '^corepack')) {
-    $script:PnpmUsesCorepack = $true
+function Resolve-FrontendRoot {
+    foreach ($name in @("frontend", "Frontend")) {
+        $candidate = Join-Path $script:RepoRoot $name
+        if (Test-Path (Join-Path $candidate "package.json")) {
+            return $candidate
+        }
+    }
+    return (Join-Path $script:RepoRoot "frontend")
 }
+
+$script:DotnetPath = Resolve-DotnetPath
+$script:NpmPath = Resolve-NpmPath
+$script:FrontendRoot = Resolve-FrontendRoot
 
 $script:Services = @(
     @{
@@ -79,20 +62,12 @@ $script:Services = @(
         WorkDir   = $script:RepoRoot
     }
     @{
-        Name      = "farmer-web"
-        Port      = 5173
-        Url       = "http://localhost:5173"
-        FilePath  = $script:PnpmPath
-        Arguments = $(if ($script:PnpmUsesCorepack) { @("pnpm", "dev:farmer") } else { @("dev:farmer") })
-        WorkDir   = Join-Path $script:RepoRoot "Frontend"
-    }
-    @{
-        Name      = "admin-web"
-        Port      = 5174
-        Url       = "http://localhost:5174"
-        FilePath  = $script:PnpmPath
-        Arguments = $(if ($script:PnpmUsesCorepack) { @("pnpm", "dev:admin") } else { @("dev:admin") })
-        WorkDir   = Join-Path $script:RepoRoot "Frontend"
+        Name      = "frontend"
+        Port      = 4200
+        Url       = "http://localhost:4200"
+        FilePath  = $script:NpmPath
+        Arguments = @("start")
+        WorkDir   = $script:FrontendRoot
     }
 )
 
@@ -130,7 +105,7 @@ function Stop-PortListeners([int]$Port) {
 function Stop-TrackedProcesses {
     if (-not (Test-Path $script:PidFile)) { return }
     $tracked = Get-Content -Raw $script:PidFile | ConvertFrom-Json
-    foreach ($entry in $tracked) {
+    foreach ($entry in @($tracked)) {
         Stop-ProcessTree ([int]$entry.Pid)
     }
 }
@@ -139,6 +114,10 @@ function Stop-AllServices {
     Stop-TrackedProcesses
     foreach ($svc in $script:Services) {
         Stop-PortListeners ([int]$svc.Port)
+    }
+    # Clear leftover Vite ports from the old React apps
+    foreach ($port in $script:LegacyPorts) {
+        Stop-PortListeners ([int]$port)
     }
     if (Test-Path $script:PidFile) {
         Remove-Item $script:PidFile -Force

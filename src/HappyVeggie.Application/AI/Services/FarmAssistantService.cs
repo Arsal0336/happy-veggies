@@ -49,6 +49,11 @@ public sealed class FarmAssistantService
             .FirstOrDefaultAsync(t => t.Id == threadId && t.FarmId == farmId, cancellationToken)
             ?? throw new KeyNotFoundException($"Thread {threadId} not found for farm {farmId}.");
 
+        var replyLanguage = ResolveReplyLanguage(language, userMessage);
+        var disclaimer = replyLanguage == "ur"
+            ? "یہ مصنوعی ذہانت سے تیار کردہ مشاورتی مواد ہے۔ پیشہ ورانہ زرعی مشورہ نہیں۔"
+            : AdvisoryDisclaimer;
+
         var context = await _contextBuilder.BuildAsync(farmId, cancellationToken);
         var contextText = FarmContextBuilder.ToPromptText(context);
 
@@ -73,9 +78,14 @@ public sealed class FarmAssistantService
             ? $"Protected environment types on this farm: {string.Join(", ", protectedTypes)}. Do not assume outdoor field conditions for those areas."
             : "All listed areas are open_field unless otherwise stated.";
 
+        var languageGuard = replyLanguage == "ur"
+            ? "The farmer's latest message is in Urdu (or Urdu is required). Write the entire assistant answer, headings, lists, table cells, and follow-up chips in Urdu. Follow-up chips must be first-person sendable requests (میں چاہتا/چاہتی ہوں… / مجھے بتائیں…), not questions to the farmer."
+            : "Write the assistant answer in clear English unless the user explicitly asks for another language. Follow-up chips must be first-person sendable requests (I want… / Tell me… / Give me…), not questions to the farmer.";
+
         var messages = new List<LlmMessage>
         {
-            new("system", PromptTemplates.AssistantSystem(language)),
+            new("system", PromptTemplates.AssistantSystem(replyLanguage)),
+            new("system", languageGuard),
             new("system", areaGuard),
             new("system", contextText)
         };
@@ -95,22 +105,97 @@ public sealed class FarmAssistantService
         _usageLogger.LogChatUsage("assistant_chat", response, farmId: farmId);
 
         var validation = _validator.Validate(response.Content, farmId);
-        var citations = AssistantResponseValidator.ExtractCitations(response.Content);
 
         // Always surface disclaimer in metadata (stub and live)
         var content = validation.Content;
         if (!content.Contains("not professional", StringComparison.OrdinalIgnoreCase) &&
-            !content.Contains("AI-generated", StringComparison.OrdinalIgnoreCase))
+            !content.Contains("AI-generated", StringComparison.OrdinalIgnoreCase) &&
+            !content.Contains("پیشہ ورانہ زرعی", StringComparison.OrdinalIgnoreCase) &&
+            !content.Contains("مصنوعی ذہانت", StringComparison.OrdinalIgnoreCase))
         {
-            content = content + "\n\n" + AdvisoryDisclaimer;
+            content = content + "\n\n" + disclaimer;
+        }
+
+        var (cleanContent, followUps) = FollowUpQuestionsParser.Extract(content);
+        var citations = AssistantResponseValidator.ExtractCitations(cleanContent);
+        if (followUps.Count == 0)
+        {
+            followUps = DefaultFollowUps(replyLanguage, userMessage, context.CropZones.FirstOrDefault()?.CropName);
         }
 
         return new AssistantReply(
-            content,
+            cleanContent,
             citations,
             validation.IsClean,
             validation.Issues,
-            AdvisoryDisclaimer);
+            disclaimer,
+            followUps);
+    }
+
+    private static string ResolveReplyLanguage(string profileLanguage, string userMessage)
+    {
+        if (ContainsArabicScript(userMessage))
+        {
+            return "ur";
+        }
+
+        // Clear Latin/English question should stay English even if profile is Urdu.
+        if (LooksPrimarilyLatin(userMessage))
+        {
+            return "en";
+        }
+
+        return string.Equals(profileLanguage, "ur", StringComparison.OrdinalIgnoreCase) ? "ur" : "en";
+    }
+
+    private static bool ContainsArabicScript(string text)
+        => text.Any(static c =>
+            c is (>= '\u0600' and <= '\u06FF')
+                or (>= '\u0750' and <= '\u077F')
+                or (>= '\u08A0' and <= '\u08FF'));
+
+    private static bool LooksPrimarilyLatin(string text)
+    {
+        var letters = text.Where(char.IsLetter).ToList();
+        if (letters.Count < 3)
+        {
+            return false;
+        }
+
+        var latin = letters.Count(static c => c <= 0x024F);
+        return latin >= letters.Count * 0.8;
+    }
+
+    private static IReadOnlyList<string> DefaultFollowUps(string language, string userMessage, string? crop)
+    {
+        var cropLabel = string.IsNullOrWhiteSpace(crop) ? (language == "ur" ? "فصل" : "crop") : crop!;
+        if (language == "ur")
+        {
+            return
+            [
+                $"مجھے {cropLabel} کی آبپاشی کا وقت بتائیں",
+                "اس ہفتے موسمی خطرے کا مشورہ دیں",
+                "فارم کے لیے اگلا عملی قدم بتائیں"
+            ];
+        }
+
+        var q = userMessage.ToLowerInvariant();
+        if (q.Contains("irrig") || q.Contains("water") || q.Contains("آبپاشی") || q.Contains("پانی"))
+        {
+            return
+            [
+                $"I want this week's water need for my {cropLabel}",
+                "Tell me whether to skip irrigation after rain",
+                "Give me the next twin signal to check"
+            ];
+        }
+
+        return
+        [
+            $"I want irrigation timing for my {cropLabel}",
+            "Tell me how to handle heat on this farm",
+            "Give me the next practical step for my zones"
+        ];
     }
 }
 
@@ -119,4 +204,5 @@ public sealed record AssistantReply(
     IReadOnlyList<string> Citations,
     bool IsClean,
     IReadOnlyList<string> ValidationIssues,
-    string Disclaimer);
+    string Disclaimer,
+    IReadOnlyList<string> FollowUpQuestions);

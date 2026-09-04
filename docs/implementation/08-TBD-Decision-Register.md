@@ -3,7 +3,7 @@
 | ID | Topic | Blocks | Owner | Decision | Date |
 |----|-------|--------|-------|----------|------|
 | TBD-01 | Admin MFA vs SSO | GAP-044 | Product/Sec | **OPEN / BLOCKED** — no MFA implementation until decision; password-only admin login interim | — |
-| TBD-02 | LLM vendor & budget | GAP-030,043 | Product | **DECIDED for hackathon** — Alibaba DashScope / Qwen (`qwen-plus`); budget TBD for production | 2026-09-04 |
+| TBD-02 | LLM vendor & budget | GAP-030,043 | Product | **DECIDED for hackathon** — OpenAI-compatible `LiveLlmProvider` (Groq local default; DashScope/Qwen configurable); budget TBD for production | 2026-09-04 |
 | TBD-03 | SMS OTP vendor | Live OTP | Product | **OPEN** | — |
 | TBD-04 | Weather API vendor | Live GAP-020 | Product | **DECIDED** — Open-Meteo (`LiveWeatherProvider`) | 2026-09-04 |
 | TBD-05 | Soil API vendor | Live GAP-021 | Product | **DECIDED** — ISRIC SoilGrids REST (`LiveSoilProvider`) | 2026-09-04 |

@@ -92,7 +92,30 @@ public sealed class AdminPortalController : ControllerBase
             .Select(f => new { f.Id, f.Name, f.RegionLabel, f.AreaAcres, f.CreatedAt })
             .ToListAsync(cancellationToken);
 
-        return Ok(new { Farmer = new { farmer.Id, farmer.Phone, farmer.Name, farmer.Language, farmer.CreatedAt }, Farms = farms });
+        var farmIds = farms.Select(f => f.Id).ToList();
+        var plans = await _db.FarmPlans.AsNoTracking()
+            .Where(p => p.FarmerId == id || farmIds.Contains(p.FarmId))
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(20)
+            .Select(p => new
+            {
+                p.Id,
+                p.FarmId,
+                p.Version,
+                p.Language,
+                p.CreatedAt,
+                p.ReviewStatus,
+                IsFlagged = p.ReviewStatus == "flagged",
+                Summary = "v" + p.Version + " · " + p.Language
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(new
+        {
+            Farmer = new { farmer.Id, farmer.Phone, farmer.Name, farmer.Language, farmer.CreatedAt },
+            Farms = farms,
+            Plans = plans
+        });
     }
 
     [HttpGet("farms/{farmId:guid}/twin")]

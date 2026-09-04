@@ -119,7 +119,11 @@ public sealed class StubLlmProvider : ILlmProvider
             ? "یہ مصنوعی ذہانت سے تیار کردہ مشاورتی مواد ہے۔ پیشہ ورانہ زرعی مشورہ نہیں۔"
             : "This is AI-generated advisory content. Not professional agricultural advice.";
 
-        return $"{body}\n\n{disclaimer}";
+        var followUps = ur
+            ? """["مجھے اس ہفتے آبپاشی کا وقت بتائیں","گرمی سے فصل بچانے کا طریقہ بتائیں","فارم کے لیے اگلا عملی قدم دیں"]"""
+            : """["I want irrigation timing for this week","Tell me how to protect crops from heat","Give me the next practical step for my farm"]""";
+
+        return $"{body}\n\n{disclaimer}\n\n<<<FOLLOW_UPS>>>\n{followUps}\n<<<END_FOLLOW_UPS>>>";
     }
 
     private static string FormatWeatherNote(FarmContext ctx, bool ur)

@@ -7,18 +7,19 @@ Ensure-RuntimeDir
 if (-not $script:DotnetPath) {
     throw "'dotnet' is not on PATH. Install the .NET SDK before running the stack."
 }
-if (-not $script:PnpmPath) {
-    throw "'pnpm' is not on PATH. Enable Corepack (`corepack enable`) or install pnpm, then retry."
+if (-not $script:NpmPath) {
+    throw "'npm' is not on PATH. Install Node.js (includes npm), then retry."
+}
+if (-not (Test-Path (Join-Path $script:FrontendRoot "package.json"))) {
+    throw "Angular frontend not found at $($script:FrontendRoot). Expected package.json."
 }
 
-$frontendRoot = Join-Path $script:RepoRoot "Frontend"
-if (-not (Test-Path (Join-Path $frontendRoot "node_modules"))) {
-    Write-Host "Installing frontend dependencies..."
-    Push-Location $frontendRoot
+if (-not (Test-Path (Join-Path $script:FrontendRoot "node_modules"))) {
+    Write-Host "Installing frontend dependencies (npm install)..."
+    Push-Location $script:FrontendRoot
     try {
-        $installArgs = $(if ($script:PnpmUsesCorepack) { @("pnpm", "install") } else { @("install") })
-        & $script:PnpmPath @installArgs
-        if ($LASTEXITCODE -ne 0) { throw "pnpm install failed." }
+        & $script:NpmPath "install"
+        if ($LASTEXITCODE -ne 0) { throw "npm install failed." }
     }
     finally {
         Pop-Location
@@ -32,8 +33,11 @@ Start-Sleep -Seconds 1
 $started = @()
 
 foreach ($svc in $script:Services) {
+    if (-not $svc.FilePath) {
+        throw "Missing executable for service '$($svc.Name)'."
+    }
+
     $outLog = Join-Path $script:RuntimeDir "$($svc.Name).out.log"
-    $errLog = Join-Path $script:RuntimeDir "$($svc.Name).err.log"
     $argString = ($svc.Arguments | ForEach-Object {
             if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
         }) -join " "
@@ -91,8 +95,8 @@ Write-Host ""
 Write-Host "Happy Veggie is starting:"
 Write-Host "  API        http://localhost:5262"
 Write-Host "  Swagger    http://localhost:5262/swagger"
-Write-Host "  Farmer web http://localhost:5173"
-Write-Host "  Admin web  http://localhost:5174"
+Write-Host "  App        http://localhost:4200"
+Write-Host "  Admin      http://localhost:4200/admin"
 Write-Host ""
 Write-Host "Demo farmer: +923001234567  OTP 1234"
 Write-Host "Demo admin:  admin@happyveggie.pk / HappyVeggie!2026"
