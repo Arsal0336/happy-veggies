@@ -198,6 +198,8 @@ Logs: `scripts/.runtime/`
 
 Remote SQL Server belongs in gitignored `src/HappyVeggie.Api/appsettings.Local.json`. Set `Database:Provider` to `Auto` (default), `SqlServer`, or `Sqlite`.
 
+**Secrets:** copy [`src/HappyVeggie.Api/.env.example`](src/HappyVeggie.Api/.env.example) and the frontend `Frontend/apps/*/.env.example` files for required variable names. Put real values in local `.env`, user secrets, or `appsettings.Local.json` — never commit API keys, tokens, passwords, or production signing keys. `.env` and `.env.*` are gitignored (examples and fixture `.env.test` are excepted).
+
 ### Stop everything
 
 ```powershell
@@ -241,15 +243,16 @@ happy-veggies/
 
 ## Demo narrative (judges)
 
+Full talk track + before/after + DashScope live steps: **[docs/DEMO-PITCH.md](docs/DEMO-PITCH.md)**.
+
 1. Open **Farmer web** → choose **اردو** or **English**.  
 2. Sign in with `+923001234567` and demo OTP **1234**.  
-3. Create a farm: GPS, area, crop, soil/water (new-farmer path if needed).  
-4. Generate a **custom crop plan** — calendar, inputs, advisory yield.  
-5. Open the **Digital Twin**: production areas, weather/soil context, green score.  
-6. Ask the **AI Farm Assistant** a farm-specific question.  
-7. (Optional) **Admin web** — `admin@happyveggie.pk` / `HappyVeggie!2026` — catalogs, flags, operations. Explore APIs at `/swagger`.
+3. Open seeded **Green Valley Farm** (zones, water/soil, twin, plan, alerts ready).  
+4. **Refresh twin** → weather/green update; open alerts (heat / irrigation).  
+5. Open or regenerate the **crop plan**; ask the **AI Farm Assistant** a farm-specific question.  
+6. (Optional) **Admin web** — `admin@happyveggie.pk` / `HappyVeggie!2026` — metrics, plan review, LLM usage. Explore APIs at `/swagger`.
 
-Time-to-plan target: **under ~60 seconds** from complete inputs.
+Time-to-wow target: **under ~90 seconds** from login on the seeded farm.
 
 ---
 

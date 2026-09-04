@@ -331,16 +331,46 @@ export interface FarmTwinDto {
   areas: FarmTwinAreaDto[];
   zones: FarmTwinZoneDto[];
   neighbourEdges: FarmTwinNeighbourEdgeDto[];
-  weather?: { providerStatus?: string | null } | null;
+  weather?: {
+    providerStatus?: string | null;
+    temperatureC?: number | null;
+    humidityPercent?: number | null;
+    windSpeedKmh?: number | null;
+    rainfallMm?: number | null;
+    condition?: string | null;
+    forecastTrend?: string | null;
+    observedAt?: string | null;
+  } | null;
   waterSummary?: {
     sourceCount: number;
     sources: Array<{ id: string; type: string; irrigationMethod?: string | null }>;
+    reliability?: string | null;
+    irrigationMethod?: string | null;
   } | null;
   soilSummary?: {
     profileCount: number;
     providerStatus?: string | null;
+    soilType?: string | null;
+    texture?: string | null;
+    phLevel?: number | null;
+    organicMatterPercent?: number | null;
   } | null;
-  greenSummary?: Record<string, unknown> | null;
+  greenSummary?: {
+    overallScore?: number;
+    maxScore?: number;
+    nonCertificationDisclaimer?: string;
+    weightsNote?: string | null;
+    computedAt?: string;
+    factors?: Array<{
+      key: string;
+      label: string;
+      available: boolean;
+      points: number;
+      maxPoints: number;
+      explanation: string;
+      dataQuality: string;
+    }>;
+  } | null;
   latestPlan?: {
     id: string;
     version: number;

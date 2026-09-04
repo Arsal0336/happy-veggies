@@ -194,6 +194,20 @@ export function mapFarmTwin(dto: FarmTwinDto, farmerId = ''): TwinDto {
     irrigationMethod: s.irrigationMethod ?? undefined,
   }));
 
+  const green = dto.greenSummary;
+  const dimensions = Object.fromEntries(
+    (green?.factors ?? []).map((f) => [
+      f.key,
+      { score: f.points, available: f.available, explanation: f.explanation },
+    ]),
+  );
+  const measuredVsEstimated = Object.fromEntries(
+    (green?.factors ?? []).map((f) => [
+      f.key,
+      f.dataQuality === 'measured' ? ('measured' as const) : ('estimated' as const),
+    ]),
+  );
+
   return {
     farm,
     areas,
@@ -201,7 +215,23 @@ export function mapFarmTwin(dto: FarmTwinDto, farmerId = ''): TwinDto {
     neighbourEdges: (dto.neighbourEdges ?? []).map(mapNeighbourEdge),
     weather: dto.weather
       ? {
-          forecastTrend: dto.weather.providerStatus ?? undefined,
+          temperature:
+            dto.weather.temperatureC != null
+              ? { value: Number(dto.weather.temperatureC), unit: '°C' }
+              : undefined,
+          humidity:
+            dto.weather.humidityPercent != null
+              ? Number(dto.weather.humidityPercent)
+              : undefined,
+          rainfall:
+            dto.weather.rainfallMm != null
+              ? { value: Number(dto.weather.rainfallMm), unit: 'mm' }
+              : undefined,
+          wind:
+            dto.weather.windSpeedKmh != null
+              ? { value: Number(dto.weather.windSpeedKmh), unit: 'km/h' }
+              : undefined,
+          forecastTrend: dto.weather.forecastTrend ?? dto.weather.condition ?? undefined,
           providerStatus: dto.weather.providerStatus,
         }
       : undefined,
@@ -209,18 +239,36 @@ export function mapFarmTwin(dto: FarmTwinDto, farmerId = ''): TwinDto {
       ? {
           sourceCount: dto.waterSummary.sourceCount,
           sources,
-          irrigationMethod: sources[0]?.irrigationMethod,
-          reliability: sources.length ? 'reliable' : undefined,
+          irrigationMethod:
+            dto.waterSummary.irrigationMethod ?? sources[0]?.irrigationMethod,
+          reliability: dto.waterSummary.reliability ?? (sources.length ? 'reliable' : undefined),
         }
       : undefined,
     soil: dto.soilSummary
       ? {
           profileCount: dto.soilSummary.profileCount,
           providerStatus: dto.soilSummary.providerStatus,
+          type: dto.soilSummary.soilType ?? undefined,
+          texture: dto.soilSummary.texture ?? undefined,
+          ph:
+            dto.soilSummary.phLevel != null
+              ? { value: Number(dto.soilSummary.phLevel), unit: 'pH' }
+              : undefined,
+          organicMatter:
+            dto.soilSummary.organicMatterPercent != null
+              ? { value: Number(dto.soilSummary.organicMatterPercent), unit: '%' }
+              : undefined,
         }
       : undefined,
     greenSummary: {
-      nonCertificationDisclaimer: GREEN_NON_CERT_DISCLAIMER,
+      overallScore: green?.overallScore,
+      dimensions: Object.keys(dimensions).length ? dimensions : undefined,
+      measuredVsEstimated: Object.keys(measuredVsEstimated).length
+        ? measuredVsEstimated
+        : undefined,
+      computedAt: green?.computedAt,
+      nonCertificationDisclaimer:
+        green?.nonCertificationDisclaimer ?? GREEN_NON_CERT_DISCLAIMER,
     },
     layoutMode: dto.layoutMode || 'auto',
     twinRefreshedAt: dto.twinRefreshedAt,

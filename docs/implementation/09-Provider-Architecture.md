@@ -7,7 +7,7 @@ Application/domain code depends on **interfaces only**. Composition root selects
 
 | Interface | Stub | Live | Flag / config |
 |-----------|------|------|---------------|
-| `ILlmProvider` | `StubLlmProvider` | `LiveLlmProvider` (vendor TBD-02) | `Llm:UseLive` + flag `llm.live` |
+| `ILlmProvider` | `StubLlmProvider` (en/ur twin-grounded templates) | `LiveLlmProvider` (Alibaba DashScope / Qwen OpenAI-compatible) | `Llm:UseLive` + flag `llm.live` + `Llm:ApiKey` |
 | `IWeatherProvider` | `StubWeatherProvider` | **Open-Meteo** `LiveWeatherProvider` | `Weather:UseLive` + `Weather:BaseUrl` |
 | `ISoilProvider` | `StubSoilProvider` | **ISRIC SoilGrids** `LiveSoilProvider` | `Soil:UseLive` + `Soil:BaseUrl` |
 | `IOtpProvider` | `MockOtpProvider` | `LiveOtpProvider` (TBD-03; throws) | `Otp:UseMock` |
@@ -17,6 +17,7 @@ Application/domain code depends on **interfaces only**. Composition root selects
 
 | Concern | Vendor | Notes |
 |---------|--------|-------|
+| LLM | Alibaba DashScope / Qwen | OpenAI-compatible; `Llm:Endpoint` + `Llm:ApiKey` |
 | Weather | [Open-Meteo](https://open-meteo.com/) | No API key; `api.open-meteo.com/v1/forecast` |
 | Soil | [ISRIC SoilGrids](https://www.isric.org/explore/soilgrids) REST v2 | Beta; may pause — degrade to null / status failed |
 | Portfolio | [PyPortfolioOpt](https://pyportfolioopt.readthedocs.io/) | Sidecar `services/portfolio-optimizer` on `:8091` |
@@ -25,17 +26,36 @@ Application/domain code depends on **interfaces only**. Composition root selects
 
 | Concern | Rule |
 |---------|------|
-| Secrets | Server-only; Open-Meteo/SoilGrids need none |
-| Timeouts | `Providers:TimeoutSeconds`; SoilGrids uses longer bound (3×); Portfolio `Portfolio:TimeoutSeconds` |
+| Secrets | Server-only; Open-Meteo/SoilGrids need none; LLM key never in git |
+| Timeouts | `Providers:TimeoutSeconds`; SoilGrids uses longer bound (60s); Portfolio `Portfolio:TimeoutSeconds`; LLM `Llm:TimeoutSeconds` |
 | Weather/soil fail | Twin refresh still succeeds; status = `failed` (EIR-005) |
 | Portfolio fail | Returns `status: degraded` with reason; farm CRUD unaffected |
 | OTP fail | Rate-limit friendly; never log OTP codes |
 
 ## Wiring
 
-1. `RefreshTwinCommandHandler` calls weather/soil providers
-2. `GET /farms/{id}/portfolio` → `PortfolioService` → PyPortfolioOpt sidecar
-3. Feature flags may still gate enrichment intent (`weather.enrichment`, `soil.enrichment`)
+1. `RefreshTwinCommandHandler.TryGetWeatherAsync` / `TryGetSoilAsync` — `CancelAfter(Providers:TimeoutSeconds)` then catch → status `failed`.
+2. `GET /farms/{id}/portfolio` → `PortfolioService` → PyPortfolioOpt sidecar.
+3. `StubLlmProvider` / `LiveLlmProvider` — linked CTS with `options.Timeout` before work / readiness checks.
+4. Feature flags may still gate enrichment intent (`weather.enrichment`, `soil.enrichment`, `llm.live`).
+5. Config: `appsettings.json` → `Providers:TimeoutSeconds`, `Llm:TimeoutSeconds`, `Weather:*`, `Soil:*`, `Portfolio:*`.
+
+See also `docs/implementation/10-Observability.md`.
+
+## Wiring targets
+
+1. `RefreshTwinCommandHandler` must call weather/soil providers (not hardcode `"stub"` only)
+2. Plan/Assistant/GreenTips already call `ILlmProvider` — swap implementation at DI
+3. Feature flags (GAP-013) override config at runtime when entity exists
+
+## LLM DI (GAP-030)
+
+- Default: `StubLlmProvider` (safe for CI/dev). Optionally writes `LlmUsageLogs` with `model=stub`, `EstimatedCostUsd=0`. Urdu plan/assistant bodies when context language is `ur`.
+- `Llm:UseLive=true` → register `LiveLlmProvider` (DashScope OpenAI-compatible Chat Completions).
+- Live checks: `Llm:ApiKey` required; `llm.live` flag **or** `Llm:UseLive` allows the call.
+- Config: `Llm:Model` (default `qwen-plus`), `Llm:Endpoint` (default `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`).
+- Usage table: `LlmUsageLogs` (`Id`, `FarmId?`, `Purpose`, `Model`, `PromptTokens`, `CompletionTokens`, `EstimatedCostUsd`, `CreatedAt`).
+- Judge script: `docs/DEMO-PITCH.md`.
 
 ## Dev / test
 - Default live weather/soil enabled in appsettings (no keys)

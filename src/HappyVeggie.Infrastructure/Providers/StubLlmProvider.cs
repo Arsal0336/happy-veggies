@@ -77,33 +77,48 @@ public sealed class StubLlmProvider : ILlmProvider
 
     private static string BuildAssistantReply(FarmContext ctx, string question)
     {
-        var crop = ctx.Crop ?? "your current crop";
-        var region = ctx.Region ?? "your region";
+        var crop = ctx.Crop ?? (ctx.Language == "ur" ? "آپ کی موجودہ فصل" : "your current crop");
+        var region = ctx.Region ?? (ctx.Language == "ur" ? "آپ کے علاقے" : "your region");
         var q = question.ToLowerInvariant();
+        var ur = ctx.Language == "ur";
 
         string body;
-        if (q.Contains("water") || q.Contains("irrig"))
+        if (q.Contains("water") || q.Contains("irrig") || q.Contains("پانی") || q.Contains("آبپاشی"))
         {
-            body = $"For {crop} in {region}, irrigate in the cool hours and avoid standing water on heavy soils. Match frequency to the latest twin rainfall and water-source notes.";
+            body = ur
+                ? $"{region} میں {crop} کے لیے ٹھنڈے اوقات میں آبپاشی کریں اور بھاری مٹی پر کھڑا پانی نہ رہنے دیں۔ تعدد کو ڈیجیٹل ٹوئن کی بارش اور پانی کے ذرائع کے مطابق رکھیں۔"
+                : $"For {crop} in {region}, irrigate in the cool hours and avoid standing water on heavy soils. Match frequency to the latest twin rainfall and water-source notes.";
         }
-        else if (q.Contains("fertil") || q.Contains("npk") || q.Contains("nutrient"))
+        else if (q.Contains("fertil") || q.Contains("npk") || q.Contains("nutrient") || q.Contains("کھاد"))
         {
-            body = $"Split nitrogen for {crop} rather than one heavy dose. Use the twin soil pH ({ctx.Soil ?? "recorded profile"}) before adding lime or gypsum.";
+            body = ur
+                ? $"{crop} کے لیے نائٹروجن ایک ساتھ نہ دیں — قسطوں میں دیں۔ چونہ یا جپسم سے پہلے ٹوئن مٹی کا پی ایچ ({ctx.Soil ?? "ریکارڈ شدہ پروفائل"}) دیکھیں۔"
+                : $"Split nitrogen for {crop} rather than one heavy dose. Use the twin soil pH ({ctx.Soil ?? "recorded profile"}) before adding lime or gypsum.";
         }
-        else if (q.Contains("pest") || q.Contains("disease"))
+        else if (q.Contains("pest") || q.Contains("disease") || q.Contains("کیڑا") || q.Contains("بیماری"))
         {
-            body = $"Scout {crop} twice a week in this season. Remove badly affected leaves and keep neighbouring fields in mind — incompatible neighbours increase pest pressure.";
+            body = ur
+                ? $"اس موسم میں {crop} کا ہفتہ میں دو بار معائنہ کریں۔ شدید متاثر پتے ہٹائیں اور پڑوسی فصلوں کا خیال رکھیں — ناموافق پڑوسی کیڑوں کا دباؤ بڑھاتے ہیں۔"
+                : $"Scout {crop} twice a week in this season. Remove badly affected leaves and keep neighbouring fields in mind — incompatible neighbours increase pest pressure.";
         }
-        else if (q.Contains("yield") || q.Contains("price") || q.Contains("rate"))
+        else if (q.Contains("yield") || q.Contains("price") || q.Contains("rate") || q.Contains("پیداوار") || q.Contains("قیمت"))
         {
-            body = $"Yield is an advisory estimate from area, crop, and season — not a guarantee. Check the latest government reference rate in Economics before sales planning.";
+            body = ur
+                ? "پیداوار رقبہ، فصل اور موسم سے ایک مشاورتی تخمینہ ہے — ضمانت نہیں۔ فروخت کی منصوبہ بندی سے پہلے Economics میں سرکاری ریفرنس ریٹ چیک کریں۔"
+                : $"Yield is an advisory estimate from area, crop, and season — not a guarantee. Check the latest government reference rate in Economics before sales planning.";
         }
         else
         {
-            body = $"Next action for this farm: keep {crop} on the seasonal calendar for {region}, refresh the digital twin after weather changes, and follow the latest plan sections for planting and inputs.";
+            body = ur
+                ? $"{region} کے لیے اگلا قدم: {crop} کو موسمی کیلنڈر پر رکھیں، موسم بدلنے پر ڈیجیٹل ٹوئن ریفریش کریں، اور تازہ منصوبے کے مطابق عمل کریں۔"
+                : $"Next action for this farm: keep {crop} on the seasonal calendar for {region}, refresh the digital twin after weather changes, and follow the latest plan sections for planting and inputs.";
         }
 
-        return $"{body}\n\nThis is AI-generated advisory content. Not professional agricultural advice.";
+        var disclaimer = ur
+            ? "یہ مصنوعی ذہانت سے تیار کردہ مشاورتی مواد ہے۔ پیشہ ورانہ زرعی مشورہ نہیں۔"
+            : "This is AI-generated advisory content. Not professional agricultural advice.";
+
+        return $"{body}\n\n{disclaimer}";
     }
 
     private static string BuildPlanJson(FarmContext ctx)
@@ -113,30 +128,67 @@ public sealed class StubLlmProvider : ILlmProvider
         var area = ctx.AreaType ?? "open field";
         var month = DateTime.UtcNow.ToString("MMMM", CultureInfo.InvariantCulture);
         var language = ctx.Language;
-        var disclaimer = "AI-generated plan. Not professional agricultural advice. Verify with local agricultural experts.";
+        var ur = language == "ur";
+        var disclaimer = ur
+            ? "مصنوعی ذہانت سے تیار کردہ منصوبہ۔ پیشہ ورانہ زرعی مشورہ نہیں۔ مقامی ماہرین سے تصدیق کریں۔"
+            : "AI-generated plan. Not professional agricultural advice. Verify with local agricultural experts.";
         var generatedAt = DateTimeOffset.UtcNow.ToString("o");
 
-        var overview =
-            $"In {month}, {crop} on {area} land in {region} should follow a tight calendar: land prep this week, then staged planting and irrigation matched to current weather on the twin.";
-        var crops =
-            $"Prioritise {crop} as the lead crop. Use a compatible neighbour (for example onion with tomato, or marigold borders) and avoid stacking two heavy feeders in adjacent zones.";
-        var timeline =
-            $"Week 1: soil moisture check and bed prep. Week 2–3: transplant or sow {crop}. Week 4+: weekly scouting, split fertiliser, and harvest window based on variety days-to-maturity.";
-        var water =
-            "Irrigate early morning. Reduce volume after rainfall recorded on the twin. Drip or furrow is preferred over flood on sandy soils.";
-        var soil =
-            $"Work with the estimated soil ({ctx.Soil ?? "loam"}) — avoid over-tillage, add compost if organic matter is low, and re-test pH before the next season.";
+        string overview, crops, timeline, water, soil;
+        string[] overviewRecs, cropRecs, timelineRecs, waterRecs, soilRecs, nextRecs;
+        string nextBody;
+
+        if (ur)
+        {
+            overview =
+                $"{month} میں {region} کے {area} پر {crop} کے لیے سخت کیلنڈر رکھیں: اس ہفتے زمین کی تیاری، پھر مرحلہ وار بوائی اور ٹوئن کے موسم کے مطابق آبپاشی۔";
+            crops =
+                $"اس سائیکل میں {crop} کو مرکزی تجارتی فصل رکھیں۔ موافق پڑوسی (مثلاً ٹماٹر کے ساتھ پیاز، یا گیندے کی پٹی) استعمال کریں اور دو بھاری خوراک والی فصلیں ساتھ نہ لگائیں۔";
+            timeline =
+                $"ہفتہ ۱: نمی اور بیڈ کی تیاری۔ ہفتہ ۲–۳: {crop} کی منتقلی یا بوائی۔ ہفتہ ۴+: ہفتہ وار معائنہ، قسطوں میں کھاد، اور قسم کے دنوں کے مطابق کٹائی۔";
+            water =
+                "صبح سویرے آبپاشی کریں۔ ٹوئن پر بارش کے بعد مقدار کم کریں۔ ریتیلی مٹی پر سیلابی آبپاشی سے گریز کریں۔";
+            soil =
+                $"تخمینی مٹی ({ctx.Soil ?? "لوام"}) کے ساتھ کام کریں — زیادہ ہل نہ چلائیں، نامیاتی مادہ کم ہو تو کمپوسٹ شامل کریں، اگلے موسم سے پہلے پی ایچ دوبارہ جانچیں۔";
+            nextBody = $"{crop} کے کیلنڈر کے کام ترتیب سے مکمل کریں اور موسم بدلے تو فارم اسسٹنٹ سے پوچھیں۔";
+            overviewRecs = new[] { "کسی بھی موسمی واقعے کے بعد ڈیجیٹل ٹوئن ریفریش کریں", "بوائی کی حقیقی تاریخ فارم ہوم پر درج کریں" };
+            cropRecs = new[] { $"اس سائیکل میں {crop} کو مرکزی فصل رکھیں", "نیا زون شامل کرنے سے پہلے پڑوسی مطابقت چیک کریں" };
+            timelineRecs = new[] { "اس مہینے کے درجہ حرارت کے بینڈ کے ساتھ بوائی ملائیں", "تجرباتی زونز کو تجارتی کھیتوں سے الگ رکھیں" };
+            waterRecs = new[] { "نمایاں بارش کے فوراً بعد آبپاشی نہ کریں", "ہر آبپاشی واٹر صفحے پر درج کریں" };
+            soilRecs = new[] { "نائٹروجن قسطوں میں دیں", "اگر ٹوئن OM ۲٪ سے کم ہو تو نامیاتی مادہ بڑھائیں" };
+            nextRecs = new[] { "زونز شامل کرنے کے بعد نیا منصوبہ بنائیں", "پہلی آبپاشی کے بعد گرین فارم اسکور دیکھیں" };
+        }
+        else
+        {
+            overview =
+                $"In {month}, {crop} on {area} land in {region} should follow a tight calendar: land prep this week, then staged planting and irrigation matched to current weather on the twin.";
+            crops =
+                $"Prioritise {crop} as the lead crop. Use a compatible neighbour (for example onion with tomato, or marigold borders) and avoid stacking two heavy feeders in adjacent zones.";
+            timeline =
+                $"Week 1: soil moisture check and bed prep. Week 2–3: transplant or sow {crop}. Week 4+: weekly scouting, split fertiliser, and harvest window based on variety days-to-maturity.";
+            water =
+                "Irrigate early morning. Reduce volume after rainfall recorded on the twin. Drip or furrow is preferred over flood on sandy soils.";
+            soil =
+                $"Work with the estimated soil ({ctx.Soil ?? "loam"}) — avoid over-tillage, add compost if organic matter is low, and re-test pH before the next season.";
+            nextBody = $"Complete the {crop} calendar tasks in order and ask the farm assistant if weather shifts.";
+            overviewRecs = new[] { "Refresh the digital twin after any weather event", "Record actual sowing dates on the farm home" };
+            cropRecs = new[] { $"Keep {crop} as the primary commercial crop this cycle", "Check on-farm neighbour compatibility before adding a new zone" };
+            timelineRecs = new[] { "Align planting with the local temperature band this month", "Track experimental zones separately from commercial fields" };
+            waterRecs = new[] { "Do not irrigate immediately after significant rainfall", "Log each irrigation on the water page" };
+            soilRecs = new[] { "Split nitrogen; avoid one heavy broadcast", "Add organic matter if the twin soil OM is below 2%" };
+            nextRecs = new[] { "Generate a new plan after adding zones", "Review Green Farm Score after the first irrigation" };
+        }
 
         var payload = new Dictionary<string, object?>
         {
             ["planSections"] = new object[]
             {
-                Section("overview", "Farm overview", overview, new[] { "Refresh the digital twin after any weather event", "Record actual sowing dates on the farm home" }),
-                Section("crops", "Crop recommendations", crops, new[] { $"Keep {crop} as the primary commercial crop this cycle", "Check on-farm neighbour compatibility before adding a new zone" }),
-                Section("timeline", "Seasonal timeline", timeline, new[] { "Align planting with the local temperature band this month", "Track experimental zones separately from commercial fields" }),
-                Section("water", "Water and irrigation", water, new[] { "Do not irrigate immediately after significant rainfall", "Log each irrigation on the water page" }),
-                Section("soil", "Soil and nutrition", soil, new[] { "Split nitrogen; avoid one heavy broadcast", "Add organic matter if the twin soil OM is below 2%" }),
-                Section("recommendations", "Next actions", $"Complete the {crop} calendar tasks in order and ask the farm assistant if weather shifts.", new[] { "Generate a new plan after adding zones", "Review Green Farm Score after the first irrigation" })
+                Section("overview", ur ? "فارم کا جائزہ" : "Farm overview", overview, overviewRecs),
+                Section("crops", ur ? "فصل کی سفارشات" : "Crop recommendations", crops, cropRecs),
+                Section("timeline", ur ? "موسمی شیڈول" : "Seasonal timeline", timeline, timelineRecs),
+                Section("water", ur ? "پانی اور آبپاشی" : "Water and irrigation", water, waterRecs),
+                Section("soil", ur ? "مٹی اور غذائیت" : "Soil and nutrition", soil, soilRecs),
+                Section("recommendations", ur ? "اگلے اقدامات" : "Next actions", nextBody, nextRecs)
             },
             ["language"] = language,
             ["disclaimer"] = disclaimer,

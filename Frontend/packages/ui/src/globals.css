@@ -83,7 +83,7 @@
   }
 
   .hv-page__lead {
-    @apply m-0 text-base;
+    @apply m-0 mt-1.5 text-base;
   }
 
   .hv-section {

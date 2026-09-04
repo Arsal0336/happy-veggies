@@ -43,9 +43,15 @@ scripts/.runtime/
 
 node_modules
 dist
+
+## Environment / secrets (never commit real keys)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!**/.env.example
+!.env.test
+!**/.env.test
+
 appsettings.Local.json
 **/appsettings.Local.json
 *.tsbuildinfo
