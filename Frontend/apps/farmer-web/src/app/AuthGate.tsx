@@ -1,22 +1,16 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../features/auth/AuthProvider';
-import { Spinner } from '@hv/ui';
 import type { ReactNode } from 'react';
+import { useAuth } from '../features/auth/AuthProvider';
+import { getToken } from '../shared/api/authStorage';
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
+  // Token is written synchronously on verify; React state may lag one frame.
+  const hasSession = isAuthenticated || !!getToken();
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spinner size="lg" label="Loading..." />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!hasSession) {
+    return <Navigate to="/auth/phone" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

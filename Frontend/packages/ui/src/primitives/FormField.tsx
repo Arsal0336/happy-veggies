@@ -1,6 +1,7 @@
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { cn } from '../utils/cn';
 
-export interface FormFieldProps {
+export type FormFieldProps = {
   label: string;
   htmlFor?: string;
   error?: string;
@@ -8,7 +9,7 @@ export interface FormFieldProps {
   required?: boolean;
   children: ReactNode;
   className?: string;
-}
+};
 
 export function FormField({
   label,
@@ -17,25 +18,29 @@ export function FormField({
   hint,
   required,
   children,
-  className = '',
+  className,
 }: FormFieldProps) {
+  const hintId = htmlFor ? `${htmlFor}-hint` : undefined;
+  const errorId = htmlFor ? `${htmlFor}-error` : undefined;
+
   return (
-    <div className={`flex flex-col gap-1.5 ${className}`}>
-      <label
-        htmlFor={htmlFor}
-        className="text-[var(--hv-text-sm)] font-medium text-[var(--hv-color-neutral-700)]"
-      >
+    <div className={cn('hv-form-field', className)}>
+      <label className="hv-form-field__label" htmlFor={htmlFor}>
         {label}
-        {required && <span className="text-[var(--hv-color-danger-500)] ms-1">*</span>}
+        {required && (
+          <span aria-hidden="true"> *</span>
+        )}
       </label>
       {children}
       {hint && !error && (
-        <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-500)]">{hint}</p>
+        <span className="hv-form-field__hint" id={hintId}>
+          {hint}
+        </span>
       )}
       {error && (
-        <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-danger-500)]" role="alert">
+        <span className="hv-form-field__error" id={errorId} role="alert">
           {error}
-        </p>
+        </span>
       )}
     </div>
   );

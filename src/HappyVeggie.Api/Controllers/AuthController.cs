@@ -1,8 +1,10 @@
 using HappyVeggie.Application.Auth.RequestOtp;
 using HappyVeggie.Application.Auth.VerifyOtp;
+using HappyVeggie.Api.RateLimiting;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HappyVeggie.Api.Controllers;
 
@@ -19,6 +21,7 @@ public sealed class AuthController : ControllerBase
 
     [HttpPost("request")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.OtpPolicy)]
     public async Task<ActionResult<RequestOtpResponse>> RequestOtp(
         [FromBody] RequestOtpRequest body,
         CancellationToken cancellationToken)

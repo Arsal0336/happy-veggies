@@ -1,4 +1,4 @@
 import '@testing-library/jest-dom/vitest';
+import { vi } from 'vitest';
 
-// jsdom doesn't implement scrollIntoView
-Element.prototype.scrollIntoView = () => {};
+vi.stubEnv('VITE_USE_FIXTURES', 'true');

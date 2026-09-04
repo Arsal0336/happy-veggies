@@ -1,6 +1,7 @@
+using System.Security.Claims;
+using HappyVeggie.Api.Helpers;
 using HappyVeggie.Application.Common.Interfaces;
 using HappyVeggie.Domain.Entities;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,11 +14,15 @@ namespace HappyVeggie.Api.Controllers;
 public sealed class AdminRatesController : ControllerBase
 {
     private readonly IApplicationDbContext _db;
+    private readonly IAdminAuditService _audit;
 
-    public AdminRatesController(IApplicationDbContext db)
+    public AdminRatesController(IApplicationDbContext db, IAdminAuditService audit)
     {
         _db = db;
+        _audit = audit;
     }
+
+    private Guid GetAdminId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<GovernmentCropRate>>> List(CancellationToken cancellationToken)
@@ -50,6 +55,17 @@ public sealed class AdminRatesController : ControllerBase
 
         _db.GovernmentCropRates.Add(rate);
         await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.WriteFromHttpAsync(
+            HttpContext,
+            GetAdminId(),
+            "government_rate.create",
+            nameof(GovernmentCropRate),
+            rate.Id.ToString(),
+            result: "success",
+            extra: new { rate.CropId, rate.RatePerUnit, rate.Period },
+            cancellationToken: cancellationToken);
+
         return Created($"api/v1/admin/government-rates/{rate.Id}", rate);
     }
 
@@ -72,6 +88,17 @@ public sealed class AdminRatesController : ControllerBase
 
         rate.UpdatedAt = DateTimeOffset.UtcNow;
         await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.WriteFromHttpAsync(
+            HttpContext,
+            GetAdminId(),
+            "government_rate.update",
+            nameof(GovernmentCropRate),
+            rate.Id.ToString(),
+            result: "success",
+            extra: new { rate.CropId, rate.RatePerUnit, rate.IsActive },
+            cancellationToken: cancellationToken);
+
         return Ok(rate);
     }
 }

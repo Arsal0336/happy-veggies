@@ -1,4 +1,5 @@
 using HappyVeggie.Application.ProductionAreas.CreateProductionArea;
+using HappyVeggie.Application.ProductionAreas.DeleteProductionArea;
 using HappyVeggie.Application.ProductionAreas.Dtos;
 using HappyVeggie.Application.ProductionAreas.ListProductionAreas;
 using HappyVeggie.Application.ProductionAreas.UpdateProductionArea;
@@ -59,6 +60,13 @@ public sealed class ProductionAreaController : ControllerBase
 
         var result = await _sender.Send(command, cancellationToken);
         return Ok(result);
+    }
+
+    [HttpDelete("{areaId:guid}")]
+    public async Task<IActionResult> Delete(Guid farmId, Guid areaId, CancellationToken cancellationToken)
+    {
+        await _sender.Send(new DeleteProductionAreaCommand(farmId, areaId), cancellationToken);
+        return NoContent();
     }
 }
 

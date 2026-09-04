@@ -1,10 +1,19 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import '@hv/ui/tokens.css';
+import { AppProviders } from './app/AppProviders';
+import { AdminApp } from './app/AdminApp';
 import './index.css';
-import { AdminApp } from './AdminApp';
 
-createRoot(document.getElementById('root')!).render(
+const rootEl = document.getElementById('root');
+if (!rootEl) {
+  throw new Error('Root element #root not found');
+}
+
+createRoot(rootEl).render(
   <StrictMode>
-    <AdminApp />
+    <AppProviders>
+      <AdminApp />
+    </AppProviders>
   </StrictMode>,
 );

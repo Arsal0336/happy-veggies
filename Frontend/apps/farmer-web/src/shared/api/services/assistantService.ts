@@ -1,30 +1,151 @@
+import type {
+  AssistantMessage,
+  AssistantThread,
+  PostAssistantMessageResponse,
+} from '@hv/api-types';
 import { farmerApi } from '../apiInstance';
-import { fixtureThread } from '@hv/api-types';
-import type { AssistantThread, PostMessageResponse } from '@hv/api-types';
+import { useFixtures } from '../env';
+import {
+  appendAssistantMessage,
+  delay,
+  fixtureThreads,
+  nextId,
+} from '../fixtures';
 
-const USE_FIXTURES = !import.meta.env.VITE_API_BASE_URL;
+type ThreadListItem = {
+  id: string;
+  title?: string | null;
+  createdAt: string;
+  lastMessageAt?: string | null;
+};
+
+type ThreadDetailResponse = {
+  id: string;
+  title?: string | null;
+  createdAt: string;
+  messages?: Array<{
+    id: string;
+    role: string;
+    content: string;
+    citationsJson?: string | null;
+    createdAt: string;
+  }>;
+};
+
+type PostMessageLiveResponse = {
+  message: {
+    id: string;
+    role: string;
+    content: string;
+    citationsJson?: string | null;
+    createdAt: string;
+  };
+  disclaimer?: string;
+};
+
+function parseCitations(citationsJson?: string | null): string[] | undefined {
+  if (!citationsJson) return undefined;
+  try {
+    const parsed = JSON.parse(citationsJson) as unknown;
+    if (Array.isArray(parsed)) return parsed.map(String);
+  } catch {
+    /* ignore */
+  }
+  return undefined;
+}
+
+function mapMessage(
+  threadId: string,
+  m: {
+    id: string;
+    role: string;
+    content: string;
+    citationsJson?: string | null;
+    createdAt: string;
+  },
+): AssistantMessage {
+  return {
+    id: m.id,
+    threadId,
+    role: m.role === 'assistant' || m.role === 'Assistant' ? 'assistant' : 'user',
+    content: m.content,
+    citations: parseCitations(m.citationsJson),
+    citationsJson: m.citationsJson,
+    createdAt: m.createdAt,
+  };
+}
 
 export const assistantService = {
-  getThread: async (farmId: string): Promise<AssistantThread> => {
-    if (USE_FIXTURES) return fixtureThread;
-    return farmerApi.get<AssistantThread>(`/farms/${farmId}/assistant/thread`);
+  async getOrCreateThread(farmId: string): Promise<AssistantThread> {
+    if (useFixtures()) {
+      await delay();
+      const existing = fixtureThreads.find((t) => t.farmId === farmId);
+      if (existing) return existing;
+      const thread: AssistantThread = {
+        id: nextId('thread'),
+        farmId,
+        createdAt: new Date().toISOString(),
+        messages: [],
+      };
+      fixtureThreads.push(thread);
+      return thread;
+    }
+
+    const threads = await farmerApi.get<ThreadListItem[]>(
+      `/farms/${farmId}/assistant/threads`,
+    );
+    let threadId = threads?.[0]?.id;
+
+    if (!threadId) {
+      const created = await farmerApi.post<{
+        id: string;
+        title?: string | null;
+        createdAt: string;
+      }>(`/farms/${farmId}/assistant/threads`, { title: null });
+      threadId = created.id;
+    }
+
+    const detail = await farmerApi.get<ThreadDetailResponse>(
+      `/farms/${farmId}/assistant/threads/${threadId}`,
+    );
+
+    return {
+      id: detail.id,
+      farmId,
+      title: detail.title,
+      createdAt: detail.createdAt,
+      messages: (detail.messages ?? []).map((m) => mapMessage(detail.id, m)),
+    };
   },
 
-  sendMessage: async (farmId: string, threadId: string, text: string): Promise<PostMessageResponse> => {
-    if (USE_FIXTURES) {
-      const base = fixtureThread.messages.find((m) => m.role === 'assistant');
-      const msg = {
-        id: `msg-${Date.now()}-a`,
-        threadId,
-        role: 'assistant' as const,
-        content: base?.content ?? 'This is a fixture response.',
-        citations: base?.citations,
-        disclaimer: base?.disclaimer,
-        createdAt: new Date().toISOString(),
+  async postMessage(
+    farmId: string,
+    threadId: string,
+    text: string,
+  ): Promise<PostAssistantMessageResponse> {
+    if (useFixtures()) {
+      await delay(200);
+      const { reply } = appendAssistantMessage(threadId, text);
+      return {
+        message: reply,
+        citations: reply.citations,
+        disclaimer: reply.disclaimer,
       };
-      await new Promise((r) => setTimeout(r, 600));
-      return { message: msg, citations: msg.citations, disclaimer: msg.disclaimer };
     }
-    return farmerApi.post<PostMessageResponse>(`/farms/${farmId}/assistant/threads/${threadId}/messages`, { text });
+
+    const res = await farmerApi.post<PostMessageLiveResponse>(
+      `/farms/${farmId}/assistant/threads/${threadId}/messages`,
+      { text },
+    );
+
+    const message = mapMessage(threadId, res.message);
+    return {
+      message: {
+        ...message,
+        disclaimer: res.disclaimer,
+      },
+      citations: message.citations,
+      disclaimer: res.disclaimer,
+    };
   },
 };

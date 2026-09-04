@@ -1,0 +1,1 @@
+export { ProductionAreaTypesPage } from './ProductionAreaTypesPage';

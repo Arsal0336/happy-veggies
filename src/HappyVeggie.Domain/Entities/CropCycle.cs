@@ -16,7 +16,14 @@ public sealed class CropCycle
 
     public string? ActualYieldUnit { get; set; }
 
+    /// <summary>
+    /// ActualYield − PredictedYield when both present. Never mutates PredictedYield.
+    /// </summary>
+    public decimal? Delta { get; set; }
+
     public string? Notes { get; set; }
+
+    public DateTimeOffset? EndedAt { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
 

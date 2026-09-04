@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HappyVeggie.Application.AI.Context;
 
 /// <summary>
-/// Builds FarmContext pack from twin + related data (Doc 04 §3.2).
+/// Builds FarmContext pack from twin + related data (Doc 04 §3.2 / GAP-031).
 /// Tags each zone with productionAreaType. Marks missing data.
 /// </summary>
 public sealed class FarmContextBuilder
@@ -38,18 +38,17 @@ public sealed class FarmContextBuilder
         var twin = await _twinAssembler.AssembleAsync(farmId, cancellationToken);
         var missingFlags = new List<string>();
 
-        // Get farm + farmer for language
         var farmEntity = await _db.Farms.AsNoTracking()
             .FirstAsync(f => f.Id == farmId, cancellationToken);
         var farmer = await _db.Farmers.AsNoTracking()
             .FirstOrDefaultAsync(f => f.Id == farmEntity.FarmerId, cancellationToken);
 
+        var language = farmer?.Language ?? "en";
         var farm = new FarmIdentityContext(
             twin.Farm.Name ?? "Unnamed Farm", twin.Farm.RegionLabel,
             twin.Farm.Lat, twin.Farm.Lng,
-            twin.Farm.AreaAcres, farmer?.Language ?? "en");
+            twin.Farm.AreaAcres, language);
 
-        // Production areas
         var areas = twin.Areas.Select(a => new AreaContext(
             a.Name ?? a.TypeCode, a.TypeCode, a.TypeCode,
             a.AreaCanonicalValue, a.AreaInputUnit,
@@ -57,10 +56,11 @@ public sealed class FarmContextBuilder
 
         if (areas.Count == 0) missingFlags.Add("No production areas configured");
 
-        // Crop zones with productionAreaType tag
         var areaTypeMap = twin.Areas.ToDictionary(a => a.Id, a => a.TypeCode);
         var zones = twin.Zones.Select(z => new ZoneContext(
-            z.Label ?? "Unnamed Zone", z.CropId, z.SeedVarietyId,
+            z.Label ?? "Unnamed Zone",
+            z.CropFreetext ?? z.CropId,
+            z.SeedVarietyId,
             z.GrowthStage, z.PlantingDate?.ToString("yyyy-MM-dd"),
             z.ExpectedYieldValue, z.ExpectedYieldUnit,
             areaTypeMap.GetValueOrDefault(z.ProductionAreaId, "unknown"),
@@ -68,32 +68,44 @@ public sealed class FarmContextBuilder
 
         if (zones.Count == 0) missingFlags.Add("No crop zones defined");
 
-        // Weather
         WeatherContext? weather = null;
         if (twin.Weather is not null)
         {
-            weather = new WeatherContext(null, null, null, null, null, twin.Weather.ProviderStatus, null);
+            weather = new WeatherContext(
+                null, null, null, null, null,
+                twin.Weather.ProviderStatus,
+                twin.TwinRefreshedAt);
         }
         else missingFlags.Add("No weather data available");
 
-        // Soil
+        // Soil profiles summary (GAP-031)
+        var soilRows = await _db.SoilProfiles.AsNoTracking()
+            .Where(s => s.FarmId == farmId && !s.IsDeleted)
+            .OrderByDescending(s => s.UpdatedAt)
+            .ToListAsync(cancellationToken);
+
         SoilContext? soil = null;
-        if (twin.SoilSummary is not null && twin.SoilSummary.ProfileCount > 0)
+        if (soilRows.Count > 0)
         {
-            soil = new SoilContext(null, null, null, null, null);
+            var primary = soilRows[0];
+            soil = new SoilContext(
+                primary.SoilType,
+                primary.Texture,
+                primary.PhValue,
+                primary.OrganicMatterValue,
+                primary.SoilTypeProvenance?.ToString() ?? primary.TextureProvenance?.ToString());
         }
         else missingFlags.Add("No soil data available");
 
-        // Water
+        // Water sources count/types
         var waterSources = new List<WaterContext>();
-        if (twin.WaterSummary is not null)
+        if (twin.WaterSummary is not null && twin.WaterSummary.SourceCount > 0)
         {
             foreach (var ws in twin.WaterSummary.Sources)
-                waterSources.Add(new WaterContext(ws.Type, null, null));
+                waterSources.Add(new WaterContext(ws.Type, ws.IrrigationMethod, true));
         }
         else missingFlags.Add("No water source data");
 
-        // Economics
         EconomicsContext? econ = null;
         var econSnapshots = await _economics.CalculateForFarmAsync(farmId, cancellationToken);
         if (econSnapshots.Count > 0)
@@ -104,11 +116,9 @@ public sealed class FarmContextBuilder
                 econSnapshots.FirstOrDefault()?.Currency ?? "PKR");
         }
 
-        // Green score
         var greenResult = await _greenScore.CalculateAsync(farmId, cancellationToken);
         var green = new GreenScoreContext(greenResult.Score, greenResult.MaxScore, greenResult.Explanations);
 
-        // Compatibility warnings
         var warnings = await _compatibility.CheckNeighboursAsync(farmId, cancellationToken);
         var warningTexts = warnings.Select(w =>
             $"'{w.ZoneALabel}' and '{w.ZoneBLabel}': {w.Reason}").ToList();
@@ -130,38 +140,40 @@ public sealed class FarmContextBuilder
 
     /// <summary>
     /// Serialize context pack to compact text for LLM prompt injection.
+    /// Emphasizes production area types so protected-env questions stay grounded (GAP-032).
     /// </summary>
     public static string ToPromptText(FarmContextPack ctx)
     {
         var sb = new global::System.Text.StringBuilder();
         sb.AppendLine("=== FARM CONTEXT (grounded data — do not fabricate beyond this) ===");
         sb.AppendLine($"Farm: {ctx.Farm.Name} | Region: {ctx.Farm.Region} | Area: {ctx.Farm.TotalAreaAcres} acres | Language: {ctx.Farm.Language}");
+        sb.AppendLine("IMPORTANT: Advice must respect each zone's productionAreaType (open_field vs shed/greenhouse/tunnel). Do not assume outdoor conditions for protected areas.");
 
         if (ctx.ProductionAreas.Count > 0)
         {
             sb.AppendLine("\nProduction Areas:");
             foreach (var a in ctx.ProductionAreas)
-                sb.AppendLine($"  - {a.Name} ({a.TypeCode}): {a.AreaValue} {a.AreaUnit} [provenance: {a.Provenance ?? "unknown"}]");
+                sb.AppendLine($"  - {a.Name} (type={a.TypeCode}): {a.AreaValue} {a.AreaUnit} [provenance: {a.Provenance ?? "unknown"}]");
         }
 
         if (ctx.CropZones.Count > 0)
         {
             sb.AppendLine("\nCrop Zones:");
             foreach (var z in ctx.CropZones)
-                sb.AppendLine($"  - {z.Label}: crop={z.CropName ?? "none"}, variety={z.VarietyName ?? "none"}, stage={z.GrowthStage ?? "unknown"}, type={z.ProductionAreaType}{(z.IsExperimental ? " [EXPERIMENTAL]" : "")}");
+                sb.AppendLine($"  - {z.Label}: crop={z.CropName ?? "none"}, variety={z.VarietyName ?? "none"}, stage={z.GrowthStage ?? "unknown"}, productionAreaType={z.ProductionAreaType}{(z.IsExperimental ? " [EXPERIMENTAL]" : "")}");
         }
 
         if (ctx.Weather is not null)
-            sb.AppendLine($"\nWeather: {ctx.Weather.TempC}°C, Humidity {ctx.Weather.Humidity}%, Wind {ctx.Weather.WindKmh}km/h, Rain {ctx.Weather.RainfallMm}mm ({ctx.Weather.Condition})");
+            sb.AppendLine($"\nWeather status (from twin snapshot): providerStatus={ctx.Weather.Provider} observedAt={ctx.Weather.ObservedAt}");
 
         if (ctx.Soil is not null)
-            sb.AppendLine($"\nSoil: Type={ctx.Soil.SoilType}, Texture={ctx.Soil.Texture}, pH={ctx.Soil.Ph}, OM={ctx.Soil.OrganicMatter}%");
+            sb.AppendLine($"\nSoil summary: Type={ctx.Soil.SoilType}, Texture={ctx.Soil.Texture}, pH={ctx.Soil.Ph}, OM={ctx.Soil.OrganicMatter}% provenance={ctx.Soil.Provenance}");
 
         if (ctx.WaterSources.Count > 0)
         {
-            sb.AppendLine("\nWater Sources:");
+            sb.AppendLine($"\nWater Sources ({ctx.WaterSources.Count}):");
             foreach (var w in ctx.WaterSources)
-                sb.AppendLine($"  - {w.Name} ({w.SourceType})");
+                sb.AppendLine($"  - type={w.SourceType} irrigation={w.Name}");
         }
 
         if (ctx.Economics is not null)

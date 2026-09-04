@@ -8,6 +8,11 @@ public sealed class LlmProviderOptions
 {
     public const string SectionName = "Llm";
 
+    /// <summary>
+    /// When true, DI registers <c>LiveLlmProvider</c> (vendor TBD). Default false → stub.
+    /// </summary>
+    public bool UseLive { get; set; }
+
     public string Provider { get; set; } = "stub";
     public string Model { get; set; } = "gpt-4o-mini";
     public string? ApiKey { get; set; }

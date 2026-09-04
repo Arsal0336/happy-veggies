@@ -1,63 +1,49 @@
-import { type ReactNode, useState } from 'react';
+import type { ReactNode } from 'react';
+import { cn } from '../utils/cn';
 
-export interface TabItem {
+export type TabItem = {
   id: string;
   label: string;
   content: ReactNode;
-  disabled?: boolean;
-}
+};
 
-export interface TabsProps {
+export type TabsProps = {
   items: TabItem[];
-  defaultActiveId?: string;
-  onChange?: (id: string) => void;
+  value: string;
+  onChange: (id: string) => void;
   className?: string;
-}
+};
 
-export function Tabs({
-  items,
-  defaultActiveId,
-  onChange,
-  className = '',
-}: TabsProps) {
-  const [activeId, setActiveId] = useState(defaultActiveId ?? items[0]?.id ?? '');
-
-  const handleSelect = (id: string) => {
-    setActiveId(id);
-    onChange?.(id);
-  };
-
-  const activeItem = items.find((t) => t.id === activeId);
+export function Tabs({ items, value, onChange, className }: TabsProps) {
+  const active = items.find((t) => t.id === value) ?? items[0];
 
   return (
-    <div className={className}>
-      <div
-        role="tablist"
-        className="flex border-b border-[var(--hv-color-neutral-200)] gap-1 overflow-x-auto"
-      >
-        {items.map((tab) => {
-          const isActive = tab.id === activeId;
-          return (
-            <button
-              key={tab.id}
-              role="tab"
-              aria-selected={isActive}
-              disabled={tab.disabled}
-              onClick={() => handleSelect(tab.id)}
-              className={`px-4 py-2 text-[var(--hv-text-sm)] font-medium whitespace-nowrap border-b-2 transition-colors duration-[var(--hv-transition-fast)] disabled:opacity-50 disabled:cursor-not-allowed ${
-                isActive
-                  ? 'border-[var(--hv-color-primary-500)] text-[var(--hv-color-primary-600)]'
-                  : 'border-transparent text-[var(--hv-color-neutral-500)] hover:text-[var(--hv-color-neutral-700)] hover:border-[var(--hv-color-neutral-300)]'
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+    <div className={cn('hv-tabs', className)}>
+      <div className="hv-tabs__list" role="tablist">
+        {items.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            id={`hv-tab-${tab.id}`}
+            aria-selected={tab.id === active?.id}
+            aria-controls={`hv-tabpanel-${tab.id}`}
+            className="hv-tabs__tab"
+            onClick={() => onChange(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
-      <div role="tabpanel" className="pt-4">
-        {activeItem?.content}
-      </div>
+      {active && (
+        <div
+          role="tabpanel"
+          id={`hv-tabpanel-${active.id}`}
+          aria-labelledby={`hv-tab-${active.id}`}
+        >
+          {active.content}
+        </div>
+      )}
     </div>
   );
 }

@@ -24,6 +24,9 @@ public interface IApplicationDbContext
     DbSet<AdminAuditLog> AdminAuditLogs { get; }
     DbSet<GovernmentCropRate> GovernmentCropRates { get; }
     DbSet<CropCycle> CropCycles { get; }
+    DbSet<Alert> Alerts { get; }
+    DbSet<FeatureFlag> FeatureFlags { get; }
+    DbSet<LlmUsageLog> LlmUsageLogs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

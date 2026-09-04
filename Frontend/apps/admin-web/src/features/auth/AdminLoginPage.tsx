@@ -1,81 +1,103 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { isAdminFixtureMode, useAdminAuth } from './AdminAuthProvider';
-import { Button, Input, FormField, Card } from '@hv/ui';
+import { useState, type FormEvent } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Alert, Button, Card, FormField, Input } from '@hv/ui';
+import { useFixtures } from '../../shared/api/env';
+import { useAdminAuth } from './AdminAuthProvider';
 
 export function AdminLoginPage() {
-  const { login, isLoading } = useAdminAuth();
+  const { t } = useTranslation();
+  const { login, isAuthenticated, isLoading } = useAdminAuth();
   const navigate = useNavigate();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = async () => {
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
     if (!email.trim() || !password.trim()) {
       setError('Email and password are required');
       return;
     }
-    setError('');
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
     try {
       await login(email, password);
-      navigate('/dashboard', { replace: true });
+      navigate('/', { replace: true });
     } catch {
-      setError('Login failed. Please check your credentials.');
+      setError('Login failed. Check your credentials.');
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4">
-      <Card padding="lg" className="w-full max-w-sm min-w-0">
-        <div className="text-center mb-6">
-          <h1 className="text-[var(--hv-text-2xl)] font-bold text-[var(--hv-color-primary-600)]">
-            HV Admin
-          </h1>
-          <p className="text-[var(--hv-text-sm)] text-[var(--hv-color-neutral-500)] mt-1">
-            Sign in to admin portal
-          </p>
-        </div>
-
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSubmit();
-          }}
-        >
-          <FormField label="Email" error={error && email.trim() === '' ? 'Email is required' : undefined}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 'var(--hv-space-4, 1rem)',
+        background: 'var(--hv-color-bg-muted, #f4f6f8)',
+      }}
+    >
+      <Card padding="lg" style={{ width: '100%', maxWidth: 400 }}>
+        <h1 style={{ marginTop: 0, fontSize: 'var(--hv-text-2xl, 1.5rem)' }}>
+          {t('auth.adminLogin', 'Admin sign in')}
+        </h1>
+        <p style={{ color: 'var(--hv-color-text-muted)', marginTop: 0 }}>
+          Happy Veggie admin portal
+        </p>
+        <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <FormField label={t('auth.adminEmail', 'Email')} htmlFor="admin-email" required>
             <Input
+              id="admin-email"
               type="email"
+              autoComplete="username"
               placeholder="admin@happyveggie.pk"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </FormField>
-
-          <FormField label="Password" error={error && password.trim() === '' ? 'Password is required' : undefined}>
+          <FormField label={t('auth.adminPassword', 'Password')} htmlFor="admin-password" required>
             <Input
+              id="admin-password"
               type="password"
+              autoComplete="current-password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </FormField>
-
-          {error && (
-            <p className="text-[var(--hv-text-sm)] text-[var(--hv-color-error-600)]">
-              {error}
-            </p>
-          )}
-
-          <Button variant="primary" type="submit" loading={isLoading}>
-            Sign In
+          {error && <Alert variant="error">{error}</Alert>}
+          <Button type="submit" variant="primary" loading={isLoading}>
+            {t('auth.adminSubmit', 'Sign in')}
           </Button>
         </form>
-
-        {isAdminFixtureMode() && (
-          <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-400)] mt-4 text-center">
-            Dev mode: enter any email + password
+        <p
+          style={{
+            marginTop: '1rem',
+            fontSize: 'var(--hv-text-xs)',
+            color: 'var(--hv-color-text-muted)',
+          }}
+        >
+          MFA / SSO is TBD (GAP-044 / TBD-01) — password login only for now.
+        </p>
+        {useFixtures() && (
+          <p
+            style={{
+              marginTop: '0.5rem',
+              fontSize: 'var(--hv-text-xs)',
+              color: 'var(--hv-color-text-muted)',
+            }}
+          >
+            Fixtures: any email + password (≥6 chars), or admin@happyveggie.pk / admin123
           </p>
         )}
       </Card>

@@ -5,6 +5,7 @@
 | **Source of truth** | HAPPY-VEGGIE-SRS.md v1.3 + `03-Backend-Technical-Design.md` |
 | **Audience** | Frontend & backend engineers |
 | **Purpose** | Shared HTTP contract, auth, errors, feature matrix |
+| **Gap backlog** | [implementation/06-Missing-Modules-Features-Implementation-Plan.md](implementation/06-Missing-Modules-Features-Implementation-Plan.md) |
 
 **Legend:** **[SRS]** · **[TECH]** · **[TBD]**
 
@@ -45,7 +46,7 @@ SQL Server / External API
 | Pagination | `?page=1&pageSize=20` → `{ items, page, pageSize, totalCount }` |
 | Filtering/sorting | `?sort=-createdAt` style **[TBD]** exact grammar |
 | Units | Send `value` + `unit`; server stores canonical; responses include both |
-| Soft-delete | Excluded from default lists; restore **[TBD]** |
+| Soft-delete | `DELETE` soft-deletes (`IsDeleted=true`); excluded from default lists; restore **[TBD]** |
 
 ### 2.1 HTTP methods
 
@@ -54,7 +55,7 @@ SQL Server / External API
 | GET | Reads / queries |
 | POST | Creates, OTP, plan generate, assistant message, twin refresh |
 | PATCH | Partial updates |
-| DELETE | Soft-delete if used; else PATCH `isDeleted` **[TBD]** |
+| DELETE | Soft-delete (GAP-011 interim): farms, production areas, crop zones |
 
 ### 2.2 Status codes
 
@@ -66,8 +67,16 @@ SQL Server / External API
 | 403 | Forbidden (not owner / not admin) |
 | 404 | Not found (or not owned — avoid leakage) |
 | 409 | Conflict (e.g., version) **[TBD]** usage |
-| 429 | Rate limited (OTP/LLM) |
+| 429 | Rate limited (OTP request, plan generate, assistant message) — envelope `RATE_LIMITED`, `retryable: true` |
 | 422/504 | Generation failed / timeout (retryable flags) |
+
+Fixed-window limits (configurable in `RateLimiting` appsettings; GAP-070 / NFR-019):
+
+| Endpoint | Default | Partition |
+|----------|---------|-----------|
+| `POST /auth/otp/request` | 5 / minute | IP |
+| `POST /farms/{id}/plan` | 10 / hour | authenticated user |
+| `POST /farms/{id}/assistant/threads/{id}/messages` | 30 / minute | authenticated user |
 
 ---
 
@@ -80,8 +89,8 @@ SQL Server / External API
 | Profile | `POST /farmers/me/profile` when `isNew` |
 | Authenticated farmer calls | `Authorization: Bearer <farmerSessionToken>` |
 | Farmer 401 | Clear client session → re-auth |
-| Refresh/revoke | FR-044 — exact refresh endpoint **[TBD]** |
-| **Admin login** | `POST /admin/auth/login` — separate from OTP (FR-042); method **[TBD]** |
+| Refresh/revoke | Interim (I-1 / GAP-010): `POST /auth/refresh` with Bearer farmer token → `{ sessionToken }`; `POST /auth/logout` → 204 (stateless; client discard). Admin: `POST /admin/auth/refresh`, `POST /admin/auth/logout`. Full refresh-token store remains future enhancement. |
+| **Admin login** | `POST /admin/auth/login` — separate from OTP (FR-042); password interim; MFA/SSO **[TBD]** |
 | **Admin calls** | `Authorization: Bearer <adminSessionToken>` + admin role |
 | Admin 401/403 | Re-login admin portal; never use farmer token on `/admin/*` |
 
@@ -111,9 +120,11 @@ Proposed structure (SRS does not define JSON shape):
 | `UNAUTHORIZED` | 401 |
 | `FORBIDDEN` | 403 |
 | `NOT_FOUND` | 404 |
-| `RATE_LIMITED` | 429 + `retryAfter` |
+| `RATE_LIMITED` | 429 + `retryable: true`; optional `Retry-After` header when lease metadata present |
 | `GENERATION_FAILED` | Plan/assistant failure |
 | `PROVIDER_UNAVAILABLE` | Weather/soil/LLM down (partial twin OK) |
+
+Availability: `GET /api/v1/system/health` → `{ status, utcNow, dbReachable, featureFlagsCount }` (503 if DB unreachable). See `docs/implementation/10-Observability.md`.
 
 Frontend: map `retryable` to Retry CTA.
 
@@ -155,23 +166,27 @@ Routes from `03` (proposed). Adjust only via contract change process.
 
 | Frontend Feature | API | Backend module | Main data |
 |------------------|-----|----------------|-----------|
-| Authentication | `POST /auth/otp/*`, profile | Auth | Farmer, session |
-| Farm Dashboard | `GET /farms`, `GET /farms/{id}/twin`, alerts | Farm / DigitalTwin | Farm state, twin summary |
+| Authentication | `POST /auth/otp/*`, `POST /auth/refresh`, `POST /auth/logout`, profile | Auth | Farmer, session |
+| Farm Dashboard | `GET /farms`, `GET /farms/{id}/twin`, `GET .../alerts` | Farm / DigitalTwin / Alerts | Farm state, twin, persisted alerts |
 | **Farm graphic** | `GET /farms/{id}/twin` (+ optional layout fields) | DigitalTwin | Areas, zones, edges for `FarmGraphic` |
 | Production Areas | `.../production-areas` | Farm | ProductionArea |
 | Crop Zones | `.../zones` | Farm | CropZone |
-| Digital Twin | `GET/POST .../twin` | DigitalTwin | TwinSnapshot |
-| Weather | Via twin (+ refresh) | Weather adapter | Weather in twin |
-| Soil | Twin + soil upsert | Soil | SoilProfile + provenance |
-| Water | `.../water-sources` | Water | WaterSource |
-| Crop Planning | `POST .../plan`, `GET .../plans` | Planning + LLM | FarmPlan |
-| Yield / Economics | Plan sections + `GET .../economics` | Economics | FarmEconomicSnapshot |
-| Nearby farms | `GET /suggestions` | NearbyFarms | Aggregates only |
-| Experimental | Experimental area + outcome APIs | Experimental | ProductionArea + CropCycle |
-| Green Farm | `GET/POST .../green-score` | GreenFarm | GreenFarmScore |
-| AI Assistant | `.../assistant/threads*` | AI | Threads/messages |
-| Compatibility | Via twin/plan/zone update responses | Compatibility | Table results |
-| **Admin login** | `POST /admin/auth/login`, `GET /admin/me` | AdminAuth | AdminUser session |
+| Digital Twin | `GET/POST .../twin` (+ refresh wires providers) | DigitalTwin | TwinSnapshot |
+| Weather | Via twin (+ `POST .../twin/refresh`); statuses on TwinSnapshot / TwinJson | Weather adapter | Weather in twin |
+| Soil | **Implemented:** `GET/PUT/POST /api/v1/farms/{farmId}/soil-profiles` (upsert by `productionAreaId`; provenance defaults to `ObservedMeasured` for farmer inputs); twin soilSummary | Soil | SoilProfile + provenance |
+| Water | **Implemented:** `GET/POST /api/v1/farms/{farmId}/water-sources`; `PATCH/DELETE /api/v1/farms/{farmId}/water-sources/{waterSourceId}` (soft-delete); twin waterSummary | Water | WaterSource |
+| Crop Planning | `POST .../plan`, `GET .../plan/history` | Planning + LLM | FarmPlan + contextUsed |
+| Yield / Economics | **Implemented:** `GET /api/v1/farms/{farmId}/economics` (compute-on-read via `EconomicsService`; response includes `disclaimer` + `ratesLabel: historical_reference` C-006); plan sections | Economics | FarmEconomicSnapshot (compute-on-read) |
+| Nearby farms | `GET .../suggestions`, `GET .../seed-suggestions/{cropId}` | NearbyFarms / SeedVariety | Aggregates + variety suggestions |
+| Experimental | `GET .../experimental`; `POST .../experimental/zones/{zoneId}/approve`; `POST .../experimental/zones/{zoneId}/outcome` | Experimental + CropCycle | Approve → track → actuals (GAP-051) |
+| Learning / history | `GET .../crop-cycles`; `POST .../crop-cycles/{cycleId}/actuals` | CropCycle | Predicted vs actual + Delta (GAP-052); future rec weights **TBD-12** |
+| Green Farm | `GET/POST .../green-score` (factors, dataQuality, disclaimer, weightsNote TBD-06) | GreenFarm | GreenFarmScore |
+| Alerts | `GET .../alerts`; `POST .../alerts/evaluate`; `PATCH .../alerts/{alertId}/read` | Alerts | Persisted Alert entity (GAP-050); cadence **TBD-10** |
+| Portfolio | `GET .../portfolio` → `{ status: "blocked", reason: "GAP-054…" }` | — | **BLOCKED** until TBD-11 |
+| AI Assistant | `.../assistant/threads*` (disclaimer on message response) | AI | Threads/messages |
+| Compatibility | Via twin/plan/zone + `GET .../neighbour-warnings` | Compatibility | Table results |
+| **Neighbour edges** | `GET/PUT/POST/DELETE .../neighbour-edges` | NeighbourEdges | FieldNeighbourEdge |
+| **Admin login** | `POST /admin/auth/login`, `POST /admin/auth/refresh`, `POST /admin/auth/logout`, `GET /admin/me` | AdminAuth | AdminUser session |
 | **Admin dashboard** | `GET /admin/metrics`, `GET /admin/analytics` | AdminAnalytics | Metrics, LLM cost |
 | **Admin farmers** | `GET /admin/farmers`, `GET /admin/farmers/{id}` | Admin | Farmer/farm inspect (audited) |
 | **Admin farm graphic** | `GET /admin/farms/{farmId}/twin` | Admin + DigitalTwin | Read-only twin/graphic |
@@ -244,15 +259,66 @@ GET /admin/farms/{farmId}/twin
 
 ## 9. Open decisions (integration)
 
-| ID | Topic |
-|----|--------|
-| I-1 | Refresh-token endpoint & cookie vs bearer storage (farmer) |
-| I-2 | Pagination/filter query grammar |
-| I-3 | Soft-delete HTTP shape |
-| I-4 | OpenAPI generation toolchain |
-| I-5 | Exact ProblemDetails vs custom error envelope (align §4) |
-| I-6 | Admin login request/response shape (password+MFA vs SSO) |
-| I-7 | Twin graphic DTO: auto-layout only vs persisted coordinates |
+| ID | Topic | Status |
+|----|--------|--------|
+| I-1 | Refresh-token endpoint & cookie vs bearer storage (farmer) | **Resolved (interim)** — Bearer re-issue via `POST /auth/refresh` / `POST /admin/auth/refresh`; logout is client discard (204). Cookie/store TBD later. |
+| I-2 | Pagination/filter query grammar | Open |
+| I-3 | Soft-delete HTTP shape | **Resolved (interim)** — `DELETE` on farm / production-area / zone → `IsDeleted=true`, 204; cascade soft-delete children on farm (and zones under area). |
+| I-4 | OpenAPI generation toolchain | Open |
+| I-5 | Exact ProblemDetails vs custom error envelope (align §4) | Open |
+| I-6 | Admin login request/response shape (password+MFA vs SSO) | Open (password interim live) |
+| I-7 | Twin graphic DTO: auto-layout only vs persisted coordinates | Open |
+| I-8 | Alert scheduler cadence (TBD-10) | Open — refresh + `POST .../alerts/evaluate` interim |
+| I-9 | Portfolio optimizer algorithm (TBD-11 / GAP-054) | **BLOCKED** — stub returns `{ status: "blocked" }` |
+| I-10 | Green Score factor weights (TBD-06) | Open — equal weights interim |
+| I-11 | Learning delta → future recommendations (TBD-12) | Open — Delta stored only |
+
+---
+
+## Appendix A — Phase 1 gap register (GAP-010…013)
+
+| Gap | Endpoints / contract |
+|-----|----------------------|
+| **GAP-010** Auth refresh/revoke | `POST /api/v1/auth/refresh` → `{ sessionToken }`; `POST /api/v1/auth/logout` → 204; `POST /api/v1/admin/auth/refresh` → `{ sessionToken }`; `POST /api/v1/admin/auth/logout` → 204 |
+| **GAP-011** Soft-delete | `DELETE /api/v1/farms/{farmId}` (cascades areas+zones); `DELETE /api/v1/farms/{farmId}/production-areas/{areaId}` (cascades zones); `DELETE /api/v1/farms/{farmId}/production-areas/{areaId}/zones/{zoneId}` — all 204, owner-scoped |
+| **GAP-012** Admin audit | `IAdminAuditService.WriteAsync`; wired on government-rates create/update; result/correlation/IP in `MetadataJson`; `GET /api/v1/admin/audit-logs` unchanged |
+| **GAP-013** Feature flags | `GET /api/v1/admin/feature-flags`; `PATCH /api/v1/admin/feature-flags/{key}` `{ enabled }`; seeds: `otp.use_mock` (true), `weather.enrichment`, `soil.enrichment`, `llm.live` (false); audited via GAP-012 |
+
+---
+
+## Appendix B — Phase 2 digital twin gap register (GAP-020…024)
+
+| Gap | Endpoints / contract |
+|-----|----------------------|
+| **GAP-020** Weather/soil in RefreshTwin | `POST /api/v1/farms/{farmId}/twin/refresh` calls `IWeatherProvider` / `ISoilProvider`; statuses `success\|failed\|stub` on TwinSnapshot; weather/soil summary in `TwinJson`; provider exceptions do not fail refresh (EIR-005). DI: default stubs; `Weather:UseLive=true` / `Soil:UseLive=true` selects Live* (NotImplemented until vendor) |
+| **GAP-021** Soil upsert | `GET /api/v1/farms/{farmId}/soil-profiles`; `PUT` or `POST` upsert (farm-level or `productionAreaId`) |
+| **GAP-022** Water CRUD | `GET/POST /api/v1/farms/{farmId}/water-sources`; `PATCH/DELETE .../water-sources/{waterSourceId}` (soft-delete) |
+| **GAP-023** Economics HTTP | `GET /api/v1/farms/{farmId}/economics` → disclaimer + `ratesLabel: historical_reference` + items |
+| **GAP-024** Twin DTO | `GET .../twin` weather/waterSummary/soilSummary from TwinSnapshot statuses + WaterSources + SoilProfiles |
+
+---
+
+## Appendix C — Phase 3 AI & planning gap register (GAP-030…034)
+
+| Gap | Endpoints / contract |
+|-----|----------------------|
+| **GAP-030** Live LLM adapter (vendor TBD — **BLOCKED**) | DI: default `StubLlmProvider`; `Llm:UseLive=true` → `LiveLlmProvider` (throws `NotImplementedException("LLM vendor TBD (GAP-003)")` after flag/`ApiKey` checks). Usage: `LlmUsageLogs` table for admin analytics. Stub may log `model=stub`, cost `0`. |
+| **GAP-031** Grounded plan generation | `POST /api/v1/farms/{farmId}/plan` builds context (areas/zones, soil summary, water count/types, weather status, language); persists `ContextUsedJson`; LLM failure → clear error, farm unchanged; structured `planSections`. `GET .../plan/history`. |
+| **GAP-032** Grounded assistant | `POST .../assistant/threads/{id}/messages` → twin-bound context + productionAreaType guard; response always includes `disclaimer` (stub/live). |
+| **GAP-033** Neighbour edges | `GET/PUT/POST /api/v1/farms/{farmId}/neighbour-edges` body `{ zoneAId, zoneBId }`; `DELETE .../neighbour-edges/{edgeId}`; `GET .../neighbour-warnings` via `CompatibilityService`. Owner-scoped. |
+| **GAP-034** Seed variety UX | `GET /api/v1/farms/{farmId}/seed-suggestions/{cropId}` (existing); FE applies via `PATCH .../zones/{zoneId}` `{ seedVarietyId }`. |
+
+---
+
+## Appendix D — Phase 4 admin operations gap register (GAP-040…044)
+
+| Gap | Endpoints / contract |
+|-----|----------------------|
+| **GAP-040** Catalog mutations | `POST/PATCH /api/v1/admin/crops`; `POST/PATCH /api/v1/admin/seed-varieties`; `POST/PATCH /api/v1/admin/production-area-types`; `PUT`/`PATCH /api/v1/admin/compatibility` (upsert by id or cropA+cropB+scope). Soft-disable via `Enabled`. Each write audited (`IAdminAuditService`). |
+| **GAP-041** Plan review | `FarmPlan.IsFlagged` + `ReviewStatus` (`none\|approved\|flagged\|dismissed`); `GET /api/v1/admin/plans?flagged=true`; `POST /api/v1/admin/plans/{planId}/review` `{ action: "approve"\|"flag"\|"dismiss", note? }` — audited. |
+| **GAP-042** Admin farm twin | `GET /api/v1/admin/farms/{farmId}/twin` via `DigitalTwinAssembler` (no farmer ownership); audit `farm.twin_inspect`. |
+| **GAP-043** Analytics | `GET /api/v1/admin/analytics` → `{ farmers, farms, plans, threads, llmUsageCount, estimatedCostUsd }` from counts + `LlmUsageLogs`. |
+| **GAP-044** MFA | **OPEN/BLOCKED** — do not invent MFA; see TBD-01. Password admin login interim only. |
 
 ---
 

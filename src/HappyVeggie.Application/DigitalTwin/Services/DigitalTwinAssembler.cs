@@ -93,6 +93,8 @@ public sealed class DigitalTwinAssembler
             farm.AreaAcres, farm.AreaInputValue, farm.AreaInputUnit,
             farm.IsNewFarmSetup);
 
+        // Weather/soil statuses come from TwinSnapshot after RefreshTwin (GAP-020).
+        // Water/soil summaries come from live WaterSources / SoilProfiles rows (GAP-024).
         var weather = twinSnapshot is not null
             ? new WeatherSummaryDto(twinSnapshot.WeatherProviderStatus)
             : null;
@@ -100,10 +102,13 @@ public sealed class DigitalTwinAssembler
         var water = new WaterSummaryDto(waterSources.Count, waterSources);
         var soil = new SoilSummaryDto(soilCount);
 
+        // GreenSummaryDto is a placeholder until green scoring is wired into the twin DTO (TASK-120).
+        GreenSummaryDto? green = null;
+
         return new FarmTwinDto(
             farmDto, areas, zones, edges,
             weather, water, soil,
-            GreenSummary: null,
+            green,
             latestPlan,
             LayoutMode: "auto",
             TwinRefreshedAt: twinSnapshot?.RefreshedAt);

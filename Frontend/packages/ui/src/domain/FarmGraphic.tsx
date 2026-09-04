@@ -1,194 +1,156 @@
-import type { CropZone, NeighbourEdge, ProductionArea, ProductionAreaTypeCode } from '@hv/api-types';
+import type { ReactNode } from 'react';
+import { Button } from '../primitives/Button';
+import { EmptyState } from '../primitives/EmptyState';
+import type { ProductionAreaType } from './ProductionAreaTypeIcon';
 import { ProductionAreaTypeIcon } from './ProductionAreaTypeIcon';
+import { cn } from '../utils/cn';
 
-export interface FarmGraphicProps {
-  areas: ProductionArea[];
-  zones: CropZone[];
-  neighbourEdges?: NeighbourEdge[];
-  /**
-   * Optional callback for interactive selection.
-   * (Wired later to Task-055/131/… flows.)
-   */
-  onZoneClick?: (zoneId: string) => void;
-}
+export type FarmGraphicArea = {
+  id: string;
+  name: string;
+  type: ProductionAreaType;
+  relativeSize: number;
+};
 
-type ZoneCenter = { x: number; y: number };
+export type FarmGraphicZone = {
+  id: string;
+  areaId: string;
+  cropName: string;
+  stage: string;
+};
 
-const areaTypeColor = (typeCode: ProductionAreaTypeCode): string => {
-  switch (typeCode) {
-    case 'open_field':
-      return 'var(--hv-area-open-field)';
-    case 'shed':
-      return 'var(--hv-area-shed)';
-    case 'greenhouse':
-      return 'var(--hv-area-greenhouse)';
-    case 'tunnel_polyhouse':
-      return 'var(--hv-area-tunnel)';
-    case 'experimental':
-      return 'var(--hv-area-experimental)';
-    case 'other_protected':
-    default:
-      return 'var(--hv-area-other)';
+export type FarmNeighbourEdge = {
+  fromZoneId: string;
+  toZoneId: string;
+  relation: string;
+};
+
+export type FarmGraphicProps = {
+  farmName: string;
+  areas: FarmGraphicArea[];
+  zones: FarmGraphicZone[];
+  neighbourEdges?: FarmNeighbourEdge[];
+  selectedId?: string;
+  onSelectArea?: (areaId: string) => void;
+  onSelectZone?: (zoneId: string) => void;
+  emptyAction?: ReactNode;
+  readOnly?: boolean;
+  className?: string;
+};
+
+export function FarmGraphic({
+  farmName,
+  areas,
+  zones,
+  neighbourEdges,
+  selectedId,
+  onSelectArea,
+  onSelectZone,
+  emptyAction,
+  readOnly = false,
+  className,
+}: FarmGraphicProps) {
+  if (areas.length === 0) {
+    return (
+      <div className={cn('hv-farm-graphic', className)}>
+        <header className="hv-farm-graphic__header">
+          <h2 className="hv-farm-graphic__title">{farmName}</h2>
+        </header>
+        <EmptyState
+          title="No production areas yet"
+          description="Add an open field, shed, greenhouse, tunnel, or experimental area to see your farm schematic."
+          action={
+            emptyAction ??
+            (!readOnly && onSelectArea ? (
+              <Button variant="primary" onClick={() => onSelectArea('')}>
+                Add production area
+              </Button>
+            ) : undefined)
+          }
+        />
+      </div>
+    );
   }
-};
 
-// Compatibility edge stroke colors.
-const relationStroke = (relation: NeighbourEdge['relation']): string => {
-  switch (relation) {
-    case 'good':
-      return 'var(--hv-compat-good)';
-    case 'avoid':
-      return 'var(--hv-compat-avoid)';
-    case 'neutral':
-    default:
-      return 'var(--hv-compat-neutral)';
-  }
-};
-
-const gridForCount = (n: number) => {
-  const cols = Math.max(1, Math.ceil(Math.sqrt(Math.max(1, n))));
-  const rows = Math.max(1, Math.ceil(n / cols));
-  return { cols, rows };
-};
-
-export function FarmGraphic({ areas, zones, neighbourEdges = [], onZoneClick }: FarmGraphicProps) {
-  // Deterministic layout: place production areas on a grid, then place zones in sub-grids.
-  const orderedAreas = [...areas].sort((a, b) => a.name.localeCompare(b.name));
-  const areaIds = new Set(orderedAreas.map((a) => a.id));
-  const areasInTwin = orderedAreas.filter((a) => areaIds.has(a.id));
-
-  const zonesByAreaId = areasInTwin.reduce<Record<string, CropZone[]>>((acc, a) => {
-    acc[a.id] = zones.filter((z) => z.productionAreaId === a.id);
-    return acc;
-  }, {});
-
-  const { cols, rows } = gridForCount(areasInTwin.length);
-
-  // Use a fixed SVG coordinate system so the component stays stable across screen sizes.
-  const viewW = cols;
-  const viewH = rows;
-  const areaCellW = 1;
-  const areaCellH = 1;
-
-  const areaRects = areasInTwin.map((area, idx) => {
-    const cellCol = idx % cols;
-    const cellRow = Math.floor(idx / cols);
-    const x = cellCol * areaCellW;
-    const y = cellRow * areaCellH;
-    return { area, x, y };
-  });
-
-  const zoneTileCols = 2; // small sub-grid inside each area cell
-  const zoneTileRows = 2;
-
-  // Precompute zone center points so neighbor edges render correctly.
-  const zoneCenters = new Map<string, ZoneCenter>();
-  areaRects.forEach(({ area, x, y }) => {
-    const areaZones = zonesByAreaId[area.id] ?? [];
-    areaZones.forEach((zone, zIdx) => {
-      const tileCol = zIdx % zoneTileCols;
-      const tileRow = Math.floor(zIdx / zoneTileCols) % zoneTileRows;
-
-      const tileW = areaCellW / zoneTileCols;
-      const tileH = areaCellH / zoneTileRows;
-
-      const zx = x + tileCol * tileW + 0.04;
-      const zy = y + tileRow * tileH + 0.06;
-      zoneCenters.set(zone.id, { x: zx + tileW * 0.5, y: zy + tileH * 0.5 });
-    });
-  });
+  const sorted = [...areas].sort((a, b) => b.relativeSize - a.relativeSize);
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-500)]">
-          {zones.length === 0 ? 'No crop zones' : `${areasInTwin.length} areas • ${zones.length} zones`}
-        </div>
+    <div className={cn('hv-farm-graphic', className)}>
+      <header className="hv-farm-graphic__header">
+        <h2 className="hv-farm-graphic__title">{farmName}</h2>
+        <span style={{ fontSize: 'var(--hv-text-xs)', color: 'var(--hv-color-text-muted)' }}>
+          Schematic (not a survey map)
+        </span>
+      </header>
+
+      <div className="hv-farm-graphic__canvas" role="list" aria-label="Farm schematic">
+        {sorted.map((area) => {
+          const areaZones = zones.filter((z) => z.areaId === area.id);
+          const flexGrow = Math.max(1, area.relativeSize);
+          const selected = selectedId === area.id;
+
+          return (
+            <div
+              key={area.id}
+              role="listitem"
+              className={cn(
+                'hv-farm-area',
+                `hv-farm-area--${area.type}`,
+                selected && 'hv-farm-area--selected',
+              )}
+              style={{ flexGrow }}
+              tabIndex={readOnly && !onSelectArea ? undefined : 0}
+              onClick={() => onSelectArea?.(area.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectArea?.(area.id);
+                }
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--hv-space-2)' }}>
+                <ProductionAreaTypeIcon type={area.type} />
+                <p className="hv-farm-area__name">{area.name}</p>
+              </div>
+              <div className="hv-farm-area__zones">
+                {areaZones.length === 0 && (
+                  <span style={{ fontSize: 'var(--hv-text-xs)', color: 'var(--hv-color-text-muted)' }}>
+                    No zones
+                  </span>
+                )}
+                {areaZones.map((zone) => (
+                  <button
+                    key={zone.id}
+                    type="button"
+                    className={cn(
+                      'hv-farm-zone',
+                      selectedId === zone.id && 'hv-farm-zone--selected',
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectZone?.(zone.id);
+                    }}
+                    disabled={readOnly && !onSelectZone}
+                  >
+                    {zone.cropName}
+                    <span style={{ opacity: 0.7 }}> · {zone.stage}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      <svg viewBox={`0 0 ${viewW} ${viewH}`} className="w-full h-auto">
-        {/* Neighbour edges (drawn behind tiles). */}
-        {neighbourEdges.map((edge, idx) => {
-          const a = zoneCenters.get(edge.zoneAId);
-          const b = zoneCenters.get(edge.zoneBId);
-          if (!a || !b) return null;
-          return (
-            <line
-              // eslint-disable-next-line react/no-array-index-key
-              key={idx}
-              x1={a.x}
-              y1={a.y}
-              x2={b.x}
-              y2={b.y}
-              stroke={relationStroke(edge.relation)}
-              strokeWidth={0.03}
-              strokeDasharray={edge.relation === 'neutral' ? '0.02 0.02' : undefined}
-              opacity={0.85}
-            />
-          );
-        })}
-
-        {/* Areas + zones */}
-        {areaRects.map(({ area, x, y }) => {
-          const areaZones = zonesByAreaId[area.id] ?? [];
-          const fill = areaTypeColor(area.typeCode);
-          const areaStroke = 'rgba(17, 24, 39, 0.18)';
-
-          return (
-            <g key={area.id}>
-              <rect
-                x={x}
-                y={y}
-                width={areaCellW}
-                height={areaCellH}
-                rx={0.08}
-                ry={0.08}
-                fill={fill}
-                opacity={0.18}
-                stroke={areaStroke}
-              />
-
-              {/* Type icon + name (small). */}
-              <g transform={`translate(${x + 0.06}, ${y + 0.09})`}>
-                <ProductionAreaTypeIcon type={area.typeCode} size="sm" />
-              </g>
-
-              {/* Zones inside the cell */}
-              {areaZones.map((zone, zIdx) => {
-                const tileCol = zIdx % zoneTileCols;
-                const tileRow = Math.floor(zIdx / zoneTileCols) % zoneTileRows;
-
-                const tileW = areaCellW / zoneTileCols;
-                const tileH = areaCellH / zoneTileRows;
-
-                const zx = x + tileCol * tileW + 0.04;
-                const zy = y + tileRow * tileH + 0.06;
-
-                return (
-                  <g key={zone.id} onClick={() => onZoneClick?.(zone.id)} style={{ cursor: onZoneClick ? 'pointer' : 'default' }}>
-                    <rect
-                      x={zx}
-                      y={zy}
-                      width={tileW - 0.08}
-                      height={tileH - 0.1}
-                      rx={0.06}
-                      ry={0.06}
-                      fill="white"
-                      opacity={0.65}
-                      stroke="rgba(17, 24, 39, 0.12)"
-                    />
-
-                    <text x={zx + 0.02} y={zy + 0.12} fontSize={0.09} fill="rgba(17, 24, 39, 0.85)">
-                      {zone.label.length > 14 ? `${zone.label.slice(0, 13)}…` : zone.label}
-                    </text>
-                  </g>
-                );
-              })}
-            </g>
-          );
-        })}
-      </svg>
+      {neighbourEdges && neighbourEdges.length > 0 && (
+        <ul className="hv-farm-edges" aria-label="Neighbour relations">
+          {neighbourEdges.map((edge, i) => (
+            <li key={`${edge.fromZoneId}-${edge.toZoneId}-${i}`}>
+              {edge.fromZoneId} → {edge.toZoneId}: {edge.relation}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
-

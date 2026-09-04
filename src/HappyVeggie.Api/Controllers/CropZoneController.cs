@@ -1,4 +1,5 @@
 using HappyVeggie.Application.CropZones.CreateCropZone;
+using HappyVeggie.Application.CropZones.DeleteCropZone;
 using HappyVeggie.Application.CropZones.Dtos;
 using HappyVeggie.Application.CropZones.ListCropZones;
 using HappyVeggie.Application.CropZones.UpdateCropZone;
@@ -61,6 +62,14 @@ public sealed class CropZoneController : ControllerBase
 
         var result = await _sender.Send(command, cancellationToken);
         return Ok(result);
+    }
+
+    [HttpDelete("{zoneId:guid}")]
+    public async Task<IActionResult> Delete(
+        Guid farmId, Guid areaId, Guid zoneId, CancellationToken cancellationToken)
+    {
+        await _sender.Send(new DeleteCropZoneCommand(farmId, areaId, zoneId), cancellationToken);
+        return NoContent();
     }
 }
 

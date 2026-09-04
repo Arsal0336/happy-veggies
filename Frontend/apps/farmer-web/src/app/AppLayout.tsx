@@ -1,80 +1,79 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../features/auth/AuthProvider';
+import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { setLanguage } from '@hv/i18n';
+import { Button } from '@hv/ui';
 import type { Language } from '@hv/api-types';
+import { useAuth } from '../features/auth/AuthProvider';
 
 export function AppLayout() {
-  const { farmer, logout } = useAuth();
   const { t, i18n } = useTranslation();
+  const { farmer, logout, setLanguagePreference } = useAuth();
   const navigate = useNavigate();
+  const { farmId } = useParams<{ farmId?: string }>();
+
+  const toggleLanguage = () => {
+    const next: Language = i18n.language === 'en' ? 'ur' : 'en';
+    setLanguagePreference(next);
+    void i18n.changeLanguage(next);
+  };
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/auth/phone', { replace: true });
   };
 
-  const handleLanguageToggle = () => {
-    const next: Language = i18n.language === 'en' ? 'ur' : 'en';
-    setLanguage(next);
-  };
-
-  const navItems = [
-    { to: '/dashboard', label: t('nav.dashboard'), icon: '🏠' },
-    { to: '/farms', label: t('nav.farms'), icon: '🌾' },
-  ];
+  const farmBase = farmId ? `/farms/${farmId}` : null;
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="sticky top-0 z-[var(--hv-z-sticky)] bg-white border-b border-[var(--hv-color-neutral-200)] px-4 py-3 flex items-center justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <span className="text-[var(--hv-text-xl)] font-bold text-[var(--hv-color-primary-600)] truncate block">
+    <div className="hv-shell">
+      <header className="hv-shell__header">
+        <div className="hv-shell__brand-row">
+          <NavLink to="/" className="hv-shell__brand">
             {t('common.appName')}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleLanguageToggle}
-            className="min-h-11 min-w-11 px-3 py-2 text-[var(--hv-text-sm)] rounded border border-[var(--hv-color-neutral-300)] hover:bg-[var(--hv-color-neutral-100)]"
-          >
-            {i18n.language === 'en' ? 'اردو' : 'English'}
-          </button>
-          <span className="hidden sm:inline text-[var(--hv-text-sm)] text-[var(--hv-color-neutral-600)] truncate max-w-[8rem]">
-            {farmer?.name ?? farmer?.phone}
-          </span>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="min-h-11 inline-flex items-center px-2 py-2 text-[var(--hv-text-sm)] text-[var(--hv-color-danger-500)] hover:underline"
-          >
-            {t('auth.logout')}
-          </button>
+          </NavLink>
+          <div className="hv-shell__actions">
+            <Button size="sm" variant="ghost" onClick={toggleLanguage}>
+              {i18n.language === 'en' ? 'اردو' : 'EN'}
+            </Button>
+            <span className="hv-shell__user">{farmer?.name ?? farmer?.phone}</span>
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col min-h-0 px-4 py-6 pb-2 max-w-lg mx-auto w-full">
+      <main className="hv-shell__main">
         <Outlet />
       </main>
 
-      <nav className="sticky bottom-0 z-[var(--hv-z-sticky)] bg-white border-t border-[var(--hv-color-neutral-200)] flex pb-[env(safe-area-inset-bottom)]">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `flex-1 flex flex-col items-center justify-center min-h-[3.5rem] py-3 text-[var(--hv-text-xs)] transition-colors ${
-                isActive
-                  ? 'text-[var(--hv-color-primary-600)]'
-                  : 'text-[var(--hv-color-neutral-500)]'
-              }`
-            }
-          >
-            <span className="text-lg">{item.icon}</span>
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+      <nav className="hv-shell__nav" aria-label="Main">
+        <NavLink to="/" end className={navClass}>
+          {t('nav.farms')}
+        </NavLink>
+        {farmBase && (
+          <>
+            <NavLink to={farmBase} end className={navClass}>
+              {t('nav.home')}
+            </NavLink>
+            <NavLink to={`${farmBase}/plan`} className={navClass}>
+              {t('nav.plan')}
+            </NavLink>
+            <NavLink to={`${farmBase}/assistant`} className={navClass}>
+              {t('nav.assistant')}
+            </NavLink>
+            <NavLink to={`${farmBase}/green`} className={navClass}>
+              {t('nav.green')}
+            </NavLink>
+          </>
+        )}
+        <NavLink to="/settings" className={navClass}>
+          {t('nav.settings')}
+        </NavLink>
+        <button type="button" className="hv-shell__nav-link" onClick={handleLogout}>
+          {t('common.logout')}
+        </button>
       </nav>
     </div>
   );
+}
+
+function navClass({ isActive }: { isActive: boolean }) {
+  return `hv-shell__nav-link${isActive ? ' is-active' : ''}`;
 }

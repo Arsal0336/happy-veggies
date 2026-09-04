@@ -1,100 +1,127 @@
-import { useParams, Link } from 'react-router-dom';
-import { Card, Badge, FarmGraphic } from '@hv/ui';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  fixtureAdminFarmers,
-  fixtureFarms,
-  fixturePlan,
-  fixtureProductionAreas,
-  fixtureCropZones,
-} from '@hv/api-types';
+  Card,
+  LoadingState,
+  ErrorState,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Badge,
+  EmptyState,
+} from '@hv/ui';
+import { useAdminFarmer } from '../../shared/api/useAdmin';
 
 export function FarmerDetailPage() {
-  const { farmerId } = useParams<{ farmerId: string }>();
-  const farmer = fixtureAdminFarmers.find((f) => f.id === farmerId);
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { data, isLoading, isError, refetch } = useAdminFarmer(id);
 
-  if (!farmer) {
+  if (isLoading) return <LoadingState label="Loading farmer…" />;
+  if (isError || !data) {
     return (
-      <div className="flex flex-col gap-4">
-        <Link to="/farmers" className="text-[var(--hv-color-primary-600)] hover:underline text-[var(--hv-text-sm)]">
-          ← Back to Farmers
-        </Link>
-        <p className="text-[var(--hv-color-neutral-500)]">Farmer not found.</p>
+      <div>
+        <Link to="/farmers">← Farmers</Link>
+        <ErrorState title="Farmer not found" onRetry={() => void refetch()} />
       </div>
     );
   }
 
-  const farms = fixtureFarms.filter((f) => f.farmerId === farmer.id);
-
   return (
-    <div className="flex flex-col gap-6">
-      <Link to="/farmers" className="text-[var(--hv-color-primary-600)] hover:underline text-[var(--hv-text-sm)]">
-        ← Back to Farmers
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <Link to="/farmers" style={{ fontSize: 'var(--hv-text-sm)' }}>
+        ← Farmers
       </Link>
 
-      <h1 className="text-[var(--hv-text-2xl)] font-bold">{farmer.name}</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
         <Card padding="md">
-          <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-500)]">Phone</p>
-          <p className="font-mono">{farmer.phone}</p>
+          <p style={{ margin: 0, fontSize: 'var(--hv-text-xs)', color: 'var(--hv-color-text-muted)' }}>
+            Phone
+          </p>
+          <p style={{ margin: '0.25rem 0 0', fontFamily: 'monospace' }}>{data.phone}</p>
         </Card>
         <Card padding="md">
-          <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-500)]">Region</p>
-          <p>{farmer.region}</p>
+          <p style={{ margin: 0, fontSize: 'var(--hv-text-xs)', color: 'var(--hv-color-text-muted)' }}>
+            Language
+          </p>
+          <p style={{ margin: '0.25rem 0 0' }}>{data.language}</p>
         </Card>
         <Card padding="md">
-          <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-500)]">Registered</p>
-          <p>{new Date(farmer.createdAt).toLocaleDateString()}</p>
+          <p style={{ margin: 0, fontSize: 'var(--hv-text-xs)', color: 'var(--hv-color-text-muted)' }}>
+            Farms
+          </p>
+          <p style={{ margin: '0.25rem 0 0' }}>{data.farms.length}</p>
         </Card>
       </div>
 
-      {/* Farms */}
       <Card padding="md">
-        <h2 className="font-semibold mb-3">Farms ({farms.length})</h2>
-        {farms.length === 0 && (
-          <p className="text-[var(--hv-color-neutral-500)] text-[var(--hv-text-sm)]">No farms found.</p>
+        <h2 style={{ marginTop: 0, fontSize: 'var(--hv-text-lg)' }}>Farms (read-only)</h2>
+        {data.farms.length === 0 ? (
+          <p style={{ color: 'var(--hv-color-text-muted)' }}>No farms.</p>
+        ) : (
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell as="th">Name</TableCell>
+                <TableCell as="th">Region</TableCell>
+                <TableCell as="th">Area</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {data.farms.map((farm) => (
+                <TableRow
+                  key={farm.id}
+                  className="hv-clickable-row"
+                  tabIndex={0}
+                  onClick={() => navigate(`/farmers/${data.id}/farms/${farm.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/farmers/${data.id}/farms/${farm.id}`);
+                    }
+                  }}
+                >
+                  <TableCell>{farm.name}</TableCell>
+                  <TableCell>{farm.regionLabel ?? '—'}</TableCell>
+                  <TableCell>
+                    {farm.areaLabel ??
+                      (farm.areaAcres != null ? `${farm.areaAcres} acre` : '—')}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
-        {farms.map((farm) => (
-          <div key={farm.id} className="border-b border-[var(--hv-color-neutral-100)] py-3 last:border-0">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-medium">{farm.name ?? 'Unnamed'}</span>
-              <Badge variant="neutral" size="sm">{farm.regionLabel}</Badge>
-            </div>
-            <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-500)]">
-              {farm.areaInput.value} {farm.areaInput.unit}
-            </p>
-          </div>
-        ))}
       </Card>
 
-      {/* Farm Graphic (read-only) */}
-      {farms.length > 0 && (
-        <Card padding="md" className="overflow-hidden">
-          <h2 className="font-semibold mb-3">Farm Layout</h2>
-          <div className="max-h-96 overflow-auto">
-          <FarmGraphic
-            areas={fixtureProductionAreas}
-            zones={fixtureCropZones}
-          />
-          </div>
-        </Card>
-      )}
-
-      {/* Plans */}
       <Card padding="md">
-        <h2 className="font-semibold mb-3">Plans</h2>
-        {farmer.id === fixturePlan.farmerId ? (
-          <div className="text-[var(--hv-text-sm)]">
-            <p>
-              <span className="font-medium">Plan {fixturePlan.id}</span>{' '}
-              <Badge variant="success" size="sm">v{fixturePlan.version}</Badge>
-            </p>
-            <p className="text-[var(--hv-text-xs)] text-[var(--hv-color-neutral-500)] mt-1">
-              Generated {new Date(fixturePlan.createdAt).toLocaleDateString()} — {fixturePlan.content.recommendedCrops.length} recommended crops
-            </p>
-          </div>
+        <h2 style={{ marginTop: 0, fontSize: 'var(--hv-text-lg)' }}>Plans (read-only)</h2>
+        {data.plans.length === 0 ? (
+          <EmptyState
+            title="No plans on this view"
+            description="Farmer detail from this backend does not include plan list."
+          />
         ) : (
-          <p className="text-[var(--hv-color-neutral-500)] text-[var(--hv-text-sm)]">No plans generated.</p>
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+            {data.plans.map((plan) => (
+              <li
+                key={plan.id}
+                style={{
+                  padding: '0.75rem 0',
+                  borderBottom: '1px solid var(--hv-color-border, #e5e7eb)',
+                }}
+              >
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <strong>{plan.id}</strong>
+                  <Badge>v{plan.version}</Badge>
+                </div>
+                <p style={{ margin: '0.25rem 0 0', fontSize: 'var(--hv-text-sm)', color: 'var(--hv-color-text-muted)' }}>
+                  {plan.summary ?? '—'} · {new Date(plan.createdAt).toLocaleDateString()}
+                </p>
+              </li>
+            ))}
+          </ul>
         )}
       </Card>
     </div>

@@ -1,6 +1,8 @@
 import { ApiClient } from '@hv/api-types';
+import { API_BASE_URL } from './env';
+import { getToken, handleUnauthorized } from './authStorage';
 
-export const farmerApi = new ApiClient({
-  baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000/api/v1',
-  getToken: () => localStorage.getItem('hv_farmer_token'),
-});
+/** Typed farmer API client — fixtures replace this when useFixtures() is true. */
+export const farmerApi = new ApiClient(API_BASE_URL, getToken, handleUnauthorized);
+
+export { farmerApi as apiInstance };

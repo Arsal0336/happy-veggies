@@ -1,19 +1,21 @@
-import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
-import path from 'path';
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  resolve: {
-    alias: {
-      '@hv/ui': path.resolve(__dirname, '../../packages/ui/src'),
-      '@hv/api-types': path.resolve(__dirname, '../../packages/api-types/src'),
-      '@hv/i18n': path.resolve(__dirname, '../../packages/i18n/src'),
-    },
-  },
+  plugins: [react()],
   server: {
     port: 5173,
-    open: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5262',
+        changeOrigin: true,
+      },
+    },
+  },
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+  },
+  optimizeDeps: {
+    include: ['@hv/ui', '@hv/api-types', '@hv/i18n'],
   },
 });

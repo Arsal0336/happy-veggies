@@ -1,153 +1,177 @@
-/**
- * API Client — typed HTTP wrapper with error envelope handling.
- *
- * Component → Feature Hook → Feature Service → apiClient → VITE_API_BASE_URL
- *
- * During development the fixture adapter intercepts calls and returns
- * deterministic data. Replace with real backend when available.
- */
+export type GetToken = () => string | null | undefined;
+export type OnUnauthorized = () => void;
 
-import type { ApiError } from '@hv/api-types';
-
-export interface ApiClientConfig {
-  baseUrl: string;
-  getToken?: () => string | null;
-  onError?: (error: ApiError) => void;
+export interface RequestOptions {
+  params?: Record<string, string | number | boolean | undefined | null>;
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
 }
 
-export interface RequestOptions extends RequestInit {
-  params?: Record<string, string | number | boolean | undefined>;
+/** Local shape — mirrors ApiErrorEnvelope without circular import. */
+interface ErrorEnvelope {
+  code: string;
+  message: string;
+  correlationId: string;
+  errors?: { field: string; message: string }[];
+  retryable?: boolean;
+}
+
+/**
+ * Join base + path without dropping base path segments (e.g. `/api/v1`).
+ * Do not use `new URL(path, base)` when `path` is absolute — that resets the path.
+ */
+export function joinUrl(baseUrl: string, path: string): string {
+  const base = baseUrl.replace(/\/+$/, '');
+  if (!path) return base;
+  if (/^https?:\/\//i.test(path)) return path;
+  const suffix = path.startsWith('/') ? path : `/${path}`;
+  return `${base}${suffix}`;
+}
+
+function createCorrelationId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `corr-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function appendQuery(
+  url: string,
+  params?: RequestOptions['params'],
+): string {
+  if (!params) return url;
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue;
+    search.set(key, String(value));
+  }
+  const qs = search.toString();
+  if (!qs) return url;
+  return url.includes('?') ? `${url}&${qs}` : `${url}?${qs}`;
+}
+
+export class ApiError extends Error {
+  readonly code: string;
+  readonly correlationId: string;
+  readonly errors?: { field: string; message: string }[];
+  readonly retryable: boolean;
+  readonly status: number;
+  readonly envelope: ErrorEnvelope;
+
+  constructor(status: number, envelope: ErrorEnvelope) {
+    super(envelope.message || `HTTP ${status}`);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = envelope.code;
+    this.correlationId = envelope.correlationId;
+    this.errors = envelope.errors;
+    this.retryable = envelope.retryable ?? false;
+    this.envelope = envelope;
+  }
 }
 
 export class ApiClient {
-  private config: ApiClientConfig;
+  private readonly baseUrl: string;
+  private readonly getToken?: GetToken;
+  private readonly onUnauthorized?: OnUnauthorized;
 
-  constructor(config: ApiClientConfig) {
-    this.config = config;
+  constructor(
+    baseUrl: string,
+    getToken?: GetToken,
+    onUnauthorized?: OnUnauthorized,
+  ) {
+    this.baseUrl = baseUrl;
+    this.getToken = getToken;
+    this.onUnauthorized = onUnauthorized;
   }
 
-  private buildUrl(path: string, params?: RequestOptions['params']): string {
-    const url = new URL(path, this.config.baseUrl);
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          url.searchParams.set(key, String(value));
-        }
-      });
+  get<T>(path: string, options?: RequestOptions): Promise<T> {
+    return this.request<T>('GET', path, undefined, options);
+  }
+
+  post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
+    return this.request<T>('POST', path, body, options);
+  }
+
+  patch<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
+    return this.request<T>('PATCH', path, body, options);
+  }
+
+  put<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
+    return this.request<T>('PUT', path, body, options);
+  }
+
+  delete<T>(path: string, options?: RequestOptions): Promise<T> {
+    return this.request<T>('DELETE', path, undefined, options);
+  }
+
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+    options?: RequestOptions,
+  ): Promise<T> {
+    const url = appendQuery(joinUrl(this.baseUrl, path), options?.params);
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'X-Correlation-Id': createCorrelationId(),
+      ...options?.headers,
+    };
+
+    if (body !== undefined) {
+      headers['Content-Type'] = 'application/json';
     }
-    return url.toString();
-  }
 
-  private async handleResponse<T>(response: Response): Promise<T> {
+    const token = this.getToken?.();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: options?.signal,
+    });
+
+    if (response.status === 401) {
+      this.onUnauthorized?.();
+    }
+
     if (response.ok) {
-      // Handle 204 No Content
       if (response.status === 204) return undefined as T;
-      return response.json() as Promise<T>;
+      const text = await response.text();
+      if (!text) return undefined as T;
+      return JSON.parse(text) as T;
     }
 
-    // Parse error envelope
-    let apiError: ApiError;
+    let envelope: ErrorEnvelope;
     try {
-      apiError = await response.json();
+      const parsed = (await response.json()) as Partial<ErrorEnvelope>;
+      if (!parsed || typeof parsed !== 'object') {
+        throw new Error('invalid envelope');
+      }
+      envelope = {
+        code: parsed.code ?? `HTTP_${response.status}`,
+        message:
+          parsed.message ??
+          (response.statusText || `HTTP ${response.status}`),
+        correlationId:
+          parsed.correlationId ?? headers['X-Correlation-Id'],
+        errors: parsed.errors,
+        retryable:
+          parsed.retryable ??
+          (response.status === 429 || response.status >= 500),
+      };
     } catch {
-      apiError = {
-        code: 'VALIDATION_ERROR',
+      envelope = {
+        code: `HTTP_${response.status}`,
         message: response.statusText || `HTTP ${response.status}`,
-        retryable: response.status >= 500,
+        correlationId: headers['X-Correlation-Id'],
+        retryable: response.status === 429 || response.status >= 500,
       };
     }
 
-    this.config.onError?.(apiError);
-    throw apiError;
-  }
-
-  async get<T>(path: string, options?: RequestOptions): Promise<T> {
-    const { params, ...init } = options ?? {};
-    const url = this.buildUrl(path, params);
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(init.headers as Record<string, string>),
-    };
-
-    const token = this.config.getToken?.();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const response = await fetch(url, { ...init, method: 'GET', headers });
-    return this.handleResponse<T>(response);
-  }
-
-  async post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
-    const { params, ...init } = options ?? {};
-    const url = this.buildUrl(path, params);
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(init.headers as Record<string, string>),
-    };
-
-    const token = this.config.getToken?.();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const response = await fetch(url, {
-      ...init,
-      method: 'POST',
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    return this.handleResponse<T>(response);
-  }
-
-  async put<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
-    const { params, ...init } = options ?? {};
-    const url = this.buildUrl(path, params);
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(init.headers as Record<string, string>),
-    };
-
-    const token = this.config.getToken?.();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const response = await fetch(url, {
-      ...init,
-      method: 'PUT',
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    return this.handleResponse<T>(response);
-  }
-
-  async patch<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
-    const { params, ...init } = options ?? {};
-    const url = this.buildUrl(path, params);
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(init.headers as Record<string, string>),
-    };
-
-    const token = this.config.getToken?.();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const response = await fetch(url, {
-      ...init,
-      method: 'PATCH',
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    return this.handleResponse<T>(response);
-  }
-
-  async delete<T>(path: string, options?: RequestOptions): Promise<T> {
-    const { params, ...init } = options ?? {};
-    const url = this.buildUrl(path, params);
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(init.headers as Record<string, string>),
-    };
-
-    const token = this.config.getToken?.();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const response = await fetch(url, { ...init, method: 'DELETE', headers });
-    return this.handleResponse<T>(response);
+    throw new ApiError(response.status, envelope);
   }
 }

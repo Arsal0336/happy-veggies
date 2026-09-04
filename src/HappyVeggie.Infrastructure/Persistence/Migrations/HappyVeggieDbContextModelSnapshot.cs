@@ -104,6 +104,56 @@ namespace HappyVeggie.Infrastructure.Persistence.Migrations
                     b.ToTable("AdminUsers", (string)null);
                 });
 
+            modelBuilder.Entity("HappyVeggie.Domain.Entities.Alert", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("FarmId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("SourceSignal")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FarmId");
+
+                    b.HasIndex("FarmId", "IsRead");
+
+                    b.HasIndex("FarmId", "SourceSignal");
+
+                    b.ToTable("Alerts", (string)null);
+                });
+
             modelBuilder.Entity("HappyVeggie.Domain.Entities.AssistantMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -434,6 +484,13 @@ namespace HappyVeggie.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CropZoneId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal?>("Delta")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTimeOffset?>("EndedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -671,10 +728,29 @@ namespace HappyVeggie.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("FarmerId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("IsFlagged")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Language")
                         .IsRequired()
                         .HasMaxLength(5)
                         .HasColumnType("nvarchar(5)");
+
+                    b.Property<string>("ReviewNote")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ReviewStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)")
+                        .HasDefaultValue("none");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<int>("Version")
                         .HasColumnType("int");
@@ -682,6 +758,8 @@ namespace HappyVeggie.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FarmerId");
+
+                    b.HasIndex("IsFlagged");
 
                     b.HasIndex("FarmId", "Version")
                         .IsUnique();
@@ -723,6 +801,72 @@ namespace HappyVeggie.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Farmers", (string)null);
+                });
+
+            modelBuilder.Entity("HappyVeggie.Domain.Entities.FeatureFlag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("UpdatedByAdminId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("FeatureFlags", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a1000001-0000-4000-8000-000000000001"),
+                            Description = "Use mock OTP provider instead of live SMS",
+                            Enabled = true,
+                            Key = "otp.use_mock",
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 9, 4, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("a1000001-0000-4000-8000-000000000002"),
+                            Description = "Enable live weather enrichment for digital twin",
+                            Enabled = false,
+                            Key = "weather.enrichment",
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 9, 4, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("a1000001-0000-4000-8000-000000000003"),
+                            Description = "Enable live soil enrichment for digital twin",
+                            Enabled = false,
+                            Key = "soil.enrichment",
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 9, 4, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("a1000001-0000-4000-8000-000000000004"),
+                            Description = "Use live LLM provider instead of stub",
+                            Enabled = false,
+                            Key = "llm.live",
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 9, 4, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        });
                 });
 
             modelBuilder.Entity("HappyVeggie.Domain.Entities.FieldNeighbourEdge", b =>
@@ -818,6 +962,49 @@ namespace HappyVeggie.Infrastructure.Persistence.Migrations
                     b.HasIndex("CropId", "Period");
 
                     b.ToTable("GovernmentCropRates", (string)null);
+                });
+
+            modelBuilder.Entity("HappyVeggie.Domain.Entities.LlmUsageLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CompletionTokens")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal>("EstimatedCostUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<Guid?>("FarmId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("FarmerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Model")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("PromptTokens")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RequestType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("RequestType");
+
+                    b.ToTable("LlmUsageLogs", (string)null);
                 });
 
             modelBuilder.Entity("HappyVeggie.Domain.Entities.ProductionArea", b =>
@@ -1411,6 +1598,17 @@ namespace HappyVeggie.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("ActorAdmin");
+                });
+
+            modelBuilder.Entity("HappyVeggie.Domain.Entities.Alert", b =>
+                {
+                    b.HasOne("HappyVeggie.Domain.Entities.Farm", "Farm")
+                        .WithMany()
+                        .HasForeignKey("FarmId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Farm");
                 });
 
             modelBuilder.Entity("HappyVeggie.Domain.Entities.AssistantMessage", b =>

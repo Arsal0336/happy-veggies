@@ -1,55 +1,72 @@
-import { render, screen } from '@testing-library/react';
+import { describe, expect, it, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi } from 'vitest';
+import { useMemo, type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { I18nextProvider } from 'react-i18next';
-import { i18n } from '@hv/i18n';
-import { NewFarmPage } from '../features/farm/NewFarmPage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { I18nextProvider, createFarmerI18n } from '@hv/i18n';
+import { AuthProvider } from '../features/auth/AuthProvider';
+import { NotificationProvider } from '../shared/notifications/NotificationProvider';
+import { AppRouter } from '../app/AppRouter';
+import { clearAuthSession } from '../shared/api/authStorage';
 
-// Mock farmService to avoid actual API calls
-vi.mock('../shared/api/services', () => ({
-  farmService: {
-    createFarm: vi.fn().mockResolvedValue({}),
-  },
-}));
-
-const renderPage = () =>
-  render(
-    <MemoryRouter>
-      <I18nextProvider i18n={i18n}>
-        <NewFarmPage />
-      </I18nextProvider>
-    </MemoryRouter>,
+function TestProviders({
+  children,
+  initialEntries = ['/auth/phone'],
+}: {
+  children: ReactNode;
+  initialEntries?: string[];
+}) {
+  const i18n = useMemo(() => createFarmerI18n('en'), []);
+  const queryClient = useMemo(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { retry: false, staleTime: 0 } },
+      }),
+    [],
   );
 
-describe('NewFarmPage wizard flow', () => {
-  it('renders the first step (Location)', () => {
-    renderPage();
-    expect(screen.getByRole('heading', { name: 'Location' })).toBeInTheDocument();
+  return (
+    <QueryClientProvider client={queryClient}>
+      <I18nextProvider i18n={i18n}>
+        <AuthProvider>
+          <NotificationProvider>
+            <MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>
+          </NotificationProvider>
+        </AuthProvider>
+      </I18nextProvider>
+    </QueryClientProvider>
+  );
+}
+
+describe('farm-flow: OTP login → farms (fixtures)', () => {
+  beforeEach(() => {
+    clearAuthSession();
+    localStorage.clear();
+    sessionStorage.clear();
   });
 
-  it('navigates through steps via Next button', async () => {
+  it('logs in with mock OTP and shows farm list', async () => {
     const user = userEvent.setup();
-    renderPage();
+    render(
+      <TestProviders>
+        <AppRouter />
+      </TestProviders>,
+    );
 
-    // Step 1 → 2
-    await user.click(screen.getByText('Next'));
-    // The heading inside the Card should say "Region"
-    expect(screen.getByRole('heading', { name: 'Region' })).toBeInTheDocument();
+    const phone = await screen.findByLabelText(/phone number/i);
+    await user.clear(phone);
+    await user.type(phone, '3001234567');
+    await user.click(screen.getByRole('button', { name: /send otp/i }));
 
-    // Step 2 → 3
-    await user.click(screen.getByText('Next'));
-    expect(screen.getByRole('heading', { name: 'Area' })).toBeInTheDocument();
-  });
+    const otp = await screen.findByLabelText(/verification code/i);
+    await user.type(otp, '1234');
+    await user.click(screen.getByRole('button', { name: /verify/i }));
 
-  it('reaches the confirm step', async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    // Click Next 6 times to reach Confirm (step 7)
-    for (let i = 0; i < 6; i++) {
-      await user.click(screen.getByText('Next'));
-    }
-    expect(screen.getByText(/\(unnamed\)/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /my farms/i })).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Green Valley Farm/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sunrise Fields/i)).toBeInTheDocument();
   });
 });

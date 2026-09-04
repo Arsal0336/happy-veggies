@@ -1,61 +1,47 @@
-import { render } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { createFarmerI18n } from '@hv/i18n';
 import { I18nextProvider } from 'react-i18next';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { i18n } from '@hv/i18n';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '../features/auth/AuthProvider';
+import { NotificationProvider } from '../shared/notifications/NotificationProvider';
+import { FarmListPage } from '../features/farms/FarmListPage';
+import { setFarmerProfile, setToken, clearAuthSession } from '../shared/api/authStorage';
+import { fixtureFarmer } from '../shared/api/fixtures';
 
-// Set Urdu / RTL
-i18n.changeLanguage('ur');
-
-// Mock hooks
-vi.mock('../shared/api/hooks', async () => {
-  const { fixtureFarms, fixtureTwin, fixtureAlerts, fixtureSuggestions, fixturePlanContent, fixtureEconomics } =
-    await import('@hv/api-types');
-  return {
-    useFarms: () => ({ data: fixtureFarms, isLoading: false, error: null }),
-    useFarm: () => ({ data: fixtureFarms[0], isLoading: false, error: null }),
-    useTwin: () => ({ data: fixtureTwin }),
-    useAlerts: () => ({ data: fixtureAlerts }),
-    useSuggestions: () => ({ data: fixtureSuggestions }),
-    useAreas: () => ({ data: fixtureTwin.areas }),
-    useZones: () => ({ data: fixtureTwin.zones }),
-    usePlan: () => ({ data: { content: fixturePlanContent }, isLoading: false, error: null, refetch: vi.fn() }),
-    useEconomics: () => ({ data: fixtureEconomics }),
-  };
-});
-
-vi.mock('../shared/api/services', () => ({
-  farmService: { createFarm: vi.fn() },
-  planService: { generatePlan: vi.fn() },
-}));
-
-const { DashboardPage } = await import('../features/dashboard/DashboardPage');
-const { PlanPage } = await import('../features/plan/PlanPage');
-
-const qc = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
-const RTLWrapper = ({ children }: { children: React.ReactNode }) => (
-  <div dir="rtl" lang="ur">
-    <QueryClientProvider client={qc()}>
-      <MemoryRouter initialEntries={['/plan/farm-001']}>
-        <I18nextProvider i18n={i18n}>
-          <AuthProvider>{children}</AuthProvider>
-        </I18nextProvider>
-      </MemoryRouter>
-    </QueryClientProvider>
-  </div>
-);
-
-describe('RTL snapshot tests (Urdu)', () => {
-  it('DashboardPage snapshot', () => {
-    const { container } = render(<DashboardPage />, { wrapper: RTLWrapper });
-    expect(container).toMatchSnapshot();
+describe('RTL / Urdu layout', () => {
+  beforeEach(() => {
+    clearAuthSession();
+    setToken('fixture-token');
+    setFarmerProfile(fixtureFarmer);
   });
 
-  it('PlanPage snapshot', () => {
-    const { container } = render(<PlanPage />, { wrapper: RTLWrapper });
-    expect(container).toMatchSnapshot();
+  it('sets document dir=rtl when language is ur', async () => {
+    const i18n = createFarmerI18n('ur');
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    render(
+      <QueryClientProvider client={qc}>
+        <I18nextProvider i18n={i18n}>
+          <AuthProvider>
+            <NotificationProvider>
+              <MemoryRouter initialEntries={['/']}>
+                <Routes>
+                  <Route path="/" element={<FarmListPage />} />
+                </Routes>
+              </MemoryRouter>
+            </NotificationProvider>
+          </AuthProvider>
+        </I18nextProvider>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(document.documentElement.dir).toBe('rtl');
+      expect(document.documentElement.lang).toBe('ur');
+    });
+
+    expect(await screen.findByText(/میرے فارم/i)).toBeInTheDocument();
   });
 });

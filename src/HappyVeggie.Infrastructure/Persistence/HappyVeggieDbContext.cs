@@ -49,6 +49,12 @@ public sealed class HappyVeggieDbContext : DbContext, IApplicationDbContext
 
     public DbSet<CropCycle> CropCycles => Set<CropCycle>();
 
+    public DbSet<Alert> Alerts => Set<Alert>();
+
+    public DbSet<FeatureFlag> FeatureFlags => Set<FeatureFlag>();
+
+    public DbSet<LlmUsageLog> LlmUsageLogs => Set<LlmUsageLog>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(HappyVeggieDbContext).Assembly);

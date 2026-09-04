@@ -1,8 +1,19 @@
 import { ApiClient } from '@hv/api-types';
+import { API_BASE_URL } from './env';
+import { clearAdminToken, getAdminToken } from './authStorage';
 
-const TOKEN_KEY = 'hv_admin_token';
+function redirectToLogin(): void {
+  clearAdminToken();
+  if (typeof window === 'undefined') return;
+  if (window.location.pathname === '/login') return;
+  window.location.assign('/login');
+}
 
-export const adminApi = new ApiClient({
-  baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000/api/v1',
-  getToken: () => localStorage.getItem(TOKEN_KEY),
-});
+/** Admin-scoped API client — separate bearer from farmer app. */
+export const adminApi = new ApiClient(
+  API_BASE_URL,
+  () => getAdminToken(),
+  redirectToLogin,
+);
+
+export { adminApi as adminApiInstance };

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using HappyVeggie.Application.Farms.CreateFarm;
+using HappyVeggie.Application.Farms.DeleteFarm;
 using HappyVeggie.Application.Farms.Dtos;
 using HappyVeggie.Application.Farms.GetFarm;
 using HappyVeggie.Application.Farms.ListFarms;
@@ -71,6 +72,13 @@ public sealed class FarmController : ControllerBase
 
         var result = await _sender.Send(command, cancellationToken);
         return Ok(result);
+    }
+
+    [HttpDelete("{farmId:guid}")]
+    public async Task<IActionResult> Delete(Guid farmId, CancellationToken cancellationToken)
+    {
+        await _sender.Send(new DeleteFarmCommand(farmId), cancellationToken);
+        return NoContent();
     }
 }
 

@@ -37,6 +37,23 @@ public sealed class AdminAuthController : ControllerBase
         var result = await _sender.Send(new GetAdminMeQuery(adminId), cancellationToken);
         return Ok(result);
     }
+
+    [HttpPost("auth/refresh")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<RefreshAdminSessionResponse>> Refresh(CancellationToken cancellationToken)
+    {
+        var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await _sender.Send(new RefreshAdminSessionCommand(adminId), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("auth/logout")]
+    [Authorize(Roles = "Admin")]
+    public IActionResult Logout()
+    {
+        // Stateless JWT — client discards the token. Denylist can be added later.
+        return NoContent();
+    }
 }
 
 public sealed record AdminLoginRequest(string Email, string Password);

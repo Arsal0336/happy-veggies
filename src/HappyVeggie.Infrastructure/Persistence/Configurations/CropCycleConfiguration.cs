@@ -18,7 +18,9 @@ public sealed class CropCycleConfiguration : IEntityTypeConfiguration<CropCycle>
         builder.Property(x => x.PredictedYieldUnit).HasMaxLength(20);
         builder.Property(x => x.ActualYield).HasPrecision(18, 4);
         builder.Property(x => x.ActualYieldUnit).HasMaxLength(20);
+        builder.Property(x => x.Delta).HasPrecision(18, 4);
         builder.Property(x => x.Notes).HasMaxLength(1000);
+        builder.Property(x => x.EndedAt);
         builder.Property(x => x.CreatedAt).IsRequired();
 
         builder.HasIndex(x => x.CropZoneId);

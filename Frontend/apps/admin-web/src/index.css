@@ -1,9 +1,24 @@
-@import "tailwindcss";
-@import "@hv/ui/tokens.css";
+/* App-level layout; design tokens come from @hv/ui/tokens.css */
+* {
+  box-sizing: border-box;
+}
 
 body {
-  font-family: var(--hv-font-body, var(--hv-font-sans));
-  color: var(--hv-color-neutral-900);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--hv-font-sans, 'Segoe UI', system-ui, sans-serif);
+  color: var(--hv-color-text, #1c2430);
+  background: var(--hv-color-bg, #f4f6f8);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.hv-clickable-row {
+  cursor: pointer;
+}
+
+.hv-clickable-row:hover {
+  background: var(--hv-color-bg-muted, #eef2f6);
 }

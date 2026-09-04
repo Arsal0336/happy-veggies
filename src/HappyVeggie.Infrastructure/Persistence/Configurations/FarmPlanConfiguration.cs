@@ -30,8 +30,21 @@ public sealed class FarmPlanConfiguration : IEntityTypeConfiguration<FarmPlan>
 
         builder.Property(x => x.CreatedAt).IsRequired();
 
+        builder.Property(x => x.IsFlagged)
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        builder.Property(x => x.ReviewStatus)
+            .HasMaxLength(32)
+            .HasDefaultValue("none")
+            .IsRequired();
+
+        builder.Property(x => x.ReviewNote)
+            .HasMaxLength(2000);
+
         builder.HasIndex(x => new { x.FarmId, x.Version }).IsUnique();
         builder.HasIndex(x => x.FarmerId);
+        builder.HasIndex(x => x.IsFlagged);
 
         builder.HasOne(x => x.Farm)
             .WithMany()

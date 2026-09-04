@@ -1,5 +1,6 @@
 using HappyVeggie.Application.Common.Interfaces;
 using HappyVeggie.Application.Common.Services;
+using HappyVeggie.Application.CropCycles;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,11 +14,16 @@ public sealed class ExperimentalController : ControllerBase
 {
     private readonly IApplicationDbContext _db;
     private readonly FarmOwnershipGuard _ownershipGuard;
+    private readonly CropCycleService _cropCycles;
 
-    public ExperimentalController(IApplicationDbContext db, FarmOwnershipGuard ownershipGuard)
+    public ExperimentalController(
+        IApplicationDbContext db,
+        FarmOwnershipGuard ownershipGuard,
+        CropCycleService cropCycles)
     {
         _db = db;
         _ownershipGuard = ownershipGuard;
+        _cropCycles = cropCycles;
     }
 
     /// <summary>
@@ -67,11 +73,42 @@ public sealed class ExperimentalController : ControllerBase
             .FirstOrDefaultAsync(z => z.Id == zoneId && z.FarmId == farmId && z.IsExperimental && !z.IsDeleted, cancellationToken)
             ?? throw new KeyNotFoundException($"Experimental zone {zoneId} not found.");
 
-        // Mark as approved by setting growth stage
         zone.GrowthStage = "approved_experimental";
         zone.UpdatedAt = DateTimeOffset.UtcNow;
         await _db.SaveChangesAsync(cancellationToken);
 
         return Ok(new { zone.Id, Status = "approved" });
     }
+
+    /// <summary>
+    /// Record experimental outcome → CropCycle actuals (GAP-051).
+    /// </summary>
+    [HttpPost("zones/{zoneId:guid}/outcome")]
+    public async Task<ActionResult<CropCycleDto>> RecordOutcome(
+        Guid farmId,
+        Guid zoneId,
+        [FromBody] ExperimentalOutcomeRequest body,
+        CancellationToken cancellationToken)
+    {
+        var result = await _cropCycles.RecordExperimentalOutcomeAsync(
+            farmId,
+            zoneId,
+            body.ActualYield,
+            body.ActualYieldUnit,
+            body.Notes,
+            body.EndedAt,
+            body.PredictedYield,
+            body.PredictedYieldUnit,
+            cancellationToken);
+
+        return Ok(result);
+    }
 }
+
+public sealed record ExperimentalOutcomeRequest(
+    decimal? ActualYield,
+    string? ActualYieldUnit,
+    string? Notes,
+    DateTimeOffset? EndedAt,
+    decimal? PredictedYield,
+    string? PredictedYieldUnit);

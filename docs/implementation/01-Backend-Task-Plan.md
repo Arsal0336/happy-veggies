@@ -5,6 +5,7 @@
 | **Track** | Backend |
 | **Sources** | `01-Core-Technical-Logic.md`, `03-Backend-Technical-Design.md`, `05-Frontend-Backend-Integration.md` |
 | **Master** | [00-Master-Implementation-Plan.md](00-Master-Implementation-Plan.md) |
+| **SRS gap plan** | [06-Missing-Modules-Features-Implementation-Plan.md](06-Missing-Modules-Features-Implementation-Plan.md) |
 | **Owner role** | `Backend` |
 
 Statuses and Task IDs **must match the Master**. Default status: `NOT STARTED`.

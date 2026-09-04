@@ -8,11 +8,15 @@ using Microsoft.Extensions.Options;
 namespace HappyVeggie.Application.AI.Services;
 
 /// <summary>
-/// Farm-scoped AI assistant service (Doc 04 §3).
-/// Builds context, assembles prompt with history, calls LLM, validates response.
+/// Farm-scoped AI assistant (Doc 04 §3 / GAP-032).
+/// Bound to the selected farm twin only; production area types in context;
+/// always returns disclaimer metadata for stub/live.
 /// </summary>
 public sealed class FarmAssistantService
 {
+    public const string AdvisoryDisclaimer =
+        "AI-generated. Not professional agricultural advice.";
+
     private readonly ILlmProvider _llm;
     private readonly FarmContextBuilder _contextBuilder;
     private readonly AssistantResponseValidator _validator;
@@ -40,29 +44,41 @@ public sealed class FarmAssistantService
         Guid farmId, Guid threadId, string userMessage, string language,
         CancellationToken cancellationToken)
     {
-        // 1. Build farm context
+        // Bind to this farm's twin only (owner-scoped upstream)
+        var thread = await _db.AssistantThreads.AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == threadId && t.FarmId == farmId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Thread {threadId} not found for farm {farmId}.");
+
         var context = await _contextBuilder.BuildAsync(farmId, cancellationToken);
         var contextText = FarmContextBuilder.ToPromptText(context);
 
-        // 2. Get conversation history (last N turns)
         var history = await _db.AssistantMessages.AsNoTracking()
-            .Where(m => m.ThreadId == threadId)
+            .Where(m => m.ThreadId == thread.Id)
             .OrderByDescending(m => m.CreatedAt)
             .Take(_options.ConversationWindowTurns * 2)
             .OrderBy(m => m.CreatedAt)
             .Select(m => new LlmMessage(m.Role.ToString().ToLowerInvariant(), m.Content))
             .ToListAsync(cancellationToken);
 
-        // 3. Assemble messages
+        var protectedTypes = context.ProductionAreas
+            .Select(a => a.TypeCode)
+            .Where(t => !string.Equals(t, "open_field", StringComparison.OrdinalIgnoreCase))
+            .Distinct()
+            .ToList();
+
+        var areaGuard = protectedTypes.Count > 0
+            ? $"Protected environment types on this farm: {string.Join(", ", protectedTypes)}. Do not assume outdoor field conditions for those areas."
+            : "All listed areas are open_field unless otherwise stated.";
+
         var messages = new List<LlmMessage>
         {
             new("system", PromptTemplates.AssistantSystem(language)),
+            new("system", areaGuard),
             new("system", contextText)
         };
         messages.AddRange(history);
         messages.Add(new("user", userMessage));
 
-        // 4. Call LLM
         var opts = new LlmOptions
         {
             Model = _options.Model,
@@ -73,17 +89,25 @@ public sealed class FarmAssistantService
         };
 
         var response = await _llm.CompleteChatAsync(messages, opts, cancellationToken);
-        _usageLogger.LogChatUsage("assistant_chat", response);
+        _usageLogger.LogChatUsage("assistant_chat", response, farmId: farmId);
 
-        // 5. Validate response
         var validation = _validator.Validate(response.Content, farmId);
         var citations = AssistantResponseValidator.ExtractCitations(response.Content);
 
+        // Always surface disclaimer in metadata (stub and live)
+        var content = validation.Content;
+        if (!content.Contains("not professional", StringComparison.OrdinalIgnoreCase) &&
+            !content.Contains("AI-generated", StringComparison.OrdinalIgnoreCase))
+        {
+            content = content + "\n\n" + AdvisoryDisclaimer;
+        }
+
         return new AssistantReply(
-            validation.Content,
+            content,
             citations,
             validation.IsClean,
-            validation.Issues);
+            validation.Issues,
+            AdvisoryDisclaimer);
     }
 }
 
@@ -91,4 +115,5 @@ public sealed record AssistantReply(
     string Content,
     IReadOnlyList<string> Citations,
     bool IsClean,
-    IReadOnlyList<string> ValidationIssues);
+    IReadOnlyList<string> ValidationIssues,
+    string Disclaimer);

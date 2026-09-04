@@ -1,21 +1,12 @@
 /**
- * @hv/api-types
- *
  * Shared TypeScript types for the Happy Veggie API contract.
- * Derived from: 05-Frontend-Backend-Integration.md, HAPPY-VEGGIE-DEV-SPEC.md
- *
- * These types are the single source of truth for request/response shapes
- * consumed by both farmer-web and admin-web.
+ * Aligned with HappyVeggie ASP.NET DTOs under /api/v1.
  */
 
-/* ────────────────────────────────────────────────────────────
-   Common / Shared
-   ──────────────────────────────────────────────────────────── */
+/* ── Common ───────────────────────────────────────────────── */
 
-/** Supported languages */
 export type Language = 'en' | 'ur';
 
-/** Data provenance labels (SRS §4.2) */
 export type Provenance =
   | 'farmer_provided'
   | 'third_party_estimate'
@@ -23,7 +14,6 @@ export type Provenance =
   | 'system_derived'
   | 'historical_reference';
 
-/** Production area type codes (FR-110) */
 export type ProductionAreaTypeCode =
   | 'open_field'
   | 'shed'
@@ -32,42 +22,34 @@ export type ProductionAreaTypeCode =
   | 'experimental'
   | 'other_protected';
 
-/** Production area category */
 export type ProductionAreaCategory = 'open' | 'protected' | 'experimental';
 
-/** Area unit options (C-008) */
 export type LandUnit = 'acre' | 'kanal' | 'marla' | 'hectare';
 export type CoveredUnit = 'sq_ft' | 'sq_m';
 export type AreaUnit = LandUnit | CoveredUnit;
 
-/** Compatibility relation */
 export type CompatibilityRelation = 'good' | 'avoid' | 'neutral';
-
-/** Crop suitability band */
 export type SuitabilityBand = 'high' | 'medium' | 'low';
-
-/** Confidence level */
 export type Confidence = 'low' | 'medium' | 'high';
-
-/** Risk band */
 export type RiskBand = 'low' | 'medium' | 'high';
-
-/** Alert severity */
 export type AlertSeverity = 'info' | 'warning' | 'critical';
-
-/** Alert type */
-export type AlertType = 'weather' | 'reminder' | 'pest' | 'info';
-
-/** Soil type enum */
+export type AlertType =
+  | 'weather'
+  | 'reminder'
+  | 'pest'
+  | 'info'
+  | 'missing_data'
+  | 'stale_data'
+  | string;
 export type SoilType = 'sandy' | 'clay' | 'loam' | 'silt' | 'mixed' | 'unknown';
-
-/** Water source type */
-export type WaterSourceType = 'canal' | 'tube_well' | 'rain_fed' | 'reservoir' | 'other';
-
-/** Water source reliability */
+export type WaterSourceType =
+  | 'canal'
+  | 'tube_well'
+  | 'rain_fed'
+  | 'reservoir'
+  | 'other';
 export type WaterReliability = 'reliable' | 'seasonal' | 'unreliable';
 
-/** Growth stage */
 export type GrowthStage =
   | 'pre_planting'
   | 'germination'
@@ -76,329 +58,405 @@ export type GrowthStage =
   | 'flowering'
   | 'fruiting'
   | 'harvest'
-  | 'post_harvest';
+  | 'post_harvest'
+  | 'approved_experimental'
+  | string;
 
-/* ────────────────────────────────────────────────────────────
-   Value + Unit + Provenance wrapper (Doc 05 §5)
-   ──────────────────────────────────────────────────────────── */
-
-export interface MeasuredValue<T = number> {
-  value: T;
+/** Value + unit (Doc 05 §2 / §5) */
+export interface ValueUnit {
+  value: number;
   unit: string;
   provenance?: Provenance;
 }
 
-export interface AreaInput {
-  value: number;
-  unit: AreaUnit;
+export interface MoneyAmount {
+  amount: number;
+  currency: string;
 }
 
-/* ────────────────────────────────────────────────────────────
-   Error Contract (Doc 05 §4)
-   ──────────────────────────────────────────────────────────── */
-
-export type ApiErrorCode =
-  | 'VALIDATION_ERROR'
-  | 'UNAUTHORIZED'
-  | 'FORBIDDEN'
-  | 'NOT_FOUND'
-  | 'RATE_LIMITED'
-  | 'GENERATION_FAILED'
-  | 'PROVIDER_UNAVAILABLE';
+/* ── Error envelope (Doc 05 §4) ───────────────────────────── */
 
 export interface ApiFieldError {
   field: string;
   message: string;
 }
 
-export interface ApiError {
-  code: ApiErrorCode;
+export interface ApiErrorEnvelope {
+  code: string;
   message: string;
-  correlationId?: string;
+  correlationId: string;
   errors?: ApiFieldError[];
-  retryable: boolean;
-  retryAfter?: number;
+  retryable?: boolean;
 }
 
-/* ────────────────────────────────────────────────────────────
-   Pagination (Doc 05 §2)
-   ──────────────────────────────────────────────────────────── */
+/* ── Pagination (Doc 05 §2) ───────────────────────────────── */
 
-export interface PaginatedResponse<T> {
+export interface Pagination<T> {
   items: T[];
   page: number;
   pageSize: number;
   totalCount: number;
 }
 
-/* ────────────────────────────────────────────────────────────
-   Auth (Doc 05 §3, Dev Spec Scenario 1)
-   ──────────────────────────────────────────────────────────── */
+/* ── Auth ─────────────────────────────────────────────────── */
 
-export interface OtpRequestPayload {
+export interface OtpRequest {
   phone: string;
   language: Language;
 }
 
 export interface OtpRequestResponse {
   requestId: string;
-  expiresIn: number;
-  mode: 'mock' | 'live';
+  mode: 'mock' | 'live' | string;
 }
 
-export interface OtpVerifyPayload {
+export interface OtpVerify {
   requestId: string;
   phone: string;
   code: string;
 }
 
-export interface Farmer {
+export interface FarmerSummary {
   id: string;
   phone: string;
-  name: string | null;
+  name?: string | null;
   language: Language;
 }
 
 export interface OtpVerifyResponse {
   sessionToken: string;
-  farmer: Farmer;
+  farmer: FarmerSummary;
   isNew: boolean;
 }
 
-export interface CompleteProfilePayload {
+/** POST /auth/refresh and POST /admin/auth/refresh */
+export interface RefreshSessionResponse {
+  sessionToken: string;
+}
+
+export interface FarmerProfileUpdate {
   name: string;
-  language: Language;
+  language?: Language;
 }
 
-export interface CompleteProfileResponse {
-  farmer: Farmer;
+/** POST /farmers/me/profile raw response */
+export interface FarmerProfileDto {
+  id: string;
+  phone: string;
+  name: string;
+  language: Language | string;
 }
 
-/* ────────────────────────────────────────────────────────────
-   Farm (Dev Spec Scenario 2, SRS FR-045–049)
-   ──────────────────────────────────────────────────────────── */
+export interface FarmerProfileUpdateResponse {
+  farmer: FarmerSummary;
+}
 
+/* ── Farm / ProductionArea / CropZone (backend DTOs + UI area) ─ */
+
+/** FarmDto — GET/POST/PATCH /farms */
 export interface Farm {
   id: string;
   farmerId: string;
-  name?: string;
+  name?: string | null;
+  lat: number;
+  lng: number;
+  regionCode: string;
+  regionLabel?: string;
+  areaAcres?: number;
+  areaInputValue: number;
+  areaInputUnit: string;
+  preferredCropId?: string | null;
+  preferredCropFreeText?: string | null;
+  isNewFarmSetup?: boolean;
+  soilType?: SoilType | string | null;
+  waterAccess?: boolean | null;
+  waterSource?: WaterSourceType | string | null;
+  budgetAmount?: number | null;
+  budgetCurrency?: string | null;
+  letAiChooseCrop?: boolean;
+  isDeleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  /** UI convenience — mapped from areaInputValue/areaInputUnit */
+  area?: ValueUnit;
+}
+
+export interface CreateFarmRequest {
+  name?: string | null;
+  lat: number;
+  lng: number;
+  regionCode: string;
+  regionLabel: string;
+  areaInputValue: number;
+  areaInputUnit: string;
+  preferredCropId?: string | null;
+  preferredCropFreeText?: string | null;
+  isNewFarmSetup: boolean;
+  soilType?: string | null;
+  waterAccess?: boolean | null;
+  waterSource?: string | null;
+  budgetAmount?: number | null;
+  budgetCurrency?: string | null;
+  letAiChooseCrop: boolean;
+}
+
+export interface UpdateFarmRequest {
+  name?: string | null;
+  lat?: number;
+  lng?: number;
+  regionCode?: string;
+  regionLabel?: string;
+  areaInputValue?: number;
+  areaInputUnit?: string;
+  preferredCropId?: string | null;
+  preferredCropFreeText?: string | null;
+  soilType?: string | null;
+  waterAccess?: boolean | null;
+  waterSource?: string | null;
+  budgetAmount?: number | null;
+  budgetCurrency?: string | null;
+  letAiChooseCrop?: boolean;
+}
+
+/** ProductionAreaDetailDto (+ UI area) */
+export interface ProductionArea {
+  id: string;
+  farmId: string;
+  typeCode: ProductionAreaTypeCode | string;
+  typeLabel?: string;
+  name?: string | null;
+  areaInputValue: number;
+  areaInputUnit: string;
+  areaCanonicalValue?: number;
+  temperatureC?: number | null;
+  temperatureProvenance?: string | null;
+  humidityPercent?: number | null;
+  humidityProvenance?: string | null;
+  ventilation?: string | null;
+  growingMedium?: string | null;
+  structureType?: string | null;
+  envAttributes?: Record<string, ValueUnit | string | null>;
+  layout?: { x: number; y: number; w: number; h: number };
+  isDeleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  /** UI convenience */
+  area: ValueUnit;
+}
+
+/** CropZoneDetailDto (+ UI area / expectedYield) */
+export interface CropZone {
+  id: string;
+  productionAreaId: string;
+  farmId: string;
+  label?: string | null;
+  areaInputValue: number;
+  areaInputUnit: string;
+  areaCanonicalValue?: number;
+  cropId?: string | null;
+  cropFreetext?: string | null;
+  seedVarietyId?: string | null;
+  plantingDate?: string | null;
+  growthStage?: GrowthStage | null;
+  expectedYieldValue?: number | null;
+  expectedYieldUnit?: string | null;
+  expectedYieldProvenance?: string | null;
+  expectedYield?: ValueUnit | null;
+  isExperimental?: boolean;
+  neighbourIds?: string[];
+  layout?: { x: number; y: number; w: number; h: number };
+  isDeleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  /** UI convenience */
+  area: ValueUnit;
+}
+
+/* ── Twin (FarmTwinDto → UI TwinDto via mapper) ───────────── */
+
+export interface FarmTwinFarmSummary {
+  id: string;
+  name?: string | null;
   lat: number;
   lng: number;
   regionCode: string;
   regionLabel: string;
   areaAcres: number;
-  areaInput: AreaInput;
-  preferredCropId?: string;
-  preferredCropFreetext?: string;
-  isNewFarmSetup?: boolean;
-  soilType?: SoilType | null;
-  waterAccess?: boolean | null;
-  waterSource?: WaterSourceType | null;
-  budgetAmount?: number | null;
-  budgetCurrency?: string | null;
-  letAiChooseCrop?: boolean;
-  isDeleted?: boolean;
-  createdAt: string;
-  updatedAt: string;
+  areaInputValue: number;
+  areaInputUnit: string;
+  isNewFarmSetup: boolean;
 }
 
-export interface CreateFarmPayload {
-  lat: number;
-  lng: number;
-  regionCode: string;
-  areaAcres: number;
-  areaInput: AreaInput;
-  preferredCropId?: string | null;
-  preferredCropFreetext?: string | null;
-  letAiChooseCrop?: boolean;
-  isNewFarmSetup?: boolean;
-  soilType?: SoilType | null;
-  waterAccess?: boolean | null;
-  waterSource?: WaterSourceType | null;
-  budget?: { amount: number; currency: string } | null;
-}
-
-export interface UpdateFarmPayload {
-  name?: string;
-  lat?: number;
-  lng?: number;
-  regionCode?: string;
-  areaAcres?: number;
-  areaInput?: AreaInput;
-  preferredCropId?: string | null;
-}
-
-/* ────────────────────────────────────────────────────────────
-   Production Area (SRS FR-109–114)
-   ──────────────────────────────────────────────────────────── */
-
-export interface ProductionArea {
+export interface FarmTwinAreaDto {
   id: string;
-  farmId: string;
-  typeCode: ProductionAreaTypeCode;
-  typeLabel: string;
-  name: string;
-  areaValue: number;
-  areaUnit: AreaUnit;
-  areaCanonical: number;
-  canonicalUnit: AreaUnit;
-  envAttributes?: Record<string, MeasuredValue | string | null>;
-  isDeleted?: boolean;
-  createdAt: string;
-  updatedAt: string;
+  typeCode: string;
+  name?: string | null;
+  areaInputValue: number;
+  areaInputUnit: string;
+  areaCanonicalValue: number;
+  temperatureC?: string | null;
+  humidityPercent?: string | null;
+  ventilation?: string | null;
+  growingMedium?: string | null;
+  structureType?: string | null;
 }
 
-export interface CreateProductionAreaPayload {
-  typeCode: ProductionAreaTypeCode;
-  name: string;
-  areaValue: number;
-  areaUnit: AreaUnit;
-  envAttributes?: Record<string, MeasuredValue | string | null>;
-}
-
-export interface UpdateProductionAreaPayload {
-  name?: string;
-  areaValue?: number;
-  areaUnit?: AreaUnit;
-  envAttributes?: Record<string, MeasuredValue | string | null>;
-}
-
-/* ────────────────────────────────────────────────────────────
-   Production Area Type Catalog
-   ──────────────────────────────────────────────────────────── */
-
-export interface ProductionAreaType {
-  code: ProductionAreaTypeCode;
-  nameEn: string;
-  nameUr: string;
-  category: ProductionAreaCategory;
-  enabled: boolean;
-}
-
-/* ────────────────────────────────────────────────────────────
-   Crop Zone (SRS FR-048)
-   ──────────────────────────────────────────────────────────── */
-
-export interface CropZone {
+export interface FarmTwinZoneDto {
   id: string;
   productionAreaId: string;
-  farmId: string;
-  label: string;
-  area: number;
-  areaUnit: AreaUnit;
-  cropId?: string;
-  cropFreetext?: string;
-  seedVarietyId?: string;
-  plantingDate?: string;
-  growthStage?: GrowthStage;
-  expectedYield?: MeasuredValue;
-  isExperimental: boolean;
-  neighbourIds?: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateCropZonePayload {
-  productionAreaId: string;
-  label: string;
-  area: number;
-  areaUnit: AreaUnit;
+  label?: string | null;
+  areaInputValue: number;
+  areaInputUnit: string;
+  areaCanonicalValue: number;
   cropId?: string | null;
   cropFreetext?: string | null;
   seedVarietyId?: string | null;
-  plantingDate?: string;
-  isExperimental?: boolean;
+  plantingDate?: string | null;
+  growthStage?: string | null;
+  expectedYieldValue?: number | null;
+  expectedYieldUnit?: string | null;
+  expectedYieldProvenance?: string | null;
+  isExperimental: boolean;
 }
 
-export interface UpdateCropZonePayload {
-  label?: string;
-  area?: number;
-  areaUnit?: AreaUnit;
-  cropId?: string | null;
-  seedVarietyId?: string | null;
-  plantingDate?: string;
-  growthStage?: GrowthStage;
-  expectedYield?: MeasuredValue;
-}
-
-/* ────────────────────────────────────────────────────────────
-   Crop Catalog
-   ──────────────────────────────────────────────────────────── */
-
-export interface Crop {
+export interface FarmTwinNeighbourEdgeDto {
   id: string;
-  nameEn: string;
-  nameUr: string;
-  icon?: string;
-  enabled: boolean;
+  cropZoneAId: string;
+  cropZoneBId: string;
+  adjacencyType: string;
 }
 
-export interface SeedVariety {
-  id: string;
-  cropId: string;
-  nameEn: string;
-  nameUr: string;
-  varietyType: string;
-  regionSuitability?: string[];
-  seasonTags?: string[];
-  soilNotes?: string;
-  waterNotes?: string;
-  diseaseResistanceNotes?: string;
-  maturityDays?: number;
-  riskBand?: RiskBand;
-  enabled: boolean;
+export interface FarmTwinDto {
+  farm: FarmTwinFarmSummary;
+  areas: FarmTwinAreaDto[];
+  zones: FarmTwinZoneDto[];
+  neighbourEdges: FarmTwinNeighbourEdgeDto[];
+  weather?: { providerStatus?: string | null } | null;
+  waterSummary?: {
+    sourceCount: number;
+    sources: Array<{ id: string; type: string; irrigationMethod?: string | null }>;
+  } | null;
+  soilSummary?: {
+    profileCount: number;
+    providerStatus?: string | null;
+  } | null;
+  greenSummary?: Record<string, unknown> | null;
+  latestPlan?: {
+    id: string;
+    version: number;
+    language: string;
+    createdAt: string;
+  } | null;
+  layoutMode: string;
+  twinRefreshedAt?: string | null;
 }
-
-/* ────────────────────────────────────────────────────────────
-   Compatibility
-   ──────────────────────────────────────────────────────────── */
-
-export interface CropCompatibility {
-  cropAId: string;
-  cropBId: string;
-  relation: CompatibilityRelation;
-  reason: string;
-  scope?: 'on_farm_neighbour' | 'portfolio' | 'nearby_region' | 'general';
-}
-
-/* ────────────────────────────────────────────────────────────
-   Digital Twin (Doc 01 §1.3, Doc 02 §4, SRS FR-051–055)
-   ──────────────────────────────────────────────────────────── */
 
 export interface WeatherSnapshot {
-  temperature?: MeasuredValue;
+  temperature?: ValueUnit;
   rainProbability?: number;
-  rainfall?: MeasuredValue;
+  rainfall?: ValueUnit;
   humidity?: number;
-  wind?: MeasuredValue;
+  wind?: ValueUnit;
   extremeAlerts?: string[];
   forecastTrend?: string;
+  provenance?: Provenance;
+  providerStatus?: string | null;
 }
 
 export interface SoilProfile {
-  type?: SoilType;
-  ph?: MeasuredValue;
-  organicMatter?: MeasuredValue;
+  type?: SoilType | string;
+  ph?: ValueUnit;
+  organicMatter?: ValueUnit;
   texture?: string;
-  nutrients?: Record<string, MeasuredValue>;
+  nutrients?: Record<string, ValueUnit>;
+  provenance?: Provenance;
+  profileCount?: number;
+  providerStatus?: string | null;
+}
+
+export interface WaterSummary {
+  sources?: WaterSource[];
+  irrigationMethod?: string;
+  reliability?: WaterReliability | string;
+  sourceCount?: number;
 }
 
 export interface WaterSource {
   id: string;
   farmId: string;
-  type: WaterSourceType;
-  availability: boolean;
-  seasonalAvailability?: boolean;
-  capacityEstimate?: MeasuredValue;
-  reliability?: WaterReliability;
-  irrigationMethod?: string;
+  type: WaterSourceType | string;
+  availability?: boolean;
+  seasonalAvailability?: boolean | string | null;
+  capacityEstimate?: ValueUnit;
+  capacityEstimateValue?: number | null;
+  capacityEstimateUnit?: string | null;
+  reliability?: WaterReliability | string;
+  reliabilityValue?: number | null;
+  irrigationMethod?: string | null;
   servedAreaIds?: string[];
   provenance?: Provenance;
+  isDeleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface GreenFarmSummary {
+export interface CreateWaterSourceRequest {
+  type: string;
+  seasonalAvailability?: string | null;
+  capacityEstimateValue?: number | null;
+  capacityEstimateUnit?: string | null;
+  irrigationMethod?: string | null;
+  reliabilityValue?: number | null;
+  availabilityValue?: number | null;
+  availabilityUnit?: string | null;
+  provenance?: Provenance | string;
+}
+
+export type UpdateWaterSourceRequest = Partial<CreateWaterSourceRequest>;
+
+/** Persisted soil profile (list/upsert) — distinct from twin SoilProfile chip */
+export interface SoilProfileRecord {
+  id: string;
+  farmId: string;
+  productionAreaId?: string | null;
+  soilType?: string | null;
+  soilTypeProvenance?: Provenance | string | null;
+  texture?: string | null;
+  textureProvenance?: Provenance | string | null;
+  phValue?: number | null;
+  phValueProvenance?: Provenance | string | null;
+  organicMatterValue?: number | null;
+  organicMatterProvenance?: Provenance | string | null;
+  nitrogenValue?: number | null;
+  phosphorusValue?: number | null;
+  potassiumValue?: number | null;
+  farmerNotes?: string | null;
+  isDeleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UpsertSoilProfileRequest {
+  id?: string | null;
+  productionAreaId?: string | null;
+  soilType?: string | null;
+  texture?: string | null;
+  phValue?: number | null;
+  organicMatterValue?: number | null;
+  nitrogenValue?: number | null;
+  phosphorusValue?: number | null;
+  potassiumValue?: number | null;
+  farmerNotes?: string | null;
+  /** Overall provenance for farmer-provided upserts */
+  provenance?: Provenance | string;
+}
+
+export interface GreenSummary {
   overallScore?: number;
-  dimensions?: Record<string, { score: number; available: boolean; explanation?: string }>;
+  dimensions?: Record<
+    string,
+    { score: number; available: boolean; explanation?: string }
+  >;
   measuredVsEstimated?: Record<string, 'measured' | 'estimated'>;
   computedAt?: string;
   nonCertificationDisclaimer: string;
@@ -408,132 +466,279 @@ export interface NeighbourEdge {
   zoneAId: string;
   zoneBId: string;
   relation: CompatibilityRelation;
-  reason: string;
+  reason?: string;
+  id?: string;
+  adjacencyType?: string;
 }
 
-export interface TwinSummary {
+/** UI twin shape used by farmer-web components */
+export interface TwinDto {
   farm: Farm;
   areas: ProductionArea[];
   zones: CropZone[];
   weather?: WeatherSnapshot;
   soil?: SoilProfile;
-  waterSources?: WaterSource[];
-  greenSummary?: GreenFarmSummary;
+  water?: WaterSummary;
+  greenSummary?: GreenSummary;
   neighbourEdges?: NeighbourEdge[];
-  contextUsed?: {
-    season?: string;
-    weather: boolean;
-    soilData: boolean;
-  };
-  layoutMode?: 'auto' | 'stored';
+  layoutMode?: 'auto' | 'stored' | string;
+  twinRefreshedAt?: string | null;
+  latestPlan?: FarmTwinDto['latestPlan'];
 }
 
-/* ────────────────────────────────────────────────────────────
-   Farm Plan (Dev Spec Scenario 4, SRS FR-007–012)
-   ──────────────────────────────────────────────────────────── */
+/* ── Plan ─────────────────────────────────────────────────── */
 
-export interface RecommendedCrop {
-  cropId: string;
-  name: string;
-  why: string;
-  suitability: SuitabilityBand;
+export interface PlanSection {
+  key: string;
+  title: string;
+  body: string;
+  items?: string[];
 }
 
-export interface CalendarStage {
-  stage: string;
-  timing: string;
-  actions: string[];
-}
-
-export interface InputGuidance {
-  water: string;
-  fertilizer: string;
-  otherInputs?: string[];
-}
-
-export interface YieldPrediction {
-  estimate: string;
-  confidence: Confidence;
-  assumptions: string[];
-}
-
-export interface PlanContent {
-  planVersion: string;
-  language: Language;
-  generatedAt: string;
-  contextUsed: {
-    season: string;
-    weather: boolean;
-    soilData: boolean;
-  };
-  recommendedCrops: RecommendedCrop[];
-  calendar: CalendarStage[];
-  inputGuidance: InputGuidance;
-  yieldPrediction?: YieldPrediction;
-  disclaimer: string;
-}
-
-export interface FarmPlan {
+/** Backend PlanDetailDto */
+export interface PlanDetail {
   id: string;
   farmId: string;
-  farmerId: string;
-  language: Language;
-  content: PlanContent;
   version: number;
+  language: Language | string;
+  contentJson: string;
+  contextUsedJson?: string | null;
   createdAt: string;
 }
 
-export interface PlanGenerateResponse {
-  planId: string;
-  plan: PlanContent;
+/** UI plan shape (sections parsed from contentJson) */
+export interface PlanDto {
+  id: string;
+  farmId: string;
+  sections: PlanSection[];
+  version: number;
+  language: Language | string;
+  createdAt: string;
+  disclaimer?: string;
+  contentJson?: string;
+  contextUsedJson?: string | null;
 }
 
-/* ────────────────────────────────────────────────────────────
-   Economics (SRS FR-079–083)
-   ──────────────────────────────────────────────────────────── */
+/** @deprecated Backend returns PlanDetail directly from POST /plan */
+export interface PlanGenerateResponse {
+  planId: string;
+  plan: PlanDto;
+}
 
-export interface EconomicSnapshot {
-  expectedYield: MeasuredValue<string> & { confidence?: Confidence };
-  governmentReferenceRate: {
-    amount: number;
-    currency: string;
-    unit: string;
-    periodLabel: string;
-    label: 'historical_reference';
-  };
-  referenceGrossValue: {
-    amount: number;
-    currency: string;
-  };
+/* ── Economics / yield ────────────────────────────────────── */
+
+export interface GovernmentReferenceRate {
+  amount: number;
+  currency: string;
+  unit: string;
+  periodLabel: string;
+  label: 'historical_reference';
+}
+
+export interface ExpectedYield {
+  value: number;
+  unit: string;
+  confidence?: Confidence;
+  label?: 'estimated' | 'measured';
+}
+
+export interface EconomicsDto {
+  expectedYield: ExpectedYield;
+  governmentReferenceRate: GovernmentReferenceRate;
+  referenceGrossValue: MoneyAmount;
   riskBand?: RiskBand;
 }
 
-/* ────────────────────────────────────────────────────────────
-   Alerts (SRS FR-036–037)
-   ──────────────────────────────────────────────────────────── */
-
-export interface Alert {
-  id: string;
-  farmerId: string;
-  farmId?: string;
-  type: AlertType;
-  message: string;
-  severity: AlertSeverity;
-  actionRef?: string;
-  read: boolean;
-  createdAt: string;
+/** Backend EconomicSnapshot (compute-on-read GET /farms/{id}/economics) */
+export interface FarmEconomicSnapshot {
+  cropId: string;
+  expectedYield: number;
+  yieldUnit: string;
+  ratePerUnit: number;
+  currency: string;
+  referenceGrossValue: number;
+  period: string;
+  sourceLabel?: string | null;
+  label?: 'historical_reference';
 }
 
-/* ────────────────────────────────────────────────────────────
-   AI Assistant (Doc 04, SRS FR-060–066)
-   ──────────────────────────────────────────────────────────── */
+export interface FarmEconomicsResponse {
+  snapshots: FarmEconomicSnapshot[];
+  disclaimer: string;
+}
+
+/* ── Nearby suggestions ───────────────────────────────────── */
+
+export type SuggestionSource = 'community' | 'ai_only' | string;
+
+/** Backend CropSuggestionDto */
+export interface CropSuggestionDto {
+  cropId: string;
+  farmCount: number;
+  source: SuggestionSource;
+}
+
+export interface Suggestion {
+  cropId: string;
+  cropName?: string;
+  reason: string;
+  source: SuggestionSource;
+  communitySignal?: string;
+  farmCount?: number;
+}
+
+export interface SuggestionsResponse {
+  suggestions: Suggestion[];
+}
+
+/** Backend SeedVarietySuggestionDto — GET .../seed-suggestions/{cropId} */
+export interface SeedVarietySuggestionDto {
+  id: string;
+  nameEn: string;
+  nameUr: string;
+  varietyType: string;
+  riskBand: string;
+  maturityDays?: number | null;
+  soilNotes?: string | null;
+  waterNotes?: string | null;
+  diseaseResistanceNotes?: string | null;
+}
+
+/* ── Neighbour edges (GAP-033) ────────────────────────────── */
+
+export interface NeighbourEdgeApiDto {
+  id: string;
+  farmId: string;
+  zoneAId: string;
+  zoneBId: string;
+  adjacencyType: string;
+  enabled: boolean;
+}
+
+export interface NeighbourWarningApiDto {
+  zoneAId: string;
+  zoneALabel?: string | null;
+  zoneBId: string;
+  zoneBLabel?: string | null;
+  reason?: string | null;
+}
+
+/* ── Green score ──────────────────────────────────────────── */
+
+/** Backend GreenScoreResult */
+export interface GreenScoreFactor {
+  key: string;
+  label: string;
+  available: boolean;
+  unavailableReason?: string | null;
+  dataQuality: 'measured' | 'estimated' | 'unavailable' | string;
+  points: number;
+  maxPoints: number;
+  explanation: string;
+}
+
+export interface GreenScoreResult {
+  score: number;
+  maxScore: number;
+  explanations: string[];
+  factors?: GreenScoreFactor[];
+  nonCertificationDisclaimer?: string;
+  weightsNote?: string;
+  computedAt: string;
+}
+
+export interface GreenTipResult {
+  score: number;
+  maxScore: number;
+  tips: string;
+  factors: string[];
+}
+
+/** UI green score shape */
+export interface GreenScore {
+  farmId: string;
+  overallScore: number;
+  maxScore?: number;
+  dimensions: Record<
+    string,
+    {
+      score: number;
+      available: boolean;
+      explanation?: string;
+    }
+  >;
+  measuredVsEstimated?: Record<string, 'measured' | 'estimated'>;
+  dataAvailabilityMap?: Record<string, boolean>;
+  explanations?: string[];
+  computedAt: string;
+  nonCertificationDisclaimer: string;
+}
+
+/* ── Experimental ─────────────────────────────────────────── */
+
+export type ExperimentStatus =
+  | 'draft'
+  | 'active'
+  | 'completed'
+  | 'abandoned'
+  | 'approved'
+  | string;
+
+export interface ExperimentalStatusDto {
+  experimentalAreas: Array<{
+    id: string;
+    name?: string | null;
+    areaInputValue: number;
+    areaInputUnit: string;
+  }>;
+  experimentalZones: Array<{
+    id: string;
+    label?: string | null;
+    cropId?: string | null;
+    cropFreetext?: string | null;
+    seedVarietyId?: string | null;
+    plantingDate?: string | null;
+    growthStage?: string | null;
+    areaInputValue: number;
+    areaInputUnit: string;
+  }>;
+}
+
+export interface ExperimentalOpportunity {
+  id: string;
+  farmId: string;
+  productionAreaId: string;
+  cropId?: string;
+  cropName?: string;
+  hypothesis?: string;
+  area?: ValueUnit;
+  riskNote?: string;
+}
+
+export interface Experiment {
+  id: string;
+  farmId: string;
+  productionAreaId: string;
+  cropId?: string;
+  cropName?: string;
+  hypothesis: string;
+  status: ExperimentStatus;
+  predictedYield?: ValueUnit;
+  actualYield?: ValueUnit;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/* ── Assistant ────────────────────────────────────────────── */
 
 export interface AssistantMessage {
   id: string;
   threadId: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | string;
   content: string;
   citations?: string[];
+  citationsJson?: string | null;
   disclaimer?: string;
   createdAt: string;
 }
@@ -541,121 +746,153 @@ export interface AssistantMessage {
 export interface AssistantThread {
   id: string;
   farmId: string;
-  messages: AssistantMessage[];
+  title?: string | null;
+  messages?: AssistantMessage[];
   createdAt: string;
+  lastMessageAt?: string | null;
 }
 
-export interface PostMessagePayload {
+export interface PostAssistantMessageRequest {
   text: string;
 }
 
-export interface PostMessageResponse {
+export interface PostAssistantMessageResponse {
   message: AssistantMessage;
   citations?: string[];
   disclaimer?: string;
 }
 
-/* ────────────────────────────────────────────────────────────
-   Nearby / Suggestions (SRS FR-033–035)
-   ──────────────────────────────────────────────────────────── */
+/* ── Alerts ───────────────────────────────────────────────── */
 
-export interface CropSuggestion {
-  cropId: string;
-  reason: string;
-  communitySignal?: string;
-}
-
-export interface SuggestionsResponse {
-  suggestions: CropSuggestion[];
-}
-
-/* ────────────────────────────────────────────────────────────
-   Green Farm (SRS FR-127–133)
-   ──────────────────────────────────────────────────────────── */
-
-export interface GreenFarmScore {
-  farmId: string;
-  overallScore: number;
-  dimensions: Record<
-    string,
-    {
-      score: number;
-      available: boolean;
-      explanation: string;
-    }
-  >;
-  measuredVsEstimated: Record<string, 'measured' | 'estimated'>;
-  dataAvailabilityMap: Record<string, boolean>;
-  computedAt: string;
-  nonCertificationDisclaimer: string;
-}
-
-/* ────────────────────────────────────────────────────────────
-   Experimental Farming (SRS FR-110 experimental areas)
-   ──────────────────────────────────────────────────────────── */
-
-export type ExperimentalPlanStatus = 'draft' | 'approved' | 'rejected' | 'completed';
-
-export interface ExperimentalPlan {
+/** Backend FarmAlertDto — persisted (GAP-050) */
+export interface FarmAlertDto {
   id: string;
-  farmId: string;
-  productionAreaId: string;
-  cropId: string;
-  cropName: string;
-  areaValue: number;
-  areaUnit: AreaUnit;
-  hypothesis: string;
-  status: ExperimentalPlanStatus;
+  type: string;
+  severity: string;
+  title: string;
+  body: string;
+  isRead: boolean;
+  sourceSignal?: string | null;
+  createdAt: string;
+  /** @deprecated use body */
+  message?: string;
+  targetId?: string | null;
+}
+
+/** UI alert shape */
+export interface Alert {
+  id: string;
+  farmerId?: string;
+  farmId?: string;
+  type: AlertType;
+  title?: string;
+  message: string;
+  severity: AlertSeverity | string;
+  actionRef?: string;
+  targetId?: string | null;
+  sourceSignal?: string | null;
+  read?: boolean;
+  createdAt: string;
+}
+
+/** Crop cycle learning comparison (GAP-052) */
+export interface CropCycleDto {
+  id: string;
+  cropZoneId: string;
+  zoneLabel?: string | null;
+  isExperimental: boolean;
+  season: string;
+  predictedYield?: number | null;
+  predictedYieldUnit?: string | null;
+  actualYield?: number | null;
+  actualYieldUnit?: string | null;
+  delta?: number | null;
+  notes?: string | null;
+  endedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface ExperimentalOutcome {
-  id: string;
-  planId: string;
-  yieldValue: number;
-  yieldUnit: string;
-  notes: string;
-  recordedAt: string;
+export interface RecordActualsRequest {
+  actualYield?: number | null;
+  actualYieldUnit?: string | null;
+  notes?: string | null;
+  endedAt?: string | null;
 }
 
-/* ────────────────────────────────────────────────────────────
-   Geo (Dev Spec Scenario 2)
-   ──────────────────────────────────────────────────────────── */
-
-export interface ReverseGeoResponse {
-  region: string | null;
-  regionCode?: string;
-  confidence?: number;
+export interface ExperimentalOutcomeRequest {
+  actualYield?: number | null;
+  actualYieldUnit?: string | null;
+  notes?: string | null;
+  endedAt?: string | null;
+  predictedYield?: number | null;
+  predictedYieldUnit?: string | null;
 }
 
-/* ────────────────────────────────────────────────────────────
-   Admin (Doc 03 §4.4)
-   ──────────────────────────────────────────────────────────── */
+/** Portfolio optimizer — BLOCKED GAP-054 */
+export interface PortfolioBlockedResponse {
+  status: 'blocked' | string;
+  reason: string;
+}
 
-export interface AdminLoginPayload {
+/* ── Admin ────────────────────────────────────────────────── */
+
+export interface AdminLoginRequest {
   email: string;
   password: string;
 }
 
+export interface AdminUser {
+  id: string;
+  email: string;
+  name?: string;
+  roles: string[];
+}
+
 export interface AdminLoginResponse {
   sessionToken: string;
-  admin: {
-    id: string;
-    email: string;
-    roles: string[];
-  };
+  admin: AdminUser;
+}
+
+export interface AdminMe {
+  id: string;
+  email: string;
+  name?: string;
+  roles: string[];
 }
 
 export interface AdminMetrics {
   totalFarmers: number;
   totalFarms: number;
   plansGenerated: number;
-  activeFarms: number;
-  llmCost: { amount: number; currency: string };
+  activeFarms?: number;
+  llmCost?: MoneyAmount;
 }
 
-export interface AdminAuditLog {
+export interface AdminFarmerListItem {
+  id: string;
+  phone: string;
+  name?: string | null;
+  language: Language;
+  farmCount: number;
+  createdAt?: string;
+}
+
+export interface GovernmentRate {
+  id: string;
+  cropId: string;
+  cropName?: string;
+  amount: number;
+  currency: string;
+  unit: string;
+  periodLabel: string;
+  regionCode?: string;
+  label: 'historical_reference';
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+}
+
+export interface AuditLogEntry {
   id: string;
   actorAdminId: string;
   action: string;
@@ -665,10 +902,15 @@ export interface AdminAuditLog {
   timestamp: string;
 }
 
-/* ────────────────────────────────────────────────────────────
-   Re-exports: client + fixtures
-   ──────────────────────────────────────────────────────────── */
+export interface FeatureFlag {
+  key: string;
+  enabled: boolean;
+  description?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
 
-export { ApiClient } from './client';
-export type { ApiClientConfig, RequestOptions } from './client';
-export * from './fixtures';
+/* ── Client ───────────────────────────────────────────────── */
+
+export { ApiClient, ApiError, joinUrl } from './client';
+export type { GetToken, OnUnauthorized, RequestOptions } from './client';

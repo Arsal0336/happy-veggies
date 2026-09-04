@@ -3,10 +3,12 @@ using System.Text.Json;
 using HappyVeggie.Application.AI.Services;
 using HappyVeggie.Application.Common.Interfaces;
 using HappyVeggie.Application.Common.Services;
+using HappyVeggie.Api.RateLimiting;
 using HappyVeggie.Domain.Entities;
 using HappyVeggie.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace HappyVeggie.Api.Controllers;
@@ -86,6 +88,7 @@ public sealed class AssistantController : ControllerBase
     }
 
     [HttpPost("threads/{threadId:guid}/messages")]
+    [EnableRateLimiting(RateLimitingExtensions.AssistantPolicy)]
     public async Task<IActionResult> PostMessage(
         Guid farmId, Guid threadId,
         [FromBody] PostMessageRequest body,
@@ -136,8 +139,16 @@ public sealed class AssistantController : ControllerBase
 
         return Ok(new
         {
-            Message = new { assistantMsg.Id, assistantMsg.Role, assistantMsg.Content, assistantMsg.CitationsJson, assistantMsg.CreatedAt },
-            Disclaimer = "AI-generated. Not professional agricultural advice."
+            Message = new
+            {
+                assistantMsg.Id,
+                assistantMsg.Role,
+                assistantMsg.Content,
+                assistantMsg.CitationsJson,
+                assistantMsg.CreatedAt,
+                Disclaimer = reply.Disclaimer
+            },
+            Disclaimer = reply.Disclaimer
         });
     }
 }

@@ -1,9 +1,11 @@
 using System.Security.Claims;
 using HappyVeggie.Application.Planning.GeneratePlan;
 using HappyVeggie.Application.Planning.ListPlanHistory;
+using HappyVeggie.Api.RateLimiting;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HappyVeggie.Api.Controllers;
 
@@ -22,6 +24,7 @@ public sealed class PlanController : ControllerBase
     private Guid GetFarmerId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpPost("plan")]
+    [EnableRateLimiting(RateLimitingExtensions.PlanPolicy)]
     public async Task<ActionResult<PlanDetailDto>> Generate(
         Guid farmId,
         [FromBody] GeneratePlanRequest body,

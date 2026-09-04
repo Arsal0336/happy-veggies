@@ -1,5 +1,9 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+
+shamefullyHoist: true
+strictPeerDependencies: false
+
 allowBuilds:
   esbuild: true

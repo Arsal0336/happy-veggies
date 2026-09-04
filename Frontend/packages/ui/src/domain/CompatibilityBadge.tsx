@@ -1,28 +1,29 @@
-import { type CompatibilityRelation } from '@hv/api-types';
+import { Badge } from '../primitives/Badge';
+import { cn } from '../utils/cn';
 
-export interface CompatibilityBadgeProps {
-  relation: CompatibilityRelation;
-  className?: string;
-}
+export type CompatibilityLevel = 'good' | 'avoid' | 'neutral';
 
-const labels: Record<CompatibilityRelation, string> = {
-  good: 'Good Companion',
-  neutral: 'Neutral',
+const TONE: Record<CompatibilityLevel, 'success' | 'error' | 'default'> = {
+  good: 'success',
+  avoid: 'error',
+  neutral: 'default',
+};
+
+const LABEL: Record<CompatibilityLevel, string> = {
+  good: 'Good companion',
   avoid: 'Avoid',
+  neutral: 'Neutral',
 };
 
-const colorMap: Record<CompatibilityRelation, string> = {
-  good: 'bg-[var(--hv-color-success-50)] text-[var(--hv-color-success-700)]',
-  neutral: 'bg-[var(--hv-color-neutral-100)] text-[var(--hv-color-neutral-700)]',
-  avoid: 'bg-[var(--hv-color-danger-50)] text-[var(--hv-color-danger-700)]',
+export type CompatibilityBadgeProps = {
+  level: CompatibilityLevel;
+  className?: string;
 };
 
-export function CompatibilityBadge({ relation, className = '' }: CompatibilityBadgeProps) {
+export function CompatibilityBadge({ level, className }: CompatibilityBadgeProps) {
   return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[var(--hv-text-xs)] font-medium ${colorMap[relation]} ${className}`}
-    >
-      {labels[relation]}
-    </span>
+    <Badge tone={TONE[level]} className={cn(className)}>
+      {LABEL[level]}
+    </Badge>
   );
 }

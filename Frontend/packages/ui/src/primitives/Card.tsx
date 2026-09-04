@@ -1,28 +1,16 @@
-import { type ReactNode, type HTMLAttributes } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
+import { cn } from '../utils/cn';
 
-export interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  padding?: 'none' | 'sm' | 'md' | 'lg';
-  children: ReactNode;
-}
+export type CardPadding = 'sm' | 'md' | 'lg';
 
-const paddingClasses: Record<string, string> = {
-  none: '',
-  sm: 'p-3',
-  md: 'p-4',
-  lg: 'p-6',
+export type CardProps = HTMLAttributes<HTMLDivElement> & {
+  padding?: CardPadding;
+  children?: ReactNode;
 };
 
-export function Card({
-  padding = 'md',
-  children,
-  className = '',
-  ...rest
-}: CardProps) {
+export function Card({ padding = 'md', className, children, ...rest }: CardProps) {
   return (
-    <div
-      className={`bg-white rounded-[var(--hv-radius-lg)] shadow-[var(--hv-shadow-sm)] border border-[var(--hv-color-neutral-200)] ${paddingClasses[padding]} ${className}`}
-      {...rest}
-    >
+    <div className={cn('hv-card', `hv-card--pad-${padding}`, className)} {...rest}>
       {children}
     </div>
   );

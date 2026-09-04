@@ -20,10 +20,14 @@ public static class DependencyInjection
         services.AddScoped<Nearby.NearbyFarmsService>();
         services.AddScoped<Suggestions.SeedVarietySuggestionService>();
         services.AddScoped<GreenScore.GreenFarmScoringService>();
+        services.AddScoped<Alerts.AlertEvaluationService>();
+        services.AddScoped<CropCycles.CropCycleService>();
 
         // AI services
         services.AddScoped<AI.Context.FarmContextBuilder>();
         services.AddScoped<AI.Services.LlmUsageLogger>();
+        services.AddScoped<Common.Interfaces.ILlmUsageRecorder>(sp =>
+            sp.GetRequiredService<AI.Services.LlmUsageLogger>());
         services.AddScoped<AI.Services.AiPlanGenerationService>();
         services.AddScoped<AI.Services.AssistantResponseValidator>();
         services.AddScoped<AI.Services.FarmAssistantService>();

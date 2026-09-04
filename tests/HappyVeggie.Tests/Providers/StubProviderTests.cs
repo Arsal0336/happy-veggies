@@ -31,4 +31,20 @@ public class StubProviderTests
         await Assert.ThrowsAsync<NotImplementedException>(() =>
             provider.SendOtpAsync("+92300", "en", CancellationToken.None));
     }
+
+    [Fact]
+    public async Task LiveWeatherProvider_ThrowsNotImplemented()
+    {
+        var provider = new LiveWeatherProvider();
+        await Assert.ThrowsAsync<NotImplementedException>(() =>
+            provider.GetCurrentWeatherAsync(30m, 70m, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task LiveSoilProvider_ThrowsNotImplemented()
+    {
+        var provider = new LiveSoilProvider();
+        await Assert.ThrowsAsync<NotImplementedException>(() =>
+            provider.GetSoilEstimateAsync(30m, 70m, CancellationToken.None));
+    }
 }

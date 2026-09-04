@@ -1,13 +1,28 @@
+import type { Alert, FarmAlertDto } from '@hv/api-types';
 import { farmerApi } from '../apiInstance';
-import { fixtureAlerts } from '@hv/api-types';
-import type { Alert } from '@hv/api-types';
-
-const USE_FIXTURES = !import.meta.env.VITE_API_BASE_URL;
+import { useFixtures } from '../env';
+import { delay, fixtureAlerts } from '../fixtures';
+import { mapFarmAlert } from '../mappers';
 
 export const alertService = {
-  listAlerts: async (): Promise<Alert[]> => {
-    if (USE_FIXTURES) return fixtureAlerts;
-    const res = await farmerApi.get<{ items: Alert[] }>('/alerts');
-    return res.items;
+  async listAlerts(farmId?: string): Promise<Alert[]> {
+    if (useFixtures()) {
+      await delay();
+      return fixtureAlerts.filter((a) => (farmId ? a.farmId === farmId : true));
+    }
+    // Live alerts are farm-scoped — no global /alerts list.
+    if (!farmId) return [];
+    const res = await farmerApi.get<FarmAlertDto[]>(`/farms/${farmId}/alerts`);
+    return (res ?? []).map((a, i) => mapFarmAlert(a, farmId, i));
+  },
+
+  async markRead(farmId: string, alertId: string): Promise<void> {
+    if (useFixtures()) {
+      await delay();
+      const alert = fixtureAlerts.find((a) => a.id === alertId);
+      if (alert) alert.read = true;
+      return;
+    }
+    await farmerApi.patch(`/farms/${farmId}/alerts/${alertId}/read`);
   },
 };

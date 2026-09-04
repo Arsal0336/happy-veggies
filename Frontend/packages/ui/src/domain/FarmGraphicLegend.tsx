@@ -1,27 +1,36 @@
-import type { ProductionArea } from '@hv/api-types';
-import { ProductionAreaTypeIcon } from './ProductionAreaTypeIcon';
+import type { ProductionAreaType } from './ProductionAreaTypeIcon';
+import { cn } from '../utils/cn';
 
-export interface FarmGraphicLegendProps {
-  areas: ProductionArea[];
-}
+const AREA_TYPES: { type: ProductionAreaType; label: string; color: string }[] = [
+  { type: 'open_field', label: 'Open field', color: 'var(--hv-area-open-field)' },
+  { type: 'shed', label: 'Shed', color: 'var(--hv-area-shed)' },
+  { type: 'greenhouse', label: 'Greenhouse', color: 'var(--hv-area-greenhouse)' },
+  { type: 'tunnel', label: 'Tunnel', color: 'var(--hv-area-tunnel)' },
+  { type: 'experimental', label: 'Experimental', color: 'var(--hv-area-experimental)' },
+];
 
-export function FarmGraphicLegend({ areas }: FarmGraphicLegendProps) {
-  const byType = new Map<string, ProductionArea>();
-  areas.forEach((a) => {
-    if (!byType.has(a.typeCode)) byType.set(a.typeCode, a);
-  });
+export type FarmGraphicLegendProps = {
+  showNeighbourNote?: boolean;
+  className?: string;
+};
 
-  if (byType.size === 0) return null;
-
+export function FarmGraphicLegend({
+  showNeighbourNote = true,
+  className,
+}: FarmGraphicLegendProps) {
   return (
-    <div className="flex flex-wrap gap-2 text-[var(--hv-text-xs)]">
-      {[...byType.values()].map((a) => (
-        <span key={a.id} className="inline-flex items-center gap-2 px-2 py-1 rounded border border-[var(--hv-color-neutral-200)] bg-white">
-          <ProductionAreaTypeIcon type={a.typeCode} size="sm" />
-          <span>{a.typeLabel}</span>
+    <div className={cn('hv-farm-legend', className)} role="list" aria-label="Farm graphic legend">
+      {AREA_TYPES.map((item) => (
+        <span key={item.type} className="hv-farm-legend__item" role="listitem">
+          <span className="hv-farm-legend__swatch" style={{ background: item.color }} aria-hidden />
+          {item.label}
         </span>
       ))}
+      {showNeighbourNote && (
+        <span className="hv-farm-legend__item" role="listitem">
+          Block size ≈ relative area · edges show neighbour relations
+        </span>
+      )}
     </div>
   );
 }
-

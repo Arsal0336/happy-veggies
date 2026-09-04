@@ -1,32 +1,32 @@
+import { useMemo, type ReactNode } from 'react';
+import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from '../features/auth/AuthProvider';
+import { I18nextProvider, createFarmerI18n } from '@hv/i18n';
+import { AuthProvider, getInitialLanguage } from '../features/auth/AuthProvider';
 import { NotificationProvider } from '../shared/notifications/NotificationProvider';
-import { AppRouter } from './AppRouter';
-import '@hv/i18n';
-import { initDirection } from '@hv/i18n';
-import type { ReactNode } from 'react';
-
-// Set document direction on startup
-initDirection();
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 60_000,
       retry: 1,
       refetchOnWindowFocus: false,
     },
   },
 });
 
-export function AppProviders({ children }: { children?: ReactNode }) {
+export function AppProviders({ children }: { children: ReactNode }) {
+  const i18n = useMemo(() => createFarmerI18n(getInitialLanguage()), []);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <NotificationProvider>
-          {children ?? <AppRouter />}
-        </NotificationProvider>
-      </AuthProvider>
+      <I18nextProvider i18n={i18n}>
+        <AuthProvider>
+          <NotificationProvider>
+            <BrowserRouter>{children}</BrowserRouter>
+          </NotificationProvider>
+        </AuthProvider>
+      </I18nextProvider>
     </QueryClientProvider>
   );
 }

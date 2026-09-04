@@ -1,13 +1,79 @@
+import type {
+  CropSuggestionDto,
+  SeedVarietySuggestionDto,
+  SuggestionsResponse,
+} from '@hv/api-types';
 import { farmerApi } from '../apiInstance';
-import { fixtureSuggestions } from '@hv/api-types';
-import type { CropSuggestion } from '@hv/api-types';
+import { useFixtures } from '../env';
+import { delay, fixtureSuggestions } from '../fixtures';
+import { mapCropSuggestions } from '../mappers';
 
-const USE_FIXTURES = !import.meta.env.VITE_API_BASE_URL;
+const fixtureSeedVarieties: Record<string, SeedVarietySuggestionDto[]> = {
+  tomato: [
+    {
+      id: 'var-tomato-roma',
+      nameEn: 'Roma VF',
+      nameUr: 'روما وی ایف',
+      varietyType: 'Hybrid',
+      riskBand: 'Low',
+      maturityDays: 75,
+      soilNotes: 'Well-drained loam',
+      waterNotes: 'Regular drip',
+    },
+    {
+      id: 'var-tomato-cherry',
+      nameEn: 'Cherry Sweet',
+      nameUr: 'چیری سویٹ',
+      varietyType: 'OpenPollinated',
+      riskBand: 'Medium',
+      maturityDays: 65,
+    },
+  ],
+  wheat: [
+    {
+      id: 'var-wheat-local',
+      nameEn: 'Local wheat',
+      nameUr: 'مقامی گندم',
+      varietyType: 'OpenPollinated',
+      riskBand: 'Low',
+      maturityDays: 120,
+    },
+  ],
+};
 
 export const suggestionService = {
-  getSuggestions: async (): Promise<CropSuggestion[]> => {
-    if (USE_FIXTURES) return fixtureSuggestions;
-    const res = await farmerApi.get<{ suggestions: CropSuggestion[] }>('/suggestions');
-    return res.suggestions;
+  async listSuggestions(farmId: string): Promise<SuggestionsResponse> {
+    if (useFixtures()) {
+      await delay();
+      return { suggestions: fixtureSuggestions };
+    }
+    const items = await farmerApi.get<CropSuggestionDto[]>(
+      `/farms/${farmId}/suggestions`,
+    );
+    return { suggestions: mapCropSuggestions(items ?? []) };
+  },
+
+  async listSeedSuggestions(
+    farmId: string,
+    cropId: string,
+  ): Promise<SeedVarietySuggestionDto[]> {
+    if (!cropId.trim()) return [];
+    if (useFixtures()) {
+      await delay();
+      const key = cropId.toLowerCase();
+      return (
+        fixtureSeedVarieties[key] ??
+        fixtureSeedVarieties.tomato!.map((v) => ({
+          ...v,
+          id: `var-${key}-${v.id}`,
+          nameEn: `${cropId} variety`,
+        }))
+      );
+    }
+    return (
+      (await farmerApi.get<SeedVarietySuggestionDto[]>(
+        `/farms/${farmId}/seed-suggestions/${encodeURIComponent(cropId)}`,
+      )) ?? []
+    );
   },
 };
