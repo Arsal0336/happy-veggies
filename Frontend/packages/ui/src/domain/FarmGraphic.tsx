@@ -10,6 +10,7 @@ export type FarmGraphicArea = {
   name: string;
   type: ProductionAreaType;
   relativeSize: number;
+  unitLabel?: string;
 };
 
 export type FarmGraphicZone = {
@@ -17,6 +18,7 @@ export type FarmGraphicZone = {
   areaId: string;
   cropName: string;
   stage: string;
+  isExperimental?: boolean;
 };
 
 export type FarmNeighbourEdge = {
@@ -27,6 +29,11 @@ export type FarmNeighbourEdge = {
 
 export type FarmGraphicProps = {
   farmName: string;
+  regionLabel?: string;
+  coordsLabel?: string;
+  weatherLabel?: string;
+  waterLabel?: string;
+  greenScore?: number | string | null;
   areas: FarmGraphicArea[];
   zones: FarmGraphicZone[];
   neighbourEdges?: FarmNeighbourEdge[];
@@ -38,8 +45,36 @@ export type FarmGraphicProps = {
   className?: string;
 };
 
+type AreaGroupKey = 'open_field' | 'protected' | 'experimental';
+
+const GROUP_ORDER: AreaGroupKey[] = ['open_field', 'protected', 'experimental'];
+
+const GROUP_LABELS: Record<AreaGroupKey, string> = {
+  open_field: 'Open field',
+  protected: 'Protected',
+  experimental: 'Experimental',
+};
+
+function groupKey(type: ProductionAreaType): AreaGroupKey {
+  if (type === 'experimental') return 'experimental';
+  if (type === 'open_field') return 'open_field';
+  return 'protected';
+}
+
+function relationTone(relation: string): 'good' | 'avoid' | 'neutral' {
+  const key = relation.toLowerCase();
+  if (key.includes('good') || key.includes('companion')) return 'good';
+  if (key.includes('avoid') || key.includes('conflict') || key.includes('bad')) return 'avoid';
+  return 'neutral';
+}
+
 export function FarmGraphic({
   farmName,
+  regionLabel,
+  coordsLabel,
+  weatherLabel,
+  waterLabel,
+  greenScore,
   areas,
   zones,
   neighbourEdges,
@@ -54,7 +89,10 @@ export function FarmGraphic({
     return (
       <div className={cn('hv-farm-graphic', className)}>
         <header className="hv-farm-graphic__header">
-          <h2 className="hv-farm-graphic__title">{farmName}</h2>
+          <div className="hv-farm-graphic__heading">
+            <h2 className="hv-farm-graphic__title">{farmName}</h2>
+            {regionLabel ? <p className="hv-farm-graphic__meta">{regionLabel}</p> : null}
+          </div>
         </header>
         <EmptyState
           title="No production areas yet"
@@ -72,8 +110,6 @@ export function FarmGraphic({
     );
   }
 
-  const sorted = [...areas].sort((a, b) => b.relativeSize - a.relativeSize);
-
   const zoneLabel = (zoneId: string) => {
     const zone = zones.find((z) => z.id === zoneId);
     if (zone?.cropName?.trim()) return zone.cropName.trim();
@@ -86,86 +122,144 @@ export function FarmGraphic({
       .replace(/[_-]+/g, ' ')
       .replace(/\b\w/g, (c) => c.toUpperCase());
 
+  const grouped = GROUP_ORDER.map((key) => ({
+    key,
+    areas: [...areas]
+      .filter((a) => groupKey(a.type) === key)
+      .sort((a, b) => Math.max(1, b.relativeSize || 1) - Math.max(1, a.relativeSize || 1)),
+  })).filter((g) => g.areas.length > 0);
+
+  const chips = [
+    weatherLabel ? { id: 'weather', label: weatherLabel } : null,
+    waterLabel ? { id: 'water', label: waterLabel } : null,
+    greenScore != null && greenScore !== ''
+      ? { id: 'green', label: `Green ${greenScore}` }
+      : null,
+  ].filter(Boolean) as Array<{ id: string; label: string }>;
+
   return (
     <div className={cn('hv-farm-graphic', className)}>
       <header className="hv-farm-graphic__header">
-        <h2 className="hv-farm-graphic__title">{farmName}</h2>
-        <span style={{ fontSize: 'var(--hv-text-xs)', color: 'var(--hv-color-text-muted)' }}>
-          Schematic (not a survey map)
-        </span>
+        <div className="hv-farm-graphic__heading">
+          <h2 className="hv-farm-graphic__title">{farmName}</h2>
+          <p className="hv-farm-graphic__meta">
+            {[regionLabel, coordsLabel].filter(Boolean).join(' · ') || 'Schematic (not a survey map)'}
+          </p>
+        </div>
+        {chips.length > 0 ? (
+          <div className="hv-farm-graphic__chips" aria-label="Twin status">
+            {chips.map((chip) => (
+              <span key={chip.id} className="hv-farm-graphic__chip">
+                {chip.label}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span className="hv-farm-graphic__badge">Schematic</span>
+        )}
       </header>
 
-      <div className="hv-farm-graphic__canvas" role="list" aria-label="Farm schematic">
-        {sorted.map((area) => {
-          const areaZones = zones.filter((z) => z.areaId === area.id);
-          const flexGrow = Math.max(1, area.relativeSize);
-          const selected = selectedId === area.id;
+      <div className="hv-farm-graphic__canvas" aria-label="Farm schematic">
+        {grouped.map((group) => (
+          <section
+            key={group.key}
+            className={cn('hv-farm-group', `hv-farm-group--${group.key}`)}
+            aria-label={GROUP_LABELS[group.key]}
+          >
+            <h3 className="hv-farm-group__title">{GROUP_LABELS[group.key]}</h3>
+            <div className="hv-farm-group__areas" role="list">
+              {group.areas.map((area) => {
+                const areaZones = zones.filter((z) => z.areaId === area.id);
+                const flexGrow = Math.max(1, Number(area.relativeSize) || 1);
+                const selected = selectedId === area.id;
 
-          return (
-            <div
-              key={area.id}
-              role="listitem"
-              className={cn(
-                'hv-farm-area',
-                `hv-farm-area--${area.type}`,
-                selected && 'hv-farm-area--selected',
-              )}
-              style={{ flexGrow }}
-              tabIndex={readOnly && !onSelectArea ? undefined : 0}
-              onClick={() => onSelectArea?.(area.id)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onSelectArea?.(area.id);
-                }
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--hv-space-2)' }}>
-                <ProductionAreaTypeIcon type={area.type} />
-                <p className="hv-farm-area__name">{area.name}</p>
-              </div>
-              <div className="hv-farm-area__zones">
-                {areaZones.length === 0 && (
-                  <span style={{ fontSize: 'var(--hv-text-xs)', color: 'var(--hv-color-text-muted)' }}>
-                    No zones
-                  </span>
-                )}
-                {areaZones.map((zone) => (
-                  <button
-                    key={zone.id}
-                    type="button"
+                return (
+                  <div
+                    key={area.id}
+                    role="listitem"
                     className={cn(
-                      'hv-farm-zone',
-                      selectedId === zone.id && 'hv-farm-zone--selected',
+                      'hv-farm-area',
+                      `hv-farm-area--${area.type}`,
+                      selected && 'hv-farm-area--selected',
                     )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectZone?.(zone.id);
+                    style={{ flexGrow }}
+                    tabIndex={readOnly && !onSelectArea ? undefined : 0}
+                    onClick={() => onSelectArea?.(area.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelectArea?.(area.id);
+                      }
                     }}
-                    disabled={readOnly && !onSelectZone}
                   >
-                    {zone.cropName}
-                    <span style={{ opacity: 0.7 }}> · {zone.stage}</span>
-                  </button>
-                ))}
-              </div>
+                    <div className="hv-farm-area__head">
+                      <ProductionAreaTypeIcon type={area.type} />
+                      <div className="hv-farm-area__titles">
+                        <p className="hv-farm-area__name">{area.name}</p>
+                        <p className="hv-farm-area__size">
+                          {area.relativeSize > 0
+                            ? `${area.relativeSize}${area.unitLabel ? ` ${area.unitLabel}` : ''}`
+                            : area.type.replace(/_/g, ' ')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="hv-farm-area__zones">
+                      {areaZones.length === 0 && (
+                        <span className="hv-farm-zone hv-farm-zone--empty">No zones</span>
+                      )}
+                      {areaZones.map((zone) => (
+                        <button
+                          key={zone.id}
+                          type="button"
+                          className={cn(
+                            'hv-farm-zone',
+                            selectedId === zone.id && 'hv-farm-zone--selected',
+                            zone.isExperimental && 'hv-farm-zone--experimental',
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectZone?.(zone.id);
+                          }}
+                          disabled={readOnly && !onSelectZone}
+                        >
+                          <span className="hv-farm-zone__crop">{zone.cropName || 'Crop'}</span>
+                          {zone.stage ? (
+                            <span className="hv-farm-zone__stage">{zone.stage}</span>
+                          ) : null}
+                          {zone.isExperimental ? (
+                            <span className="hv-farm-zone__flag">Exp</span>
+                          ) : null}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </section>
+        ))}
       </div>
 
       {neighbourEdges && neighbourEdges.length > 0 && (
         <ul className="hv-farm-edges" aria-label="Neighbour relations">
-          {neighbourEdges.map((edge, i) => (
-            <li key={`${edge.fromZoneId}-${edge.toZoneId}-${i}`} className="hv-farm-edges__item">
-              <span className="hv-farm-edges__from">{zoneLabel(edge.fromZoneId)}</span>
-              <span className="hv-farm-edges__arrow" aria-hidden>
-                →
-              </span>
-              <span className="hv-farm-edges__to">{zoneLabel(edge.toZoneId)}</span>
-              <span className="hv-farm-edges__relation">{relationLabel(edge.relation)}</span>
-            </li>
-          ))}
+          {neighbourEdges.map((edge, i) => {
+            const tone = relationTone(edge.relation);
+            return (
+              <li
+                key={`${edge.fromZoneId}-${edge.toZoneId}-${i}`}
+                className={cn('hv-farm-edges__item', `hv-farm-edges__item--${tone}`)}
+              >
+                <span className="hv-farm-edges__from">{zoneLabel(edge.fromZoneId)}</span>
+                <span className="hv-farm-edges__arrow" aria-hidden>
+                  ↔
+                </span>
+                <span className="hv-farm-edges__to">{zoneLabel(edge.toZoneId)}</span>
+                <span className={cn('hv-farm-edges__relation', `hv-farm-edges__relation--${tone}`)}>
+                  {relationLabel(edge.relation)}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
