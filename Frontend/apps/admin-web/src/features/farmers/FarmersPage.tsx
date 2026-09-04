@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FarmersTable, Input, LoadingState, ErrorState } from '@hv/ui';
+import { FarmersTable, Input, LoadingState, ErrorState, Page } from '@hv/ui';
 import { useAdminFarmers } from '../../shared/api/useAdmin';
 
 export function FarmersPage() {
@@ -21,7 +21,8 @@ export function FarmersPage() {
     })) ?? [];
 
   return (
-    <div className="flex flex-col gap-4">
+    <Page className="max-w-5xl gap-4">
+      <p className="m-0 text-sm text-muted">Search and open a farmer to inspect farms and plans.</p>
       <Input
         placeholder="Search name, phone, id…"
         value={q}
@@ -29,6 +30,6 @@ export function FarmersPage() {
         aria-label="Search farmers"
       />
       <FarmersTable rows={rows} onRowClick={(id) => navigate(`/farmers/${id}`)} />
-    </div>
+    </Page>
   );
 }

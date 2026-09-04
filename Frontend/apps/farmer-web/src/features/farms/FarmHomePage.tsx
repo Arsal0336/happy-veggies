@@ -22,7 +22,6 @@ import {
   PageHeader,
   Section,
   StatCard,
-  TwinSummaryPanel,
   type ProductionAreaType,
 } from '@hv/ui';
 import type { ProductionAreaTypeCode } from '@hv/api-types';
@@ -195,9 +194,6 @@ export function FarmHomePage() {
           farmName={farm.name ?? t('common.unnamed')}
           regionLabel={farm.regionLabel ?? farm.regionCode}
           coordsLabel={`${farm.lat.toFixed(4)}, ${farm.lng.toFixed(4)}`}
-          weatherLabel={weather}
-          waterLabel={water}
-          greenScore={twin?.greenSummary?.overallScore}
           selectedId={selectedZoneId ?? undefined}
           areas={(twin?.areas ?? []).map((a) => ({
             id: a.id,
@@ -228,12 +224,6 @@ export function FarmHomePage() {
         />
         <FarmGraphicLegend />
       </Section>
-
-      <TwinSummaryPanel
-        weather={weather}
-        water={water}
-        greenScore={twin?.greenSummary?.overallScore}
-      />
 
       {alerts && alerts.length > 0 && (
         <Section title={t('alerts.title')}>

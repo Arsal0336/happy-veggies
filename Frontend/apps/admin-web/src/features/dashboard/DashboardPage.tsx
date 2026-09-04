@@ -1,5 +1,5 @@
 import { ClipboardList, MessageSquare, Sprout, Users } from 'lucide-react';
-import { LoadingState, ErrorState, StatCard, Page, PageHeader } from '@hv/ui';
+import { LoadingState, ErrorState, StatCard, Page } from '@hv/ui';
 import { useAdminMetrics } from '../../shared/api/useAdmin';
 
 export function DashboardPage() {
@@ -11,12 +11,10 @@ export function DashboardPage() {
   }
 
   return (
-    <Page className="max-w-5xl">
-      <PageHeader title="Overview">
-        <p className="m-0 text-sm text-muted">
-          Live portal metrics across farmers, farms, plans, and assistant threads.
-        </p>
-      </PageHeader>
+    <Page className="max-w-5xl gap-6">
+      <p className="m-0 max-w-2xl text-sm leading-relaxed text-muted">
+        Live portal metrics across farmers, farms, plans, and assistant threads.
+      </p>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -41,15 +39,15 @@ export function DashboardPage() {
         />
       </div>
 
-      <div className="rounded-2xl border border-border bg-primary-50 p-5 shadow-sm">
+      <div className="rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50 to-white p-5 shadow-sm">
         <p className="m-0 text-[0.65rem] font-semibold uppercase tracking-wider text-muted">
           Operations
         </p>
-        <p className="m-0 mt-1 font-display text-lg font-semibold tracking-tight">
-          Keep rates, farmers, and AI visibility current for demos
+        <p className="m-0 mt-1 font-display text-lg font-semibold tracking-tight text-foreground">
+          Keep rates, farmers, and AI visibility current
         </p>
         <p className="m-0 mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-          Use the sidebar to review farmers, government rates, and assistant threads. Metrics update
+          Review farmers, government rates, and assistant quality from the sidebar. Metrics refresh
           from the live API as you work.
         </p>
       </div>

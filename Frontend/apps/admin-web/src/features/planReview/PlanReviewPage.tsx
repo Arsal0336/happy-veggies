@@ -7,6 +7,8 @@ import {
   Card,
   EmptyState,
   Button,
+  Page,
+  cn,
 } from '@hv/ui';
 import { useAdminPlans, useReviewAdminPlan } from '../../shared/api/useAdmin';
 import type { PlanReviewAction } from '../../shared/types';
@@ -30,8 +32,7 @@ export function PlanReviewPage() {
   const onReview = async (action: PlanReviewAction) => {
     if (!selected) return;
     setActionError(null);
-    const note =
-      window.prompt(`Optional note for "${action}"`, '') ?? undefined;
+    const note = window.prompt(`Optional note for "${action}"`, '') ?? undefined;
     try {
       await review.mutateAsync({
         planId: selected.id,
@@ -46,115 +47,90 @@ export function PlanReviewPage() {
   };
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gap: '1.25rem',
-        gridTemplateColumns: 'minmax(220px, 280px) 1fr',
-      }}
-    >
-      <Card padding="md">
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: '0.5rem',
-            marginBottom: '0.75rem',
-          }}
-        >
-          <h2 style={{ margin: 0, fontSize: 'var(--hv-text-lg)' }}>Plans</h2>
-          <Button
-            size="sm"
-            variant={flaggedOnly ? 'primary' : 'secondary'}
-            onClick={() => setFlaggedOnly((v) => !v)}
-          >
-            {flaggedOnly ? 'Flagged only' : 'All plans'}
-          </Button>
-        </div>
-        {data.length === 0 ? (
-          <EmptyState
-            title="No plans"
-            description={
-              flaggedOnly
-                ? 'No flagged plans match the filter.'
-                : 'No farm plans returned by the admin API.'
-            }
-          />
-        ) : (
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {data.map((plan) => (
-              <li key={plan.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(plan.id)}
-                  style={{
-                    width: '100%',
-                    textAlign: 'start',
-                    padding: '0.75rem',
-                    border:
-                      selected?.id === plan.id
-                        ? '1px solid var(--hv-color-primary, #2d6a4f)'
-                        : '1px solid transparent',
-                    background:
-                      selected?.id === plan.id
-                        ? 'var(--hv-color-primary-soft, #d8f3dc)'
-                        : 'transparent',
-                    borderRadius: 'var(--hv-radius-md, 8px)',
-                    cursor: 'pointer',
-                    marginBottom: '0.35rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <strong style={{ fontSize: 'var(--hv-text-sm)' }}>{plan.title}</strong>
-                    {plan.flagged && <Badge tone="warning">Flagged</Badge>}
-                  </div>
-                  <span
-                    style={{
-                      fontSize: 'var(--hv-text-xs)',
-                      color: 'var(--hv-color-text-muted)',
-                    }}
-                  >
-                    {plan.farmerName}
-                    {plan.reviewStatus && plan.reviewStatus !== 'none'
-                      ? ` · ${plan.reviewStatus}`
-                      : ''}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-      {selected ? (
-        <>
-          {actionError && (
-            <p style={{ color: 'var(--hv-color-error, #b00020)', gridColumn: '2' }}>
-              {actionError}
-            </p>
+    <Page className="max-w-6xl gap-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(220px,280px)_1fr]">
+        <Card padding="md" className="h-fit">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="m-0 font-display text-lg font-semibold tracking-tight">Plans</h2>
+            <Button
+              size="sm"
+              variant={flaggedOnly ? 'primary' : 'secondary'}
+              onClick={() => setFlaggedOnly((v) => !v)}
+            >
+              {flaggedOnly ? 'Flagged only' : 'All plans'}
+            </Button>
+          </div>
+          {data.length === 0 ? (
+            <EmptyState
+              title="No plans"
+              description={
+                flaggedOnly
+                  ? 'No flagged plans match the filter.'
+                  : 'No farm plans returned by the admin API.'
+              }
+            />
+          ) : (
+            <ul className="m-0 flex list-none flex-col gap-1 p-0">
+              {data.map((plan) => {
+                const active = selected?.id === plan.id;
+                return (
+                  <li key={plan.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(plan.id)}
+                      className={cn(
+                        'w-full rounded-xl border px-3 py-2.5 text-start transition',
+                        active
+                          ? 'border-primary-500 bg-primary-50 shadow-sm'
+                          : 'border-transparent hover:border-border hover:bg-surface',
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <strong className="text-sm font-semibold">{plan.title}</strong>
+                        {plan.flagged ? <Badge tone="warning">Flagged</Badge> : null}
+                      </div>
+                      <span className="mt-0.5 block text-xs text-muted">
+                        {plan.farmerName}
+                        {plan.reviewStatus && plan.reviewStatus !== 'none'
+                          ? ` · ${plan.reviewStatus}`
+                          : ''}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-          <PlanReviewPane
-            planTitle={selected.title}
-            flagged={selected.flagged}
-            reviewStatus={selected.reviewStatus}
-            sections={
-              selected.sections.length > 0
-                ? selected.sections
-                : [
-                    {
-                      id: 'meta',
-                      title: 'Metadata',
-                      body: `Farm ${selected.farmId} · Farmer ${selected.farmerId} · v${selected.version ?? '?'}`,
-                    },
-                  ]
-            }
-            actionsDisabled={review.isPending}
-            onReviewAction={(action) => void onReview(action)}
-          />
-        </>
-      ) : (
-        <p>No plans to review.</p>
-      )}
-    </div>
+        </Card>
+
+        <div className="min-w-0">
+          {actionError ? <p className="mb-3 text-sm text-error">{actionError}</p> : null}
+          {selected ? (
+            <PlanReviewPane
+              planTitle={selected.title}
+              flagged={selected.flagged}
+              reviewStatus={selected.reviewStatus}
+              sections={
+                selected.sections.length > 0
+                  ? selected.sections
+                  : [
+                      {
+                        id: 'meta',
+                        title: 'Metadata',
+                        body: `Farm ${selected.farmId} · Farmer ${selected.farmerId} · v${selected.version ?? '?'}`,
+                      },
+                    ]
+              }
+              actionsDisabled={review.isPending}
+              onReviewAction={(action) => void onReview(action)}
+            />
+          ) : (
+            <Card padding="md">
+              <p className="m-0 text-sm text-muted">No plans to review.</p>
+            </Card>
+          )}
+        </div>
+      </div>
+    </Page>
   );
 }

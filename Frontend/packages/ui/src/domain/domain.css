@@ -43,31 +43,6 @@
   align-items: end;
 }
 
-.hv-twin-panel {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  gap: var(--hv-space-3);
-}
-
-.hv-twin-panel__item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--hv-space-1);
-}
-
-.hv-twin-panel__label {
-  font-size: var(--hv-text-xs);
-  color: var(--hv-color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.hv-twin-panel__value {
-  font-size: var(--hv-text-md);
-  font-weight: var(--hv-weight-semibold);
-  color: var(--hv-color-text);
-}
-
 .hv-green-meter {
   display: flex;
   flex-direction: column;
