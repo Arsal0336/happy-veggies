@@ -87,32 +87,130 @@ public sealed class StubLlmProvider : ILlmProvider
         if (q.Contains("water") || q.Contains("irrig") || q.Contains("پانی") || q.Contains("آبپاشی"))
         {
             body = ur
-                ? $"{region} میں {crop} کے لیے ٹھنڈے اوقات میں آبپاشی کریں اور بھاری مٹی پر کھڑا پانی نہ رہنے دیں۔ {weatherNote} تعدد کو ڈیجیٹل ٹوئن کی بارش اور پانی کے ذرائع کے مطابق رکھیں۔"
-                : $"For {crop} in {region}, irrigate in the cool hours and avoid standing water on heavy soils. {weatherNote} Match frequency to the latest twin rainfall and water-source notes.";
+                ? $"""
+                  ## آبپاشی — {crop}
+
+                  {region} میں **ٹھنڈے اوقات** میں آبپاشی کریں۔
+
+                  ### عملی اقدامات
+                  1. صبح سویرے یا شام کو پانی دیں
+                  2. بھاری مٹی پر کھڑا پانی نہ رہنے دیں
+                  3. ٹوئن کی بارش دیکھ کر تعدد ایڈجسٹ کریں
+
+                  {weatherNote}
+
+                  | اشارہ | عمل |
+                  | --- | --- |
+                  | حالیہ بارش | مقدار کم کریں |
+                  | گرمی کی تنبیہ | دوپہر میں سپرے سے گریز |
+                  """
+                : $"""
+                  ## Irrigation — {crop}
+
+                  For **{crop}** in {region}, irrigate in the **cool hours** and avoid standing water on heavy soils.
+
+                  ### Steps
+                  1. Water early morning or evening
+                  2. Skip irrigation right after meaningful rain
+                  3. Match frequency to twin rainfall and water-source notes
+
+                  {weatherNote}
+
+                  | Signal | Action |
+                  | --- | --- |
+                  | Recent rainfall | Reduce volume |
+                  | Heat advisory | Avoid midday spray |
+                  """;
         }
         else if (q.Contains("fertil") || q.Contains("npk") || q.Contains("nutrient") || q.Contains("کھاد"))
         {
             body = ur
-                ? $"{crop} کے لیے نائٹروجن ایک ساتھ نہ دیں — قسطوں میں دیں۔ چونہ یا جپسم سے پہلے ٹوئن مٹی کا پی ایچ ({ctx.Soil ?? "ریکارڈ شدہ پروفائل"}) دیکھیں۔"
-                : $"Split nitrogen for {crop} rather than one heavy dose. Use the twin soil pH ({ctx.Soil ?? "recorded profile"}) before adding lime or gypsum.";
+                ? $"""
+                  ## کھاد — {crop}
+
+                  نائٹروجن **ایک ساتھ** نہ دیں — **قسطوں** میں دیں۔
+
+                  - ٹوئن مٹی کا پی ایچ چیک کریں ({ctx.Soil ?? "ریکارڈ شدہ پروفائل"})
+                  - چونہ/جپسم سے پہلے پی ایچ تصدیق کریں
+                  - نامیاتی مادہ کم ہو تو کمپوسٹ شامل کریں
+                  """
+                : $"""
+                  ## Fertilizer — {crop}
+
+                  Split **nitrogen** for {crop} rather than one heavy dose.
+
+                  - Check twin soil pH ({ctx.Soil ?? "recorded profile"}) first
+                  - Confirm pH before lime or gypsum
+                  - Add compost if organic matter is low
+                  """;
         }
         else if (q.Contains("pest") || q.Contains("disease") || q.Contains("کیڑا") || q.Contains("بیماری"))
         {
             body = ur
-                ? $"اس موسم میں {crop} کا ہفتہ میں دو بار معائنہ کریں۔ شدید متاثر پتے ہٹائیں اور پڑوسی فصلوں کا خیال رکھیں — ناموافق پڑوسی کیڑوں کا دباؤ بڑھاتے ہیں۔"
-                : $"Scout {crop} twice a week in this season. Remove badly affected leaves and keep neighbouring fields in mind — incompatible neighbours increase pest pressure.";
+                ? $"""
+                  ## کیڑے / بیماری — {crop}
+
+                  1. ہفتے میں **دو بار** معائنہ کریں
+                  2. شدید متاثر پتے ہٹائیں
+                  3. پڑوسی فصلوں کی مطابقت دیکھیں
+
+                  > ناموافق پڑوسی کیڑوں کا دباؤ بڑھا سکتے ہیں۔
+                  """
+                : $"""
+                  ## Pests / disease — {crop}
+
+                  1. Scout **twice a week** this season
+                  2. Remove badly affected leaves
+                  3. Check neighbour-crop compatibility
+
+                  > Incompatible neighbours increase pest pressure.
+                  """;
         }
         else if (q.Contains("yield") || q.Contains("price") || q.Contains("rate") || q.Contains("پیداوار") || q.Contains("قیمت"))
         {
             body = ur
-                ? "پیداوار رقبہ، فصل اور موسم سے ایک مشاورتی تخمینہ ہے — ضمانت نہیں۔ فروخت کی منصوبہ بندی سے پہلے Economics میں سرکاری ریفرنس ریٹ چیک کریں۔"
-                : $"Yield is an advisory estimate from area, crop, and season — not a guarantee. Check the latest government reference rate in Economics before sales planning.";
+                ? """
+                  ## پیداوار اور ریٹ
+
+                  پیداوار **مشاورتی تخمینہ** ہے — ضمانت نہیں۔
+
+                  | چیک کریں | کہاں |
+                  | --- | --- |
+                  | متوقع پیداوار | فارم پلان ٹیبل |
+                  | سرکاری ریفرنس ریٹ | Economics |
+                  """
+                : """
+                  ## Yield & rates
+
+                  Yield is an **advisory estimate** from area, crop, and season — not a guarantee.
+
+                  | Check | Where |
+                  | --- | --- |
+                  | Expected yield | Farm Plan tables |
+                  | Government reference rate | Economics |
+                  """;
         }
         else
         {
             body = ur
-                ? $"{region} کے لیے اگلا قدم: {crop} کو موسمی کیلنڈر پر رکھیں، موسم بدلنے پر ڈیجیٹل ٹوئن ریفریش کریں، اور تازہ منصوبے کے مطابق عمل کریں۔ {weatherNote}"
-                : $"Next action for this farm: keep {crop} on the seasonal calendar for {region}, refresh the digital twin after weather changes, and follow the latest plan sections for planting and inputs. {weatherNote}";
+                ? $"""
+                  ## اگلا قدم — {region}
+
+                  {weatherNote}
+
+                  - {crop} کو موسمی کیلنڈر پر رکھیں
+                  - موسم بدلنے پر ڈیجیٹل ٹوئن ریفریش کریں
+                  - تازہ منصوبے کے مطابق عمل کریں
+                  """
+                : $"""
+                  ## Next actions — {region}
+
+                  {weatherNote}
+
+                  - Keep **{crop}** on the seasonal calendar
+                  - Refresh the digital twin after weather changes
+                  - Follow the latest plan sections for planting and inputs
+                  """;
         }
 
         var disclaimer = ur

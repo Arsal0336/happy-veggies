@@ -364,7 +364,10 @@
     "empty": "No alerts",
     "markRead": "Mark read",
     "unreadCount": "{{count}} unread",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "read": "Read",
+    "unread": "Unread",
+    "untitled": "Alert"
   },
   "weather": {
     "title": "Weather",

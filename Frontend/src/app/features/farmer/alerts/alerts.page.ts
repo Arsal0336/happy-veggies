@@ -67,13 +67,19 @@ export class AlertsPage implements OnInit {
   }
 
   alertItems(): any[] {
-    return this.alerts().map((a) => ({
-      id: a.id,
-      read: a.read,
-      severity: a.severity,
-      title: a.title || a.type,
-      message: a.message,
-    }));
+    return this.alerts().map((a) => this.normalizeAlert(a));
+  }
+
+  private normalizeAlert(a: any): any {
+    return {
+      id: String(a.id ?? a.Id ?? ''),
+      read: !!(a.isRead ?? a.IsRead ?? a.read),
+      severity: a.severity ?? a.Severity ?? 'info',
+      type: a.type ?? a.Type ?? null,
+      title: a.title ?? a.Title ?? a.type ?? a.Type,
+      message: a.body ?? a.Body ?? a.message ?? a.Message ?? '',
+      createdAt: a.createdAt ?? a.CreatedAt ?? null,
+    };
   }
 
   async load(): Promise<void> {
@@ -91,7 +97,9 @@ export class AlertsPage implements OnInit {
   async markRead(id: string): Promise<void> {
     try {
       await firstValueFrom(this.api.markRead(this.farmId, id));
-      this.alerts.update((list) => list.map((a) => (a.id === id ? { ...a, read: true } : a)));
+      this.alerts.update((list) =>
+        list.map((a) => (a.id === id ? { ...a, read: true, isRead: true } : a)),
+      );
     } catch (e: any) {
       this.toast.error(e?.message || this.t.instant('common.error'));
     }

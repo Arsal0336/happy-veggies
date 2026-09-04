@@ -30,7 +30,9 @@ public static class PromptTemplates
            - Use short paragraphs and bullet/numbered lists for steps
            - Use markdown tables when comparing options, schedules, rates, or measurements
            - Use fenced code blocks only for formulas, unit conversions, or structured snippets
-           - Use **bold** for key actions; keep the answer scannable on mobile
+           - Prefer structure over walls of text: start with a short heading, then bullets or a numbered checklist
+           - When listing 3+ comparable facts (yield, rates, timing, zones), use a markdown pipe table
+           - Do not wrap the whole answer in a single paragraph
         12. GROUNDING (critical): A FARM CONTEXT block is injected with every request. You MUST use numbers from that block (zone expectedYield, plantingDate, area, weather temp/rainfall, soil pH/NPK, water reliability, alerts, economics). Never say yield/weather/soil/water data is missing when the context lists values. If a field is explicitly n/a or listed under Missing Data, say so. Prefer citing provenance labels from context (e.g. third_party_estimate, farmer_provided).
         13. After your answer and disclaimer, append exactly this trailer (English keys, suggestion text in the reply language):
         <<<FOLLOW_UPS>>>

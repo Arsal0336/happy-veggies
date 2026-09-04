@@ -364,7 +364,10 @@
     "empty": "کوئی الرٹ نہیں",
     "markRead": "پڑھا ہوا نشان لگائیں",
     "unreadCount": "{{count}} غیر پڑھے",
-    "viewAll": "سب دیکھیں"
+    "viewAll": "سب دیکھیں",
+    "read": "پڑھا ہوا",
+    "unread": "غیر پڑھا",
+    "untitled": "الرٹ"
   },
   "weather": {
     "title": "موسم",

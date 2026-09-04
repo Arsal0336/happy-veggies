@@ -138,10 +138,11 @@ public sealed class FarmContextBuilder
         }
         else missingFlags.Add("No weather data available");
 
-        var soilRows = await _db.SoilProfiles.AsNoTracking()
+        var soilRows = (await _db.SoilProfiles.AsNoTracking()
             .Where(s => s.FarmId == farmId && !s.IsDeleted)
+            .ToListAsync(cancellationToken))
             .OrderByDescending(s => s.UpdatedAt)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         SoilContext? soil = null;
         if (soilRows.Count > 0)
@@ -215,20 +216,22 @@ public sealed class FarmContextBuilder
             return $"{a ?? e.CropZoneAId.ToString()} ↔ {b ?? e.CropZoneBId.ToString()} ({e.AdjacencyType})";
         }).ToList();
 
-        var alertRows = await _db.Alerts.AsNoTracking()
+        var alertRows = (await _db.Alerts.AsNoTracking()
             .Where(a => a.FarmId == farmId)
+            .ToListAsync(cancellationToken))
             .OrderByDescending(a => a.CreatedAt)
             .Take(8)
-            .ToListAsync(cancellationToken);
+            .ToList();
         var alerts = alertRows.Select(a => new AlertContext(
             a.Type, a.Severity, a.Title, a.Body, a.CreatedAt)).ToList();
 
         var zoneIds = twin.Zones.Select(z => z.Id).ToList();
-        var cycleRows = await _db.CropCycles.AsNoTracking()
+        var cycleRows = (await _db.CropCycles.AsNoTracking()
             .Where(c => zoneIds.Contains(c.CropZoneId))
+            .ToListAsync(cancellationToken))
             .OrderByDescending(c => c.UpdatedAt)
             .Take(12)
-            .ToListAsync(cancellationToken);
+            .ToList();
         var cycles = cycleRows.Select(c =>
         {
             zoneLabelById.TryGetValue(c.CropZoneId, out var label);

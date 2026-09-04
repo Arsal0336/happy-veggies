@@ -273,13 +273,17 @@ export class FarmHomePage implements OnInit {
   }
 
   alertItems(): any[] {
-    return this.alerts().map((a) => ({
-      id: a.id,
-      read: !!(a.isRead ?? a.read),
-      severity: a.severity,
-      title: a.title || a.type,
-      message: a.body || a.message,
-    }));
+    return this.alerts()
+      .slice(0, 5)
+      .map((a) => ({
+        id: String(a.id ?? a.Id ?? ''),
+        read: !!(a.isRead ?? a.IsRead ?? a.read),
+        severity: a.severity ?? a.Severity ?? 'info',
+        type: a.type ?? a.Type ?? null,
+        title: a.title ?? a.Title ?? a.type ?? a.Type,
+        message: a.body ?? a.Body ?? a.message ?? a.Message ?? '',
+        createdAt: a.createdAt ?? a.CreatedAt ?? null,
+      }));
   }
 
   graphicAreas(): any[] {

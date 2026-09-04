@@ -113,9 +113,15 @@ export type ChatMessage = {
     .bubble__body .md-h2 { font-size: 1.05rem; font-weight: 700; }
     .bubble__body .md-h3 { font-size: 0.98rem; font-weight: 700; }
     .bubble__body .md-ul,
-    .bubble__body .md-ol { padding-inline-start: 1.2rem; }
+    .bubble__body .md-ol { padding-inline-start: 1.35rem; margin: 0 0 0.75rem; }
     .bubble__body .md-ul { list-style: disc; }
     .bubble__body .md-ol { list-style: decimal; }
+    .bubble__body .md-ul li,
+    .bubble__body .md-ol li {
+      margin: 0.28rem 0;
+      padding-inline-start: 0.15rem;
+    }
+    .bubble__body .md-p { margin: 0 0 0.65rem; }
     .bubble__body .md-quote {
       border-inline-start: 3px solid var(--hv-color-primary-300);
       padding-inline-start: 0.65rem;
@@ -145,22 +151,30 @@ export type ChatMessage = {
       color: inherit;
       font-size: inherit;
     }
-    .bubble__body .md-table-wrap { overflow-x: auto; }
+    .bubble__body .md-table-wrap {
+      overflow-x: auto;
+      margin: 0 0 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--hv-color-border);
+    }
     .bubble__body .md-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
     }
     .bubble__body .md-table th,
     .bubble__body .md-table td {
       border: 1px solid var(--hv-color-border);
-      padding: 0.4rem 0.55rem;
+      padding: 0.45rem 0.6rem;
       text-align: start;
       vertical-align: top;
     }
     .bubble__body .md-table th {
       background: var(--hv-color-primary-50);
       font-weight: 700;
+    }
+    .bubble__body .md-table tr:nth-child(even) td {
+      background: rgb(31 92 50 / 0.03);
     }
     .bubble__body .md-hr {
       border: 0;
@@ -404,21 +418,29 @@ export class AssistantChat implements AfterViewChecked {
   }
 
   private split(content: string): { body: string; inlineDisclaimer?: string } {
-    const withoutFollowUps = content
+    // Preserve markdown structure (tables, lists). Only strip follow-up trailer
+    // and optionally peel a trailing disclaimer line.
+    let body = (content || '')
       .replace(/<<<FOLLOW_UPS>>>[\s\S]*?<<<END_FOLLOW_UPS>>>/gi, '')
+      .replace(/\r\n/g, '\n')
       .trim();
-    const parts = withoutFollowUps
-      .split(/\n+/)
-      .map((p) => p.trim())
-      .filter(Boolean);
-    if (!parts.length) return { body: '' };
-    const last = parts[parts.length - 1]!;
+    if (!body) return { body: '' };
+
+    const lines = body.split('\n');
+    // Walk back past trailing blank lines to find a possible disclaimer line
+    let end = lines.length - 1;
+    while (end >= 0 && !lines[end]!.trim()) end--;
+    if (end <= 0) return { body };
+
+    const last = lines[end]!.trim();
     const disclaimerRe =
       /(?:⚠️\s*)?(?:this is\s+)?ai[- ]generated|not professional agricultural|advisory(?:\s+content)?(?:\s+only)?|مصنوعی ذہانت|پیشہ ورانہ زرعی/i;
-    if (parts.length > 1 && disclaimerRe.test(last)) {
-      return { body: parts.slice(0, -1).join('\n\n'), inlineDisclaimer: last };
+    if (disclaimerRe.test(last)) {
+      const kept = lines.slice(0, end);
+      while (kept.length && !kept[kept.length - 1]!.trim()) kept.pop();
+      return { body: kept.join('\n').trim(), inlineDisclaimer: last };
     }
-    return { body: parts.join('\n\n') };
+    return { body };
   }
 
   private scrollToEnd(): void {

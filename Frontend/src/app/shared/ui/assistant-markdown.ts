@@ -1,6 +1,6 @@
 /**
  * Lightweight markdown → safe HTML for assistant replies.
- * Supports headings, paragraphs, lists, tables, fenced/inline code, emphasis.
+ * Supports headings, paragraphs, lists (incl. •), tables, fenced/inline code, emphasis.
  */
 export function renderAssistantMarkdown(source: string): string {
   const text = (source || '').replace(/\r\n/g, '\n').trim();
@@ -30,7 +30,7 @@ export function renderAssistantMarkdown(source: string): string {
       continue;
     }
 
-    // Table (header | --- | ---)
+    // Table (header + divider row)
     if (isTableRow(line) && i + 1 < lines.length && isTableDivider(lines[i + 1] ?? '')) {
       const tableLines: string[] = [];
       while (i < lines.length && isTableRow(lines[i] ?? '')) {
@@ -42,16 +42,16 @@ export function renderAssistantMarkdown(source: string): string {
     }
 
     // Heading
-    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    const heading = line.match(/^(#{1,4})\s+(.+)$/);
     if (heading) {
-      const level = heading[1]!.length;
+      const level = Math.min(heading[1]!.length, 3);
       blocks.push(`<h${level} class="md-h${level}">${inline(heading[2]!)}</h${level}>`);
       i++;
       continue;
     }
 
-    // Horizontal rule
-    if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+    // Horizontal rule (not a table divider)
+    if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(line) && !isTableDivider(line)) {
       blocks.push('<hr class="md-hr" />');
       i++;
       continue;
@@ -68,12 +68,16 @@ export function renderAssistantMarkdown(source: string): string {
       continue;
     }
 
-    // Unordered list
-    if (/^\s*[-*+]\s+/.test(line)) {
+    // Unordered list (- * + •)
+    if (isUnorderedItem(line)) {
       const items: string[] = [];
-      while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i] ?? '')) {
-        items.push((lines[i] ?? '').replace(/^\s*[-*+]\s+/, ''));
+      while (i < lines.length && isUnorderedItem(lines[i] ?? '')) {
+        items.push(stripUnorderedMarker(lines[i] ?? ''));
         i++;
+        // Allow a single blank line inside a list without breaking it
+        while (i < lines.length && !(lines[i] ?? '').trim() && i + 1 < lines.length && isUnorderedItem(lines[i + 1] ?? '')) {
+          i++;
+        }
       }
       blocks.push(
         `<ul class="md-ul">${items.map((it) => `<li>${inline(it)}</li>`).join('')}</ul>`,
@@ -81,12 +85,15 @@ export function renderAssistantMarkdown(source: string): string {
       continue;
     }
 
-    // Ordered list
-    if (/^\s*\d+[.)]\s+/.test(line)) {
+    // Ordered list (1. 1) ۱. etc.)
+    if (isOrderedItem(line)) {
       const items: string[] = [];
-      while (i < lines.length && /^\s*\d+[.)]\s+/.test(lines[i] ?? '')) {
-        items.push((lines[i] ?? '').replace(/^\s*\d+[.)]\s+/, ''));
+      while (i < lines.length && isOrderedItem(lines[i] ?? '')) {
+        items.push(stripOrderedMarker(lines[i] ?? ''));
         i++;
+        while (i < lines.length && !(lines[i] ?? '').trim() && i + 1 < lines.length && isOrderedItem(lines[i + 1] ?? '')) {
+          i++;
+        }
       }
       blocks.push(
         `<ol class="md-ol">${items.map((it) => `<li>${inline(it)}</li>`).join('')}</ol>`,
@@ -107,11 +114,11 @@ export function renderAssistantMarkdown(source: string): string {
       if (
         !l.trim() ||
         /^```/.test(l) ||
-        /^(#{1,3})\s+/.test(l) ||
+        /^(#{1,4})\s+/.test(l) ||
         /^>\s?/.test(l) ||
-        /^\s*[-*+]\s+/.test(l) ||
-        /^\s*\d+[.)]\s+/.test(l) ||
-        /^(-{3,}|\*{3,}|_{3,})\s*$/.test(l) ||
+        isUnorderedItem(l) ||
+        isOrderedItem(l) ||
+        (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(l) && !isTableDivider(l)) ||
         (isTableRow(l) && i + 1 < lines.length && isTableDivider(lines[i + 1] ?? ''))
       ) {
         break;
@@ -131,15 +138,19 @@ export function looksRtl(text: string): boolean {
 
 function inline(text: string): string {
   let s = escapeHtml(text);
-  // inline code
+  // inline code first
   s = s.replace(/`([^`]+)`/g, '<code class="md-code">$1</code>');
-  // bold then italic (avoid lookbehind for broader TS targets)
+  // bold
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  // italic
   s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  s = s.replace(/_([^_]+)_/g, '<em>$1</em>');
+  s = s.replace(/(^|[\s(])_([^_]+)_(?=[\s).,]|$)/g, '$1<em>$2</em>');
   // links [text](url) — only http(s)
-  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  s = s.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
+  );
   return s;
 }
 
@@ -147,9 +158,17 @@ function renderTable(rows: string[]): string {
   if (rows.length < 2) return `<p class="md-p">${inline(rows.join(' '))}</p>`;
   const header = splitRow(rows[0]!);
   const bodyRows = rows.slice(2).map(splitRow);
-  const thead = `<thead><tr>${header.map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead>`;
+  const colCount = Math.max(header.length, ...bodyRows.map((r) => r.length));
+  const pad = (cells: string[]) => {
+    const copy = [...cells];
+    while (copy.length < colCount) copy.push('');
+    return copy.slice(0, colCount);
+  };
+  const thead = `<thead><tr>${pad(header)
+    .map((c) => `<th>${inline(c)}</th>`)
+    .join('')}</tr></thead>`;
   const tbody = `<tbody>${bodyRows
-    .map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`)
+    .map((r) => `<tr>${pad(r).map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`)
     .join('')}</tbody>`;
   return `<div class="md-table-wrap"><table class="md-table">${thead}${tbody}</table></div>`;
 }
@@ -164,11 +183,34 @@ function splitRow(line: string): string[] {
 }
 
 function isTableRow(line: string): boolean {
-  return /^\s*\|?.+\|.+\|?\s*$/.test(line) && line.includes('|');
+  const t = line.trim();
+  if (!t.includes('|')) return false;
+  // avoid treating bare ---|--- as a data row when alone (divider handles that)
+  if (isTableDivider(t)) return true;
+  return /^\s*\|?.+\|.+\|?\s*$/.test(line);
 }
 
 function isTableDivider(line: string): boolean {
-  return /^\s*\|?[\s:|-]+\|[\s:|-]+\|?\s*$/.test(line);
+  const t = line.trim();
+  if (!t.includes('-')) return false;
+  return /^\|?[\s:|-]+\|[\s:|-]+\|?$/.test(t) && /-+/.test(t);
+}
+
+function isUnorderedItem(line: string): boolean {
+  return /^\s*([-*+]|•|●|◦)\s+/.test(line);
+}
+
+function stripUnorderedMarker(line: string): string {
+  return line.replace(/^\s*([-*+]|•|●|◦)\s+/, '');
+}
+
+function isOrderedItem(line: string): boolean {
+  // Latin digits, Eastern Arabic, and common "a)" style skipped — digits only
+  return /^\s*(\d+|[\u06F0-\u06F9]+)[.)]\s+/.test(line);
+}
+
+function stripOrderedMarker(line: string): string {
+  return line.replace(/^\s*(\d+|[\u06F0-\u06F9]+)[.)]\s+/, '');
 }
 
 function escapeHtml(s: string): string {

@@ -84,19 +84,19 @@ type PlanContent = Record<string, unknown>;
                 </thead>
                 <tbody>
                   @for (row of yieldRows(); track rowKey(row, $index)) {
-                    <tr class="border-b border-[var(--hv-color-border)] last:border-0">
-                      <td class="py-2.5 pe-3 font-medium">{{ dash(row['zoneLabel']) }}</td>
-                      <td class="py-2.5 pe-3">{{ dash(row['cropName'] ?? row['cropId']) }}</td>
-                      <td class="py-2.5 pe-3">{{ num(row['areaAcres']) }}</td>
+                    <tr class="border-b border-[var(--hv-color-border)]">
+                      <td class="py-2.5 pe-3 font-medium">{{ dash(cell(row, 'zoneLabel')) }}</td>
+                      <td class="py-2.5 pe-3">{{ dash(cell(row, 'cropName') ?? cell(row, 'cropId')) }}</td>
+                      <td class="py-2.5 pe-3">{{ num(cell(row, 'areaAcres')) }}</td>
                       <td class="py-2.5 pe-3 font-semibold tabular-nums">
-                        {{ num(row['estimatedYield'] ?? row['expectedYield']) }}
+                        {{ num(cell(row, 'estimatedYield') ?? cell(row, 'expectedYield')) }}
                       </td>
-                      <td class="py-2.5 pe-3">{{ dash(row['unit'] ?? row['yieldUnit']) }}</td>
-                      <td class="py-2.5 pe-3 tabular-nums">{{ money(row['ratePerUnit'], row['currency']) }}</td>
+                      <td class="py-2.5 pe-3">{{ dash(cell(row, 'unit') ?? cell(row, 'yieldUnit')) }}</td>
+                      <td class="py-2.5 pe-3 tabular-nums">{{ money(cell(row, 'ratePerUnit'), cell(row, 'currency')) }}</td>
                       <td class="py-2.5 pe-3 font-semibold tabular-nums">
-                        {{ money(row['referenceGrossValue'], row['currency']) }}
+                        {{ money(cell(row, 'referenceGrossValue'), cell(row, 'currency')) }}
                       </td>
-                      <td class="py-2.5">{{ dash(row['confidence']) }}</td>
+                      <td class="py-2.5">{{ dash(cell(row, 'confidence')) }}</td>
                     </tr>
                   }
                 </tbody>
@@ -169,36 +169,117 @@ export class PlanSections {
 
   farmSummary(): PlanContent | null {
     const c = this.content();
-    const s = c?.['farmSummary'];
-    return s && typeof s === 'object' ? (s as PlanContent) : null;
+    const raw = c?.['farmSummary'] ?? c?.['FarmSummary'];
+    if (!raw || typeof raw !== 'object') return null;
+    const s = raw as PlanContent;
+    return {
+      name: this.val(s, 'name'),
+      region: this.val(s, 'region'),
+      totalAcres: this.val(s, 'totalAcres'),
+      areaCount: this.val(s, 'areaCount'),
+      zoneCount: this.val(s, 'zoneCount'),
+    };
   }
 
   farmStatus(): PlanContent | null {
     const c = this.content();
-    const s = c?.['farmStatus'];
-    return s && typeof s === 'object' ? (s as PlanContent) : null;
+    const raw = c?.['farmStatus'] ?? c?.['FarmStatus'];
+    if (!raw || typeof raw !== 'object') return null;
+    const s = raw as PlanContent;
+    return {
+      weatherTempC: this.val(s, 'weatherTempC'),
+      weatherCondition: this.val(s, 'weatherCondition'),
+      rainfallMm: this.val(s, 'rainfallMm'),
+      humidityPercent: this.val(s, 'humidityPercent'),
+      waterSourceCount: this.val(s, 'waterSourceCount'),
+      irrigationMethod: this.val(s, 'irrigationMethod'),
+      waterReliability: this.val(s, 'waterReliability'),
+      soilType: this.val(s, 'soilType'),
+      soilPh: this.val(s, 'soilPh'),
+    };
   }
 
   warnings(): PlanContent[] {
     const c = this.content();
-    const list = c?.['compatibilityWarnings'];
-    return Array.isArray(list) ? (list as PlanContent[]) : [];
+    const list = c?.['compatibilityWarnings'] ?? c?.['CompatibilityWarnings'];
+    return this.asRows(list).map((w) => ({
+      zoneA: this.val(w, 'zoneA'),
+      zoneB: this.val(w, 'zoneB'),
+      reason: this.val(w, 'reason'),
+    }));
   }
 
   yieldRows(): PlanContent[] {
     const c = this.content();
-    const economics = Array.isArray(c?.['economicsRows']) ? (c!['economicsRows'] as PlanContent[]) : [];
-    const yields = Array.isArray(c?.['yieldEstimates']) ? (c!['yieldEstimates'] as PlanContent[]) : [];
+    const economics = this.asRows(c?.['economicsRows'] ?? c?.['EconomicsRows']);
+    const yields = this.asRows(c?.['yieldEstimates'] ?? c?.['YieldEstimates']);
 
-    if (economics.length && yields.length) {
-      return yields.map((y, i) => {
+    const mappedYields = yields.map((y) => this.normalizeYieldRow(y));
+    const mappedEcon = economics.map((e) => this.normalizeEconRow(e));
+
+    if (mappedEcon.length && mappedYields.length) {
+      return mappedYields.map((y, i) => {
         const match =
-          economics.find((e) => String(e['zoneId']) === String(y['zoneId'])) ?? economics[i];
-        return { ...y, ...match, estimatedYield: y['estimatedYield'] ?? match?.['expectedYield'], confidence: y['confidence'] };
+          mappedEcon.find((e) => String(this.val(e, 'zoneId')) === String(this.val(y, 'zoneId'))) ??
+          mappedEcon[i];
+        return {
+          ...y,
+          ...match,
+          estimatedYield:
+            this.val(y, 'estimatedYield') ?? this.val(match, 'expectedYield') ?? this.val(match, 'estimatedYield'),
+          confidence: this.val(y, 'confidence'),
+          unit: this.val(y, 'unit') ?? this.val(match, 'yieldUnit') ?? this.val(match, 'unit'),
+        };
       });
     }
-    if (economics.length) return economics;
-    return yields;
+    if (mappedEcon.length) return mappedEcon;
+    return mappedYields;
+  }
+
+  private asRows(value: unknown): PlanContent[] {
+    return Array.isArray(value) ? (value as PlanContent[]) : [];
+  }
+
+  private val(row: PlanContent | undefined, camel: string): unknown {
+    if (!row) return undefined;
+    if (row[camel] != null && row[camel] !== '') return row[camel];
+    const pascal = camel.charAt(0).toUpperCase() + camel.slice(1);
+    if (row[pascal] != null && row[pascal] !== '') return row[pascal];
+    return row[camel] ?? row[pascal];
+  }
+
+  private normalizeYieldRow(y: PlanContent): PlanContent {
+    return {
+      zoneId: this.val(y, 'zoneId'),
+      zoneLabel: this.val(y, 'zoneLabel'),
+      cropId: this.val(y, 'cropId'),
+      cropName: this.val(y, 'cropName') ?? this.val(y, 'cropId'),
+      areaAcres: this.val(y, 'areaAcres'),
+      estimatedYield: this.val(y, 'estimatedYield') ?? this.val(y, 'expectedYield'),
+      unit: this.val(y, 'unit') ?? this.val(y, 'yieldUnit'),
+      ratePerUnit: this.val(y, 'ratePerUnit'),
+      currency: this.val(y, 'currency') ?? 'PKR',
+      referenceGrossValue: this.val(y, 'referenceGrossValue'),
+      confidence: this.val(y, 'confidence'),
+    };
+  }
+
+  private normalizeEconRow(e: PlanContent): PlanContent {
+    return {
+      zoneId: this.val(e, 'zoneId'),
+      zoneLabel: this.val(e, 'zoneLabel'),
+      cropId: this.val(e, 'cropId'),
+      cropName: this.val(e, 'cropName') ?? this.val(e, 'cropId'),
+      areaAcres: this.val(e, 'areaAcres'),
+      expectedYield: this.val(e, 'expectedYield') ?? this.val(e, 'estimatedYield'),
+      estimatedYield: this.val(e, 'expectedYield') ?? this.val(e, 'estimatedYield'),
+      yieldUnit: this.val(e, 'yieldUnit') ?? this.val(e, 'unit'),
+      unit: this.val(e, 'yieldUnit') ?? this.val(e, 'unit'),
+      ratePerUnit: this.val(e, 'ratePerUnit'),
+      currency: this.val(e, 'currency') ?? 'PKR',
+      referenceGrossValue: this.val(e, 'referenceGrossValue'),
+      confidence: this.val(e, 'confidence'),
+    };
   }
 
   sections(): Array<{ id: string; title: string; body: string }> {
@@ -222,6 +303,10 @@ export class PlanSections {
   dash(value: unknown): string {
     if (value == null || value === '') return '—';
     return String(value);
+  }
+
+  cell(row: PlanContent, camel: string): unknown {
+    return this.val(row, camel);
   }
 
   num(value: unknown): string {
