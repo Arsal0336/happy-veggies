@@ -30,6 +30,9 @@ Thumbs.db
 *.userosscache
 *.slnx
 
+## Local script runtime (PIDs, process logs)
+scripts/.runtime/
+
 ## Logs
 *.log
 *.tmp
