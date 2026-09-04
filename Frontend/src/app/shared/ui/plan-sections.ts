@@ -2,6 +2,7 @@ import { Component, inject, input } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { HvCard } from './hv-card';
 import { HvEmptyState } from './hv-empty-state';
+import { expectedAmount } from '../catalogs/units';
 
 type PlanContent = Record<string, unknown>;
 
@@ -259,7 +260,7 @@ export class PlanSections {
     }));
   }
 
-  /** Expected amount = yield × rate per unit (e.g. kg × PKR/kg). */
+  /** Expected amount = yield converted into rate unit × rate. */
   rowGross(row: PlanContent): number | null {
     const stored = this.toNum(this.val(row, 'referenceGrossValue'));
     if (stored != null) return stored;
@@ -267,8 +268,14 @@ export class PlanSections {
       this.val(row, 'estimatedYield') ?? this.val(row, 'expectedYield'),
     );
     const rate = this.toNum(this.val(row, 'ratePerUnit'));
-    if (yieldAmt == null || rate == null) return null;
-    return yieldAmt * rate;
+    const area = this.toNum(this.val(row, 'areaAcres')) ?? 0;
+    return expectedAmount(
+      yieldAmt,
+      String(this.val(row, 'unit') ?? this.val(row, 'yieldUnit') ?? 'kg'),
+      rate,
+      String(this.val(row, 'rateUnit') ?? 'kg'),
+      area,
+    );
   }
 
   yieldTotalGross(): number | null {

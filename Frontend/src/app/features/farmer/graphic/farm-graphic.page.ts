@@ -10,6 +10,7 @@ import { TwinApiService } from '../../../core/api/twin.service';
 import { FarmApiService } from '../../../core/api/farm.service';
 import { EconomicsApiService } from '../../../core/api/economics.service';
 import { FarmGraphic } from '../../../shared/ui/farm-graphic';
+import { expectedAmount } from '../../../shared/catalogs/units';
 
 function toGraphicType(code: string): string {
   if (code === 'tunnel_polyhouse') return 'tunnel';
@@ -137,13 +138,17 @@ export class FarmGraphicPage implements OnInit {
       const yieldUnit = twinUnit || snap?.yieldUnit || snap?.YieldUnit || null;
       const ratePerUnit = snap?.ratePerUnit ?? snap?.RatePerUnit ?? null;
       const currency = snap?.currency ?? snap?.Currency ?? 'PKR';
+      const rateUnit = snap?.rateUnit ?? snap?.RateUnit ?? 'kg';
+      const areaAcres = z.areaCanonicalValue ?? z.AreaCanonicalValue ?? z.area?.value ?? null;
       let referenceGrossValue = snap?.referenceGrossValue ?? snap?.ReferenceGrossValue ?? null;
-      if (
-        (referenceGrossValue == null || Number.isNaN(Number(referenceGrossValue))) &&
-        yieldValue != null &&
-        ratePerUnit != null
-      ) {
-        referenceGrossValue = Number(yieldValue) * Number(ratePerUnit);
+      if (referenceGrossValue == null || Number.isNaN(Number(referenceGrossValue))) {
+        referenceGrossValue = expectedAmount(
+          yieldValue,
+          yieldUnit,
+          ratePerUnit != null ? Number(ratePerUnit) : null,
+          rateUnit,
+          Number(areaAcres) || 0,
+        );
       }
       return {
         id: z.id,
@@ -152,10 +157,11 @@ export class FarmGraphicPage implements OnInit {
         cropName: z.cropFreetext || z.cropName || z.CropFreetext || z.label || '',
         stage: z.growthStage || z.GrowthStage || '',
         isExperimental: !!(z.isExperimental ?? z.IsExperimental),
-        areaAcres: z.areaCanonicalValue ?? z.AreaCanonicalValue ?? z.area?.value ?? null,
+        areaAcres,
         yieldValue: yieldValue != null && !Number.isNaN(yieldValue) ? yieldValue : null,
         yieldUnit,
         ratePerUnit,
+        rateUnit,
         currency,
         referenceGrossValue:
           referenceGrossValue != null && !Number.isNaN(Number(referenceGrossValue))

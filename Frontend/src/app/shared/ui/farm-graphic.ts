@@ -1,6 +1,7 @@
 import { Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HvEmptyState } from './hv-empty-state';
+import { expectedAmount } from '../catalogs/units';
 
 export type FarmGraphicArea = {
   id: string;
@@ -22,6 +23,7 @@ export type FarmGraphicZone = {
   yieldValue?: number | null;
   yieldUnit?: string | null;
   ratePerUnit?: number | null;
+  rateUnit?: string | null;
   currency?: string | null;
   referenceGrossValue?: number | null;
 };
@@ -591,21 +593,18 @@ export class FarmGraphic {
       });
   }
 
-  /** Expected amount = stored gross, or yield × rate per unit. */
+  /** Expected amount = stored gross, or converted yield × rate. */
   resolveGross(zone: FarmGraphicZone): number | null {
     if (zone.referenceGrossValue != null && !Number.isNaN(Number(zone.referenceGrossValue))) {
       return Number(zone.referenceGrossValue);
     }
-    const yieldAmt =
-      zone.yieldValue != null && !Number.isNaN(Number(zone.yieldValue))
-        ? Number(zone.yieldValue)
-        : null;
-    const rate =
-      zone.ratePerUnit != null && !Number.isNaN(Number(zone.ratePerUnit))
-        ? Number(zone.ratePerUnit)
-        : null;
-    if (yieldAmt == null || rate == null) return null;
-    return yieldAmt * rate;
+    return expectedAmount(
+      zone.yieldValue,
+      zone.yieldUnit,
+      zone.ratePerUnit,
+      zone.rateUnit || 'kg',
+      Number(zone.areaAcres) || 0,
+    );
   }
 
   yieldMoneyTotal(): string | null {
