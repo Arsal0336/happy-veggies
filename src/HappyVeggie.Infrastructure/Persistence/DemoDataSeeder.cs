@@ -28,6 +28,9 @@ public static class DemoDataSeeder
     private static readonly Guid EdgeTomatoOnionId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee000c");
     private static readonly Guid EdgeTomatoMarigoldId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee000d");
     private static readonly Guid AlertHeatId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee000e");
+    private static readonly Guid ShedAreaId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0010");
+    private static readonly Guid ZoneCucumberId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0011");
+    private static readonly Guid ExpAreaId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0012");
     private static readonly Guid AlertIrrigId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee000f");
     private static readonly Guid AlertCompatId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0010");
 
@@ -212,10 +215,91 @@ public static class DemoDataSeeder
                     CropFreetext = "Marigold",
                     GrowthStage = "flowering",
                     PlantingDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-45)),
-                    IsExperimental = true,
+                    IsExperimental = false,
                     CreatedAt = now,
                     UpdatedAt = now
                 });
+        }
+
+        if (!await db.ProductionAreas.AnyAsync(a => a.Id == ShedAreaId || (a.FarmId == FarmId && a.TypeCode == "greenhouse"), cancellationToken))
+        {
+            db.ProductionAreas.Add(new ProductionArea
+            {
+                Id = ShedAreaId,
+                FarmId = FarmId,
+                TypeCode = "greenhouse",
+                Name = "Tomato Greenhouse",
+                AreaInputValue = 2000m,
+                AreaInputUnit = "sq_ft",
+                AreaCanonicalValue = 0.046m,
+                TemperatureC = 28m,
+                HumidityPercent = 70m,
+                StructureType = "polyhouse",
+                CreatedAt = now,
+                UpdatedAt = now
+            });
+        }
+
+        if (!await db.ProductionAreas.AnyAsync(a => a.Id == ExpAreaId || (a.FarmId == FarmId && a.TypeCode == "experimental"), cancellationToken))
+        {
+            db.ProductionAreas.Add(new ProductionArea
+            {
+                Id = ExpAreaId,
+                FarmId = FarmId,
+                TypeCode = "experimental",
+                Name = "Trial Plot",
+                AreaInputValue = 1m,
+                AreaInputUnit = "acres",
+                AreaCanonicalValue = 1m,
+                CreatedAt = now,
+                UpdatedAt = now
+            });
+        }
+
+        var shedId = await db.ProductionAreas
+            .Where(a => a.FarmId == FarmId && !a.IsDeleted && (a.Id == ShedAreaId || a.TypeCode == "greenhouse"))
+            .Select(a => a.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (shedId != Guid.Empty &&
+            !await db.CropZones.AnyAsync(z => z.Id == ZoneCucumberId || (z.FarmId == FarmId && z.CropId == "cucumber"), cancellationToken))
+        {
+            db.CropZones.Add(new CropZone
+            {
+                Id = ZoneCucumberId,
+                FarmId = FarmId,
+                ProductionAreaId = shedId,
+                Label = "Cucumber bay",
+                AreaInputValue = 1200m,
+                AreaInputUnit = "sq_ft",
+                AreaCanonicalValue = 0.028m,
+                CropId = "cucumber",
+                CropFreetext = "Cucumber",
+                GrowthStage = "fruiting",
+                PlantingDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-40)),
+                ExpectedYieldValue = 8m,
+                ExpectedYieldUnit = "t",
+                ExpectedYieldProvenance = DataProvenance.ThirdPartyEstimate,
+                IsExperimental = false,
+                CreatedAt = now,
+                UpdatedAt = now
+            });
+        }
+
+        var expAreaId = await db.ProductionAreas
+            .Where(a => a.FarmId == FarmId && !a.IsDeleted && (a.Id == ExpAreaId || a.TypeCode == "experimental"))
+            .Select(a => a.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (expAreaId != Guid.Empty)
+        {
+            var marigold = await db.CropZones.FirstOrDefaultAsync(
+                z => z.FarmId == FarmId && !z.IsDeleted && (z.Id == ZoneMarigoldId || z.CropId == "marigold"),
+                cancellationToken);
+            if (marigold is not null && marigold.ProductionAreaId != expAreaId)
+            {
+                marigold.ProductionAreaId = expAreaId;
+                marigold.IsExperimental = true;
+                marigold.UpdatedAt = now;
+            }
         }
 
         if (!await db.FieldNeighbourEdges.AnyAsync(e => e.FarmId == FarmId, cancellationToken))
@@ -231,7 +315,7 @@ public static class DemoDataSeeder
                     FarmId = FarmId,
                     CropZoneAId = tomatoId,
                     CropZoneBId = onionId,
-                    AdjacencyType = "adjacent",
+                    AdjacencyType = "companion_good",
                     Source = "demo_seed",
                     Enabled = true
                 },
@@ -241,7 +325,7 @@ public static class DemoDataSeeder
                     FarmId = FarmId,
                     CropZoneAId = tomatoId,
                     CropZoneBId = marigoldId,
-                    AdjacencyType = "adjacent",
+                    AdjacencyType = "companion_good",
                     Source = "demo_seed",
                     Enabled = true
                 });

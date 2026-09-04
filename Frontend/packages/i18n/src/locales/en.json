@@ -317,7 +317,8 @@
   },
   "graphic": {
     "title": "Farm graphic",
-    "coordsOnly": "Map library TBD-07 — coordinates only"
+    "coordsOnly": "Schematic twin view — not a survey map",
+    "openFull": "Full view"
   },
   "suggestions": {
     "title": "Nearby suggestions"

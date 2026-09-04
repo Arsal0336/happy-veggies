@@ -69,23 +69,37 @@ export function FarmGraphicPage() {
       <section className="hv-section">
         <FarmGraphic
           farmName={farm.name ?? t('common.unnamed')}
+          regionLabel={farm.regionLabel ?? farm.regionCode}
+          coordsLabel={`${farm.lat.toFixed(4)}, ${farm.lng.toFixed(4)}`}
+          weatherLabel={
+            twin?.weather?.temperature
+              ? `${twin.weather.temperature.value}° ${twin.weather.forecastTrend ?? ''}`.trim()
+              : twin?.weather?.providerStatus ?? undefined
+          }
+          waterLabel={
+            twin?.water?.reliability ??
+            (twin?.water?.sourceCount != null ? `${twin.water.sourceCount}` : undefined)
+          }
+          greenScore={twin?.greenSummary?.overallScore}
           selectedId={selectedZoneId ?? undefined}
           areas={(twin?.areas ?? []).map((a) => ({
             id: a.id,
-            name: a.name,
+            name: a.name ?? t('common.unnamed'),
             type: toGraphicType(a.typeCode),
-            relativeSize: a.area.value,
+            relativeSize: a.area?.value ?? a.areaInputValue ?? 1,
+            unitLabel: a.area?.unit ?? a.areaInputUnit ?? undefined,
           }))}
           zones={(twin?.zones ?? []).map((z) => ({
             id: z.id,
             areaId: z.productionAreaId,
             cropName: z.cropFreetext ?? z.label ?? '',
             stage: z.growthStage ?? '',
+            isExperimental: z.isExperimental,
           }))}
           neighbourEdges={(twin?.neighbourEdges ?? []).map((e) => ({
             fromZoneId: e.zoneAId,
             toZoneId: e.zoneBId,
-            relation: e.relation,
+            relation: e.relation ?? e.adjacencyType ?? 'adjacent',
           }))}
           emptyAction={
             <Button variant="primary" onClick={() => navigate(`/farms/${farmId}/areas`)}>

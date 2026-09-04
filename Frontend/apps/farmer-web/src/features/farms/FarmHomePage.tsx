@@ -184,6 +184,51 @@ export function FarmHomePage() {
         />
       </div>
 
+      <Section title={t('nav.graphic')}>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="m-0 text-sm text-muted">{t('graphic.coordsOnly')}</p>
+          <Button size="sm" variant="ghost" onClick={() => navigate(`/farms/${farmId}/graphic`)}>
+            {t('graphic.openFull', { defaultValue: 'Full view' })}
+          </Button>
+        </div>
+        <FarmGraphic
+          farmName={farm.name ?? t('common.unnamed')}
+          regionLabel={farm.regionLabel ?? farm.regionCode}
+          coordsLabel={`${farm.lat.toFixed(4)}, ${farm.lng.toFixed(4)}`}
+          weatherLabel={weather}
+          waterLabel={water}
+          greenScore={twin?.greenSummary?.overallScore}
+          selectedId={selectedZoneId ?? undefined}
+          areas={(twin?.areas ?? []).map((a) => ({
+            id: a.id,
+            name: a.name ?? t('common.unnamed'),
+            type: toGraphicType(a.typeCode),
+            relativeSize: a.area?.value ?? a.areaInputValue ?? 1,
+            unitLabel: a.area?.unit ?? a.areaInputUnit ?? undefined,
+          }))}
+          zones={(twin?.zones ?? []).map((z) => ({
+            id: z.id,
+            areaId: z.productionAreaId,
+            cropName: z.cropFreetext ?? z.label ?? '',
+            stage: z.growthStage ?? '',
+            isExperimental: z.isExperimental,
+          }))}
+          neighbourEdges={(twin?.neighbourEdges ?? []).map((e) => ({
+            fromZoneId: e.zoneAId,
+            toZoneId: e.zoneBId,
+            relation: e.relation ?? e.adjacencyType ?? 'adjacent',
+          }))}
+          emptyAction={
+            <Button variant="primary" onClick={() => navigate(`/farms/${farmId}/areas`)}>
+              {t('areas.add')}
+            </Button>
+          }
+          onSelectArea={() => navigate(`/farms/${farmId}/areas`)}
+          onSelectZone={(zoneId) => setSelectedZoneId(zoneId)}
+        />
+        <FarmGraphicLegend />
+      </Section>
+
       <TwinSummaryPanel
         weather={weather}
         water={water}
@@ -218,38 +263,6 @@ export function FarmHomePage() {
           />
         </Section>
       )}
-
-      <Section title={t('nav.graphic')}>
-        <FarmGraphic
-          farmName={farm.name ?? t('common.unnamed')}
-          selectedId={selectedZoneId ?? undefined}
-          areas={(twin?.areas ?? []).map((a) => ({
-            id: a.id,
-            name: a.name,
-            type: toGraphicType(a.typeCode),
-            relativeSize: a.area.value,
-          }))}
-          zones={(twin?.zones ?? []).map((z) => ({
-            id: z.id,
-            areaId: z.productionAreaId,
-            cropName: z.cropFreetext ?? z.label ?? '',
-            stage: z.growthStage ?? '',
-          }))}
-          neighbourEdges={(twin?.neighbourEdges ?? []).map((e) => ({
-            fromZoneId: e.zoneAId,
-            toZoneId: e.zoneBId,
-            relation: e.relation,
-          }))}
-          emptyAction={
-            <Button variant="primary" onClick={() => navigate(`/farms/${farmId}/areas`)}>
-              {t('areas.add')}
-            </Button>
-          }
-          onSelectArea={() => navigate(`/farms/${farmId}/areas`)}
-          onSelectZone={(zoneId) => setSelectedZoneId(zoneId)}
-        />
-        <FarmGraphicLegend />
-      </Section>
 
       {suggestions?.suggestions?.length ? (
         <Section title={t('suggestions.title')}>
