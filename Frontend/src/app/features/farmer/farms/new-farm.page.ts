@@ -9,6 +9,7 @@ import { HvButton } from '../../../shared/ui/hv-button';
 import { HvCard } from '../../../shared/ui/hv-card';
 import { FarmApiService } from '../../../core/api/farm.service';
 import { PlanApiService } from '../../../core/api/plan.service';
+import { SystemApiService } from '../../../core/api/system.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ToastService } from '../../../shared/ui/toast.service';
 
@@ -384,6 +385,7 @@ function areaTypeLabelKey(code: string): string {
 export class NewFarmPage {
   private readonly farms = inject(FarmApiService);
   private readonly plans = inject(PlanApiService);
+  private readonly system = inject(SystemApiService);
   private readonly language = inject(LanguageService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
@@ -400,7 +402,8 @@ export class NewFarmPage {
   readonly name = signal('');
   readonly lat = signal('33.6844');
   readonly lng = signal('73.0479');
-  readonly regionCode = signal('Punjab');
+  readonly regionCode = signal('');
+  readonly regionLabel = signal('');
   readonly areaValue = signal('5');
   readonly areaUnit = signal('acres');
   readonly soilType = signal<string>('loam');
@@ -419,6 +422,7 @@ export class NewFarmPage {
   readonly unitOptions = [
     { value: 'acres', label: 'acres' },
     { value: 'kanal', label: 'kanal' },
+    { value: 'marla', label: 'marla' },
     { value: 'acre', label: 'acre' },
   ];
 
@@ -515,8 +519,11 @@ export class NewFarmPage {
     this.fieldError.set('');
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        this.lat.set(pos.coords.latitude.toFixed(6));
-        this.lng.set(pos.coords.longitude.toFixed(6));
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        this.lat.set(lat.toFixed(6));
+        this.lng.set(lng.toFixed(6));
+        void this.applySuggestedRegion(lat, lng);
         this.locating.set(false);
       },
       () => {
@@ -538,7 +545,7 @@ export class NewFarmPage {
           lat: Number(this.lat()),
           lng: Number(this.lng()),
           regionCode: this.regionCode().trim(),
-          regionLabel: this.regionCode().trim(),
+          regionLabel: (this.regionLabel().trim() || this.regionCode().trim()),
           areaInputValue: farmSize,
           areaInputUnit: this.areaUnit(),
           soilType: this.soilType(),
@@ -610,6 +617,16 @@ export class NewFarmPage {
       this.toast.error(e?.message || this.t.instant('common.error'));
       this.isWorking.set(false);
       this.workingLabel.set('');
+    }
+  }
+
+  private async applySuggestedRegion(lat: number, lng: number): Promise<void> {
+    try {
+      const suggestion = await firstValueFrom(this.system.suggestRegion(lat, lng));
+      this.regionCode.set(suggestion.regionCode);
+      this.regionLabel.set(suggestion.regionLabel);
+    } catch {
+      // Manual region entry remains available if suggestion fails.
     }
   }
 }

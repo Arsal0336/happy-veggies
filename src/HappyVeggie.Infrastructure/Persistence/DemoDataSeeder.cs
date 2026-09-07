@@ -39,6 +39,11 @@ public static class DemoDataSeeder
         await SeedAdminAsync(db, cancellationToken);
         await SeedDemoFarmerAsync(db, cancellationToken);
         await SeedDemoFarmAsync(db, cancellationToken);
+        if (db.ChangeTracker.HasChanges())
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
         await SeedDemoEnrichmentAsync(db, cancellationToken);
         await SeedGovernmentRatesAsync(db, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
@@ -148,10 +153,12 @@ public static class DemoDataSeeder
             return;
         }
 
-        var areaId = await db.ProductionAreas
-            .Where(a => a.FarmId == FarmId && !a.IsDeleted)
-            .Select(a => a.Id)
-            .FirstOrDefaultAsync(cancellationToken);
+        var areaId = db.ProductionAreas.Local
+            .FirstOrDefault(a => a.FarmId == FarmId && !a.IsDeleted)?.Id
+            ?? await db.ProductionAreas
+                .Where(a => a.FarmId == FarmId && !a.IsDeleted)
+                .Select(a => a.Id)
+                .FirstOrDefaultAsync(cancellationToken);
         if (areaId == Guid.Empty)
         {
             return;

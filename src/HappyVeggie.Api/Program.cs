@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using HappyVeggie.Api.Middleware;
 using HappyVeggie.Api.Options;
@@ -6,6 +7,7 @@ using HappyVeggie.Application;
 using HappyVeggie.Infrastructure;
 using HappyVeggie.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
@@ -53,6 +55,32 @@ builder.Services
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(1)
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var farmerIdValue = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                var sessionClaim = context.Principal?.FindFirstValue("sv");
+                if (farmerIdValue is null || sessionClaim is null
+                    || !int.TryParse(sessionClaim, out var tokenSessionVersion)
+                    || !Guid.TryParse(farmerIdValue, out var farmerId))
+                {
+                    context.Fail("Invalid farmer session token.");
+                    return;
+                }
+
+                var db = context.HttpContext.RequestServices.GetRequiredService<HappyVeggieDbContext>();
+                var farmer = await db.Farmers
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(f => f.Id == farmerId, context.HttpContext.RequestAborted);
+
+                if (farmer is null || farmer.SessionVersion != tokenSessionVersion)
+                {
+                    context.Fail("Farmer session has been revoked.");
+                }
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -92,3 +120,5 @@ app.UseRateLimiter();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program;

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using HappyVeggie.Application.Auth.LogoutSession;
 using HappyVeggie.Application.Auth.RefreshSession;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -27,9 +28,10 @@ public sealed class AuthSessionController : ControllerBase
     }
 
     [HttpPost("logout")]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
-        // Stateless JWT — client discards the token. Denylist can be added later.
+        var farmerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await _sender.Send(new LogoutFarmerSessionCommand(farmerId), cancellationToken);
         return NoContent();
     }
 }
