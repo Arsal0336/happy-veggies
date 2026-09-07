@@ -28,6 +28,7 @@ public sealed class JwtTokenService : ITokenService
             new Claim(JwtRegisteredClaimNames.Sub, farmer.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim("phone", farmer.Phone),
+            new Claim("sv", farmer.SessionVersion.ToString()),
             new Claim(ClaimTypes.Role, "Farmer")
         };
 

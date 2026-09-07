@@ -21,11 +21,14 @@ public sealed class ListCropZonesQueryHandler : IRequestHandler<ListCropZonesQue
     {
         await _ownershipGuard.EnsureOwnerAsync(request.FarmId, cancellationToken);
 
-        return await _db.CropZones
+        var rows = await _db.CropZones
             .AsNoTracking()
             .Where(z => z.FarmId == request.FarmId && z.ProductionAreaId == request.ProductionAreaId && !z.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        return rows
             .OrderBy(z => z.CreatedAt)
             .Select(z => z.ToDto())
-            .ToListAsync(cancellationToken);
+            .ToList();
     }
 }

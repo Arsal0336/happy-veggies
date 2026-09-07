@@ -62,11 +62,20 @@ public sealed record NeighbourEdgeDto(
     string AdjacencyType);
 
 public sealed record WeatherSummaryDto(
-    string? ProviderStatus);
+    string? ProviderStatus,
+    decimal? TemperatureC = null,
+    decimal? HumidityPercent = null,
+    decimal? WindSpeedKmh = null,
+    decimal? RainfallMm = null,
+    string? Condition = null,
+    string? ForecastTrend = null,
+    DateTimeOffset? ObservedAt = null);
 
 public sealed record WaterSummaryDto(
     int SourceCount,
-    IReadOnlyList<WaterSourceBriefDto> Sources);
+    IReadOnlyList<WaterSourceBriefDto> Sources,
+    string? Reliability = null,
+    string? IrrigationMethod = null);
 
 public sealed record WaterSourceBriefDto(
     Guid Id,
@@ -74,9 +83,29 @@ public sealed record WaterSourceBriefDto(
     string? IrrigationMethod);
 
 public sealed record SoilSummaryDto(
-    int ProfileCount);
+    int ProfileCount,
+    string? ProviderStatus = null,
+    string? SoilType = null,
+    string? Texture = null,
+    decimal? PhLevel = null,
+    decimal? OrganicMatterPercent = null);
 
-public sealed record GreenSummaryDto; // placeholder — TASK-120
+public sealed record GreenSummaryDto(
+    int OverallScore,
+    int MaxScore,
+    string NonCertificationDisclaimer,
+    string? WeightsNote,
+    DateTimeOffset ComputedAt,
+    IReadOnlyList<GreenFactorSummaryDto> Factors);
+
+public sealed record GreenFactorSummaryDto(
+    string Key,
+    string Label,
+    bool Available,
+    int Points,
+    int MaxPoints,
+    string Explanation,
+    string DataQuality);
 
 public sealed record PlanSummaryDto(
     Guid Id,

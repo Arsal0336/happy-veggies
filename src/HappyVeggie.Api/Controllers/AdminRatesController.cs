@@ -29,8 +29,8 @@ public sealed class AdminRatesController : ControllerBase
     {
         var rates = await _db.GovernmentCropRates
             .AsNoTracking()
-            .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
+        rates = rates.OrderByDescending(r => r.CreatedAt).ToList();
         return Ok(rates);
     }
 

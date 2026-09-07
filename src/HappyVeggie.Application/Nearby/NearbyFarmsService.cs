@@ -21,20 +21,22 @@ public sealed class NearbyFarmsService
         Guid excludeFarmId,
         CancellationToken cancellationToken)
     {
-        // Aggregate crops grown in the same region (excluding current farm).
-        var suggestions = await _db.CropZones
+        // Materialize crop IDs first — EF cannot translate GroupBy into CropSuggestionDto on SQLite.
+        var cropIds = await _db.CropZones
             .AsNoTracking()
-            .Where(z => z.Farm.RegionCode == regionCode && z.FarmId != excludeFarmId && !z.IsDeleted && z.CropId != null)
-            .GroupBy(z => z.CropId!)
-            .Select(g => new CropSuggestionDto(
-                g.Key,
-                g.Count(),
-                "community"))
-            .OrderByDescending(s => s.FarmCount)
-            .Take(10)
+            .Where(z => z.Farm.RegionCode == regionCode
+                        && z.FarmId != excludeFarmId
+                        && !z.IsDeleted
+                        && z.CropId != null)
+            .Select(z => z.CropId!)
             .ToListAsync(cancellationToken);
 
-        return suggestions;
+        return cropIds
+            .GroupBy(id => id)
+            .Select(g => new CropSuggestionDto(g.Key, g.Count(), "community"))
+            .OrderByDescending(s => s.FarmCount)
+            .Take(10)
+            .ToList();
     }
 }
 

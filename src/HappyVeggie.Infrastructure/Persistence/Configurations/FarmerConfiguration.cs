@@ -24,6 +24,10 @@ public sealed class FarmerConfiguration : IEntityTypeConfiguration<Farmer>
             .HasDefaultValue("en")
             .IsRequired();
 
+        builder.Property(x => x.SessionVersion)
+            .HasDefaultValue(0)
+            .IsRequired();
+
         builder.Property(x => x.CreatedAt)
             .IsRequired();
 

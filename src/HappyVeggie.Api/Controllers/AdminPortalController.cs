@@ -73,12 +73,11 @@ public sealed class AdminPortalController : ControllerBase
         }
 
         var farmers = await query
-            .OrderByDescending(f => f.CreatedAt)
-            .Take(50)
             .Select(f => new { f.Id, f.Phone, f.Name, f.Language, f.CreatedAt })
             .ToListAsync(cancellationToken);
 
-        return Ok(farmers);
+        // SQLite cannot ORDER BY DateTimeOffset — sort in memory.
+        return Ok(farmers.OrderByDescending(f => f.CreatedAt).Take(50).ToList());
     }
 
     [HttpGet("farmers/{id:guid}")]
@@ -93,7 +92,30 @@ public sealed class AdminPortalController : ControllerBase
             .Select(f => new { f.Id, f.Name, f.RegionLabel, f.AreaAcres, f.CreatedAt })
             .ToListAsync(cancellationToken);
 
-        return Ok(new { Farmer = new { farmer.Id, farmer.Phone, farmer.Name, farmer.Language, farmer.CreatedAt }, Farms = farms });
+        var farmIds = farms.Select(f => f.Id).ToList();
+        var plans = await _db.FarmPlans.AsNoTracking()
+            .Where(p => p.FarmerId == id || farmIds.Contains(p.FarmId))
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(20)
+            .Select(p => new
+            {
+                p.Id,
+                p.FarmId,
+                p.Version,
+                p.Language,
+                p.CreatedAt,
+                p.ReviewStatus,
+                IsFlagged = p.ReviewStatus == "flagged",
+                Summary = "v" + p.Version + " · " + p.Language
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(new
+        {
+            Farmer = new { farmer.Id, farmer.Phone, farmer.Name, farmer.Language, farmer.CreatedAt },
+            Farms = farms,
+            Plans = plans
+        });
     }
 
     [HttpGet("farms/{farmId:guid}/twin")]
@@ -403,8 +425,6 @@ public sealed class AdminPortalController : ControllerBase
             query = query.Where(p => p.IsFlagged);
 
         var plans = await query
-            .OrderByDescending(p => p.CreatedAt)
-            .Take(50)
             .Select(p => new
             {
                 p.Id,
@@ -419,6 +439,8 @@ public sealed class AdminPortalController : ControllerBase
                 p.ContentJson
             })
             .ToListAsync(cancellationToken);
+
+        plans = plans.OrderByDescending(p => p.CreatedAt).Take(50).ToList();
 
         return Ok(plans);
     }

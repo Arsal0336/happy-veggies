@@ -11,10 +11,17 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Hap
         var optionsBuilder = new DbContextOptionsBuilder<HappyVeggieDbContext>();
         var connectionString =
             Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-            ?? LoadFromLocalSettings()
-            ?? "Server=195.250.26.22;Database=vtoxico3_happyveggie;User Id=vtoxico3_veggieadmin;TrustServerCertificate=True;Encrypt=True";
+            ?? LoadFromLocalSettings();
 
-        optionsBuilder.UseSqlServer(connectionString);
+        if (DatabaseProviderSelector.IsUsableSqlServerConnectionString(connectionString)
+            && DatabaseProviderSelector.CanOpenSqlServer(connectionString!))
+        {
+            optionsBuilder.UseSqlServer(connectionString);
+        }
+        else
+        {
+            optionsBuilder.UseSqlite("Data Source=happyveggie.design.db");
+        }
 
         return new HappyVeggieDbContext(optionsBuilder.Options);
     }

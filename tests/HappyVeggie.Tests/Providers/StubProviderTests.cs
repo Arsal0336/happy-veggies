@@ -15,8 +15,15 @@ public class StubProviderTests
         var provider = new StubWeatherProvider();
         var data = await provider.GetCurrentWeatherAsync(30m, 70m, CancellationToken.None);
         Assert.NotNull(data);
-        Assert.Equal("stub", data!.ProviderName);
+        Assert.Equal("regional-estimate", data!.ProviderName);
         Assert.NotNull(data.TemperatureC);
+
+        var other = await provider.GetCurrentWeatherAsync(24.8m, 67.0m, CancellationToken.None);
+        Assert.NotNull(other);
+        Assert.False(
+            data.TemperatureC == other!.TemperatureC
+            && data.HumidityPercent == other.HumidityPercent
+            && data.Condition == other.Condition);
     }
 
     [Fact]
@@ -25,7 +32,7 @@ public class StubProviderTests
         var provider = new StubSoilProvider();
         var data = await provider.GetSoilEstimateAsync(30m, 70m, CancellationToken.None);
         Assert.NotNull(data);
-        Assert.Equal("stub", data!.ProviderName);
+        Assert.Equal("regional-estimate", data!.ProviderName);
     }
 
     [Fact]

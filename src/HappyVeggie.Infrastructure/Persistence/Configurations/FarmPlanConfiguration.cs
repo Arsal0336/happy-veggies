@@ -20,11 +20,9 @@ public sealed class FarmPlanConfiguration : IEntityTypeConfiguration<FarmPlan>
             .IsRequired();
 
         builder.Property(x => x.ContentJson)
-            .HasColumnType("nvarchar(max)")
             .IsRequired();
 
-        builder.Property(x => x.ContextUsedJson)
-            .HasColumnType("nvarchar(max)");
+        builder.Property(x => x.ContextUsedJson);
 
         builder.Property(x => x.Version).IsRequired();
 

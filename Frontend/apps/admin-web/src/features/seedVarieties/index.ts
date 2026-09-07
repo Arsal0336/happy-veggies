@@ -1,1 +1,0 @@
-export { SeedVarietiesPage } from './SeedVarietiesPage';

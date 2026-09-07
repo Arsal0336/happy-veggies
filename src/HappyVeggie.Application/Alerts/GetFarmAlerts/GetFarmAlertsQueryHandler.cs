@@ -23,9 +23,13 @@ public sealed class GetFarmAlertsQueryHandler : IRequestHandler<GetFarmAlertsQue
     {
         await _ownershipGuard.EnsureOwnerAsync(request.FarmId, cancellationToken);
 
-        return await _db.Alerts
+        // SQLite cannot ORDER BY DateTimeOffset — sort in memory.
+        var rows = await _db.Alerts
             .AsNoTracking()
             .Where(a => a.FarmId == request.FarmId)
+            .ToListAsync(cancellationToken);
+
+        return rows
             .OrderByDescending(a => a.CreatedAt)
             .Select(a => new FarmAlertDto(
                 a.Id,
@@ -36,6 +40,6 @@ public sealed class GetFarmAlertsQueryHandler : IRequestHandler<GetFarmAlertsQue
                 a.IsRead,
                 a.SourceSignal,
                 a.CreatedAt))
-            .ToListAsync(cancellationToken);
+            .ToList();
     }
 }

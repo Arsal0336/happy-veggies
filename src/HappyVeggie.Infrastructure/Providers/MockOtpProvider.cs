@@ -3,23 +3,23 @@ using HappyVeggie.Application.Common.Interfaces;
 namespace HappyVeggie.Infrastructure.Providers;
 
 /// <summary>
-/// Mock OTP provider for development. Accepts any 4-8 digit code.
+/// Mock OTP provider for development. Accepts only the documented demo code 1234.
 /// Never logs OTP codes or secrets (GAP-071 / NFR-013).
 /// </summary>
 public sealed class MockOtpProvider : IOtpProvider
 {
+    public const string DemoCode = "1234";
+
     public bool IsMock => true;
 
     public Task<string> SendOtpAsync(string phone, string language, CancellationToken cancellationToken)
     {
-        // Returns opaque request id only — no OTP code is generated or logged.
         return Task.FromResult(Guid.NewGuid().ToString("N"));
     }
 
     public Task<bool> ValidateOtpAsync(string requestId, string phone, string code, CancellationToken cancellationToken)
     {
-        // Validate shape only; never log <paramref name="code"/>.
-        var isValid = code.Length is >= 4 and <= 8 && code.All(char.IsDigit);
+        var isValid = code == DemoCode;
         return Task.FromResult(isValid);
     }
 }

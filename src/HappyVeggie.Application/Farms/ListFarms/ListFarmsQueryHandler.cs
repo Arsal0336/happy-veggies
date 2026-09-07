@@ -16,11 +16,14 @@ public sealed class ListFarmsQueryHandler : IRequestHandler<ListFarmsQuery, IRea
 
     public async Task<IReadOnlyList<FarmDto>> Handle(ListFarmsQuery request, CancellationToken cancellationToken)
     {
-        return await _db.Farms
+        var farms = await _db.Farms
             .AsNoTracking()
             .Where(f => f.FarmerId == request.FarmerId && !f.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        return farms
             .OrderByDescending(f => f.CreatedAt)
             .Select(f => f.ToDto())
-            .ToListAsync(cancellationToken);
+            .ToList();
     }
 }

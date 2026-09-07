@@ -337,7 +337,7 @@ Destructive admin actions: confirm + prefer soft-disable.
 | ID | Topic |
 |----|--------|
 | F-1 | State library |
-| F-2 | CSS approach (tokens required) |
+| F-2 | CSS: Tailwind 3 + shadcn-style primitives in `@hv/ui` |
 | F-3 | Map provider for pin/manual location |
 | F-4 | Streaming assistant UI |
 | F-5 | PWA vs React Native |

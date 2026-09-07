@@ -106,7 +106,22 @@ public sealed class PortfolioService
                 string.Equals(z.CropId, crop.Id, StringComparison.OrdinalIgnoreCase));
 
             var yieldValue = zone?.ExpectedYieldValue ?? 1m;
-            var gross = rate is null ? yieldValue : yieldValue * rate.RatePerUnit;
+            var yieldUnit = zone?.ExpectedYieldUnit ?? "kg";
+            var areaAcres = zone?.AreaCanonicalValue ?? 1m;
+            decimal gross;
+            if (rate is null)
+            {
+                gross = yieldValue;
+            }
+            else
+            {
+                var qty = Domain.Helpers.YieldUnitConverter.ToRateUnit(
+                    yieldValue,
+                    yieldUnit,
+                    rate.Unit,
+                    areaAcres);
+                gross = (qty ?? yieldValue) * rate.RatePerUnit;
+            }
             // Normalize expected return into a modest fraction for optimizer stability.
             var expectedReturn = Math.Clamp(gross / 100_000m, 0.02m, 0.45m);
 

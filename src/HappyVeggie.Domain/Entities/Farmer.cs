@@ -10,6 +10,9 @@ public sealed class Farmer
 
     public string Language { get; set; } = "en";
 
+    /// <summary>Incremented on logout to invalidate outstanding JWTs.</summary>
+    public int SessionVersion { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset UpdatedAt { get; set; }
